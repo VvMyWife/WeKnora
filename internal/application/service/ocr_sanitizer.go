@@ -1,18 +1,27 @@
 package service
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
+	"encoding/json"
+	"os"
+	"path/filepath"
 	"regexp"
 	"strings"
+	"time"
 
 	htmltomd "github.com/JohannesKaufmann/html-to-markdown/v2"
 )
 
 var (
-	htmlTagPattern    = regexp.MustCompile(`<[^>]+>`)
-	codeBlockPattern  = regexp.MustCompile("(?s)^\\s*```[a-zA-Z]*\\s*\n(.*?)\n\\s*```\\s*$")
-	htmlDocPattern    = regexp.MustCompile(`(?i)^\s*(<\!DOCTYPE|<html|<body|<div|<p[\s>]|<table|<h[1-6][\s>])`)
-	multipleNewlines  = regexp.MustCompile(`\n{3,}`)
-	knownEmptyReplies = []string{
+	htmlTagPattern        = regexp.MustCompile(`<[^>]+>`)
+	codeBlockPattern      = regexp.MustCompile("(?s)^\\s*```[a-zA-Z]*\\s*\n(.*?)\n\\s*```\\s*$")
+	htmlDocPattern        = regexp.MustCompile(`(?i)^\s*(<\!DOCTYPE|<html|<body|<div|<p[\s>]|<table|<h[1-6][\s>])`)
+	multipleNewlines      = regexp.MustCompile(`\n{3,}`)
+	reasoningBlockPattern = regexp.MustCompile(`(?is)<(?:think|analysis|reasoning)\b[^>]*>.*?</(?:think|analysis|reasoning)\s*>`)
+	reasoningOpenPattern  = regexp.MustCompile(`(?is)<(?:think|analysis|reasoning)\b[^>]*>`)
+	reasoningClosePattern = regexp.MustCompile(`(?is)</(?:think|analysis|reasoning)\s*>`)
+	knownEmptyReplies     = []string{
 		"无文字内容",
 		"无法识别",
 		"no text",
@@ -24,9 +33,38 @@ var (
 	}
 )
 
-// sanitizeOCRText cleans up VLM OCR output by stripping HTML wrappers,
-// converting HTML to markdown, and filtering out useless responses.
+// OCRSanitizationResult separates stored evidence from model control text.
+type OCRSanitizationResult struct {
+	Content  string
+	Rejected bool
+	Reason   string
+}
+
+// sanitizeOCRText retains the legacy simple API for temporary attachments.
 func sanitizeOCRText(raw string) string {
+	return sanitizeOCRTextWithResult(raw).Content
+}
+
+// sanitizeOCRTextWithResult rejects malformed reasoning markup and strips
+// closed reasoning blocks before any output is persisted or embedded.
+func sanitizeOCRTextWithResult(raw string) OCRSanitizationResult {
+	text := strings.TrimSpace(raw)
+	if text == "" {
+		return OCRSanitizationResult{}
+	}
+	if reasoningOpenPattern.MatchString(text) {
+		if !reasoningClosePattern.MatchString(text) {
+			return OCRSanitizationResult{Rejected: true, Reason: "unterminated_reasoning_block"}
+		}
+		text = reasoningBlockPattern.ReplaceAllString(text, "")
+	}
+	if reasoningOpenPattern.MatchString(text) || reasoningClosePattern.MatchString(text) {
+		return OCRSanitizationResult{Rejected: true, Reason: "reasoning_markup_remaining"}
+	}
+	return OCRSanitizationResult{Content: sanitizeOCRTextCore(text)}
+}
+
+func sanitizeOCRTextCore(raw string) string {
 	text := strings.TrimSpace(raw)
 	if text == "" {
 		return ""
@@ -55,6 +93,35 @@ func sanitizeOCRText(raw string) string {
 
 	text = multipleNewlines.ReplaceAllString(text, "\n\n")
 	return strings.TrimSpace(text)
+}
+
+// writeVLMOCRAudit writes sensitive raw OCR only to an opt-in private mount.
+func writeVLMOCRAudit(knowledgeID, raw string, result OCRSanitizationResult) {
+	root := strings.TrimSpace(os.Getenv("WEKNORA_VLM_AUDIT_DIR"))
+	if root == "" {
+		return
+	}
+	sum := sha256.Sum256([]byte(knowledgeID))
+	dir := filepath.Join(root, hex.EncodeToString(sum[:8]))
+	if err := os.MkdirAll(dir, 0o700); err != nil {
+		return
+	}
+	record := struct {
+		At       time.Time `json:"at"`
+		Raw      string    `json:"raw"`
+		Clean    string    `json:"clean"`
+		Rejected bool      `json:"rejected"`
+		Reason   string    `json:"reason,omitempty"`
+	}{At: time.Now().UTC(), Raw: raw, Clean: result.Content, Rejected: result.Rejected, Reason: result.Reason}
+	data, err := json.Marshal(record)
+	if err != nil {
+		return
+	}
+	name := time.Now().UTC().Format("20060102T150405.000000000Z") + ".json"
+	tmp := filepath.Join(dir, "."+name+".tmp")
+	if err := os.WriteFile(tmp, data, 0o600); err == nil {
+		_ = os.Rename(tmp, filepath.Join(dir, name))
+	}
 }
 
 // stripMarkdownCodeBlock removes a markdown code-fence wrapper that some

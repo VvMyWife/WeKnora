@@ -1,6 +1,11 @@
 package service
 
-import "testing"
+import (
+	"os"
+	"path/filepath"
+	"strings"
+	"testing"
+)
 
 func TestSanitizeOCRText(t *testing.T) {
 	tests := []struct {
@@ -209,5 +214,47 @@ func TestIsKnownEmptyReply(t *testing.T) {
 				t.Errorf("isKnownEmptyReply(%q) = %v, want %v", tt.input, got, tt.want)
 			}
 		})
+	}
+}
+
+func TestSanitizeOCRTextWithResult_StripsReasoningAndPreservesTable(t *testing.T) {
+	raw := "<think>先分析版式，不能进入知识库。</think>\n| 姓名 | 身份证号 |\n| --- | --- |\n| 陈俊英 | 511122196603293765 |"
+	got := sanitizeOCRTextWithResult(raw)
+	if got.Rejected {
+		t.Fatalf("sanitizeOCRTextWithResult unexpectedly rejected: %s", got.Reason)
+	}
+	if strings.Contains(got.Content, "先分析版式") {
+		t.Fatalf("reasoning leaked into stored content: %q", got.Content)
+	}
+	if !strings.Contains(got.Content, "511122196603293765") {
+		t.Fatalf("table evidence was lost: %q", got.Content)
+	}
+}
+
+func TestSanitizeOCRTextWithResult_RejectsUnterminatedReasoning(t *testing.T) {
+	got := sanitizeOCRTextWithResult("<think>未结束的推理\n| 姓名 | 身份证号 |")
+	if !got.Rejected || got.Reason != "unterminated_reasoning_block" {
+		t.Fatalf("got %+v, want unterminated reasoning rejection", got)
+	}
+}
+
+func TestWriteVLMOCRAuditPrivatePermissions(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("WEKNORA_VLM_AUDIT_DIR", dir)
+	writeVLMOCRAudit("knowledge-test", "raw ocr", OCRSanitizationResult{Content: "clean ocr"})
+	dirs, err := os.ReadDir(dir)
+	if err != nil || len(dirs) != 1 || !dirs[0].IsDir() {
+		t.Fatalf("audit directory not written privately: entries=%v err=%v", dirs, err)
+	}
+	entries, err := os.ReadDir(filepath.Join(dir, dirs[0].Name()))
+	if err != nil || len(entries) != 1 {
+		t.Fatalf("audit file not written privately: entries=%v err=%v", entries, err)
+	}
+	info, err := entries[0].Info()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if info.Mode().Perm() != 0o600 {
+		t.Fatalf("audit permissions = %o, want 600", info.Mode().Perm())
 	}
 }

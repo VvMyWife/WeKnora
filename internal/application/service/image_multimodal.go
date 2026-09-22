@@ -213,6 +213,13 @@ func (s *ImageMultimodalService) Handle(ctx context.Context, task *asynq.Task) e
 					"MULTIMODAL_VLM_FAILED",
 					handleErr.Error(),
 					handleErr)
+				if strings.HasPrefix(handleErr.Error(), "VLM OCR output rejected:") && s.knowledgeRepo != nil {
+					_ = s.knowledgeRepo.UpdateKnowledgeColumns(ctx, payload.KnowledgeID, map[string]interface{}{
+						"parse_status":  types.ParseStatusFailed,
+						"enable_status": "disabled",
+						"error_message": "VLM OCR output rejected after retries; document quarantined: " + handleErr.Error(),
+					})
+				}
 			}
 		}
 		if handleErr == nil || isFinalAsynqAttempt(ctx) {
@@ -268,12 +275,19 @@ func (s *ImageMultimodalService) Handle(ctx context.Context, task *asynq.Task) e
 		}
 		prompt = types.AppendCustomPromptInstructions(prompt, vlmCfg.CustomInstructions, "image_ocr")
 
-		ocrText, ocrErr := vlmModel.Predict(ctx, [][]byte{imgBytes}, prompt)
+		rawOCR, ocrErr := vlmModel.Predict(ctx, [][]byte{imgBytes}, prompt)
 		if ocrErr != nil {
 			logger.Warnf(ctx, "[ImageMultimodal] OCR failed for %s: %v", payload.ImageURL, ocrErr)
 			imgOut["ocr_error"] = ocrErr.Error()
 		} else {
-			ocrText = sanitizeOCRText(ocrText)
+			sanitized := sanitizeOCRTextWithResult(rawOCR)
+			writeVLMOCRAudit(payload.KnowledgeID, rawOCR, sanitized)
+			if sanitized.Rejected {
+				handleErr = fmt.Errorf("VLM OCR output rejected: %s", sanitized.Reason)
+				imgOut["ocr_rejected"] = sanitized.Reason
+				return handleErr
+			}
+			ocrText := sanitized.Content
 			if ocrText != "" {
 				imageInfo.OCRText = ocrText
 				imgOut["ocr_chars"] = len([]rune(ocrText))

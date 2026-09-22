@@ -18,6 +18,7 @@ var listKnowledgeChunksTool = BaseTool{
 ## Use After grep_chunks or knowledge_search:
 - **FAQ hit** (type faq): list_knowledge_chunks(faq_id="cN") — reads that one FAQ chunk with answers from metadata.
 - **Document hit**: list_knowledge_chunks(knowledge_id="dN") — pages through all chunks.
+- **Exact field/table request**: read returned image_ocr content before saying a field is absent; captions and summaries are not source evidence.
 
 ## Parameters (provide exactly one id target):
 - faq_id (optional): Short cN ID for an FAQ chunk from grep_chunks / knowledge_search.
@@ -147,7 +148,7 @@ func (t *ListKnowledgeChunksTool) Execute(ctx context.Context, args json.RawMess
 
 	enabled := true
 	chunks, total, err := t.chunkService.GetRepository().ListPagedChunksByKnowledgeID(ctx,
-		effectiveTenantID, knowledgeID, pagination, []types.ChunkType{types.ChunkTypeText, types.ChunkTypeFAQ}, nil, "", "", "", "", &enabled)
+		effectiveTenantID, knowledgeID, pagination, []types.ChunkType{types.ChunkTypeText, types.ChunkTypeImageOCR, types.ChunkTypeFAQ}, nil, "", "", "", "", &enabled)
 	if err != nil {
 		return &types.ToolResult{
 			Success: false,

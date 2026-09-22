@@ -1,0 +1,7 @@
+services:
+  app:
+    image: weknora-app:0.8.0-vlm-clean-r1
+    environment:
+      WEKNORA_VLM_AUDIT_DIR: /data/vlm_audit
+    volumes:
+      - ./data/vlm_audit:/data/vlm_audit
