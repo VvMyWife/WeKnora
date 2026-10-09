@@ -6,6 +6,7 @@
 *.crt
 *.bak
 *.bak.*
+*.bak-*
 *.log
 *.pid
 node_modules/
