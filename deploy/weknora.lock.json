@@ -1,0 +1,23 @@
+{
+  "source": {
+    "repo": "https://gitee.com/mirrors/WeKnora.git",
+    "tag": "v0.8.0",
+    "commit": "1edcd54b43606d9079bb36650efe3f68707a79ea"
+  },
+  "compose_project": "weknora_v080",
+  "ports": {
+    "frontend": 18080,
+    "app": 18081
+  },
+  "runtime": {
+    "ocr_existing": [
+      9960,
+      9961
+    ],
+    "vllm_existing": [
+      8101,
+      8102
+    ]
+  },
+  "secrets": "stored only in .env"
+}

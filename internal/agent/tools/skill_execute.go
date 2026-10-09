@@ -39,6 +39,10 @@ var executeSkillScriptTool = BaseTool{
 - User-uploaded files are listed in the current ` + "`<sandbox_attachments>`" + `
   block. Pass their absolute ` + "`/workspace/input/...`" + ` paths through
   ` + "`args`" + ` when a script accepts an input file.
+- Positional command-line arguments required by a script's usage/help MUST be
+  passed in ` + "`args`" + `. For example, ` + "`scripts/xlsx_create.py`" + ` requires
+  ` + "`spec output`" + `, so call it with ` + "`args`" + ` set to the spec JSON path and the output XLSX path.
+  Do not retry a script without ` + "`args`" + ` after it reports missing positional arguments.
 - Treat ` + "`/workspace/input`" + ` as read-only. Write generated files only to
   ` + "`$WEKNORA_SKILL_OUTPUT_DIR`" + ` so they can be collected for download.
 - Scripts reach the dependencies their install put beside them: Python runs
@@ -258,7 +262,10 @@ func (t *ExecuteSkillScriptTool) Execute(ctx context.Context, args json.RawMessa
 		builder.WriteString(hint)
 		builder.WriteString("\n")
 	} else if !result.IsSuccess() {
-		if hint := pythonSyntaxErrorHint(result.Stderr); hint != "" {
+		if hint := skillMissingArgsHint(input, result.Stderr); hint != "" {
+			builder.WriteString(hint)
+			builder.WriteString("\n")
+		} else if hint := pythonSyntaxErrorHint(result.Stderr); hint != "" {
 			builder.WriteString(hint)
 			builder.WriteString("\n")
 		} else if hint := skillMissingPackageHint(input.SkillName, result.Stderr); hint != "" {
@@ -299,6 +306,21 @@ func (t *ExecuteSkillScriptTool) Execute(ctx context.Context, args json.RawMessa
 			return ""
 		}(),
 	}, nil
+}
+
+func skillMissingArgsHint(input ExecuteSkillScriptInput, stderr string) string {
+	if !strings.Contains(stderr, "the following arguments are required") {
+		return ""
+	}
+	var builder strings.Builder
+	builder.WriteString("\n## Hint\n\n")
+	builder.WriteString("This script was invoked without required positional command-line arguments. ")
+	builder.WriteString("Retry the same execute_skill_script call with an args array containing the required values in order.\n")
+	if input.SkillName == "xlsx" && input.ScriptPath == "scripts/xlsx_create.py" {
+		builder.WriteString("For xlsx_create.py the required args are: [spec_json_path, output_xlsx_path]. ")
+		builder.WriteString("Example: args=[\"/workspace/output/person_info.json\", \"/workspace/output/人员信息汇总.xlsx\"].\n")
+	}
+	return builder.String()
 }
 
 func skillScriptCommand(input ExecuteSkillScriptInput) string {

@@ -1,0 +1,10 @@
+services:
+  app:
+    build:
+      network: host
+  docreader:
+    build:
+      network: host
+  frontend:
+    build:
+      network: host

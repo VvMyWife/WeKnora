@@ -46,7 +46,7 @@ services:
       # Docker 沙箱默认关闭（见 WEKNORA_SANDBOX_DOCKER_ENABLED）。需要本机 daemon 时
       # 同时设 true 并挂载实际 socket——这等同宿主机 root，仅私有化单机。
       # 入口脚本会按 socket GID 把 appuser 加入对应组（compose group_add 在 gosu 后无效）。
-      # - /var/run/docker.sock:/var/run/docker.sock
+      - /var/run/docker.sock:/var/run/docker.sock
       # Optional: declarative built-in models. Copy config/builtin_models.yaml.example
       # to config/builtin_models.yaml, edit it for your deployment, then
       # uncomment the line below. See docs/BUILTIN_MODELS.md.
@@ -99,7 +99,7 @@ services:
       # IM 渠道图片/文件外链的外部可达 URL。IM 显示知识库图片需二选一：
       # 存储后端公网可达（如 MINIO_ENDPOINT 设为公网），或设本变量走 <APP_EXTERNAL_URL>/r/<token>（需 nginx 代理 /r/）。
       # 默认 MinIO 内网部署 / local 后端需设本变量。
-      # - APP_EXTERNAL_URL=${APP_EXTERNAL_URL:-}
+      - APP_EXTERNAL_URL=${APP_EXTERNAL_URL:-}
       # 前端外部 origin，用于邀请链接等绝对 URL（留空走 host-relative）
       - FRONTEND_BASE_URL=${FRONTEND_BASE_URL:-}
       # ========== 对象存储 - 腾讯云 COS ==========

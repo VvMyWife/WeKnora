@@ -1,0 +1,11 @@
+{
+  "policy": "No CPU model inference. Recheck nvidia-smi immediately before starting a model. Select lowest used memory in priority order GPU 3, then 2, 1, 0 when ties or sufficient capacity.",
+  "observed_at": "2026-09-20T11:00:00+08:00",
+  "selected_for_next_model": "GPU 3",
+  "observed_memory_mib": {
+    "0": 31215,
+    "1": 18215,
+    "2": 28741,
+    "3": 17250
+  }
+}

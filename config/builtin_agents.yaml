@@ -70,7 +70,8 @@ builtin_agents:
       agent_type: "rag-qa"
       system_prompt: ""
       temperature: 0.7
-      max_completion_tokens: 0
+      max_completion_tokens: 8192
+      max_tool_output_chars: 8000
       max_iterations: 50
       kb_selection_mode: "all"
       retrieve_kb_only_when_mentioned: false

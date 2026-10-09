@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+set -euo pipefail
+cd "$(dirname "$0")/.."
+run_id="$(date +%Y%m%dT%H%M%S%z)-smoke"
+out="evaluation/runs/$run_id"
+mkdir -p "$out"
+printf '{"api":"' > "$out/result.json"
+api="$(curl -fsS http://127.0.0.1:18081/health)"
+bge="$(curl -fsS http://127.0.0.1:18082/health)"
+ocr9960="$(curl -fsS http://127.0.0.1:9960/health)"
+ocr9961="$(curl -fsS http://127.0.0.1:9961/health)"
+vllm8101="$(curl -fsS http://127.0.0.1:8101/v1/models)"
+printf '%s' "$api" > "$out/api-health.json"
+printf '%s' "$bge" > "$out/bge-health.json"
+printf '%s' "$ocr9960" > "$out/ocr-9960-health.json"
+printf '%s' "$ocr9961" > "$out/ocr-9961-health.json"
+printf '%s' "$vllm8101" > "$out/vllm-8101-models.json"
+curl -fsS http://127.0.0.1:18082/v1/embeddings -H 'Content-Type: application/json' -d '{"input":["WeKnora GPU smoke test"],"model":"bge-m3"}' > "$out/bge-embedding.json"
+printf '{"run_id":"%s","api":"ok","bge":"ok","ocr9960":"ok","ocr9961":"ok","vllm8101":"ok"}
+' "$run_id" | tee "$out/result.json"
+echo "Smoke result: $out"

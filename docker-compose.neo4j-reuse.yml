@@ -1,0 +1,8 @@
+networks:
+  rag_default:
+    external: true
+services:
+  app:
+    networks:
+      - WeKnora-network
+      - rag_default

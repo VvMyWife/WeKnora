@@ -112,6 +112,7 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # 安装 grpc_health_probe
+COPY packages/grpc_health_probe-linux-amd64 /tmp/grpc_health_probe-linux-amd64
 ARG TARGETARCH
 # 兼容 BuildKit 和传统构建：如果 TARGETARCH 为空，使用 uname 检测
 RUN if [ -z "$TARGETARCH" ]; then \
@@ -132,7 +133,7 @@ RUN if [ -z "$TARGETARCH" ]; then \
         "arm") ARCH="arm" ;; \
         *) echo "Unsupported architecture: $TARGETARCH" && exit 1 ;; \
     esac && \
-    wget -qO/bin/grpc_health_probe https://github.com/grpc-ecosystem/grpc-health-probe/releases/download/${GRPC_HEALTH_PROBE_VERSION}/grpc_health_probe-linux-${ARCH} && \
+    if [ "$ARCH" = "amd64" ] && [ -f /tmp/grpc_health_probe-linux-amd64 ]; then cp /tmp/grpc_health_probe-linux-amd64 /bin/grpc_health_probe; else wget -qO/bin/grpc_health_probe https://gh-proxy.com/https://github.com/grpc-ecosystem/grpc-health-probe/releases/download/${GRPC_HEALTH_PROBE_VERSION}/grpc_health_probe-linux-${ARCH}; fi && \
     chmod +x /bin/grpc_health_probe
 
 # 从构建阶段复制已安装的依赖和生成的代码
