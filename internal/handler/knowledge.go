@@ -1040,6 +1040,25 @@ func (h *KnowledgeHandler) ListKnowledge(c *gin.Context) {
 	})
 }
 
+// GetKnowledgeProcessingOverview returns an unpaginated, whole-KB snapshot.
+// The same KB read-access check as the document list prevents cross-tenant
+// counts from leaking through this endpoint.
+func (h *KnowledgeHandler) GetKnowledgeProcessingOverview(c *gin.Context) {
+	ctx := c.Request.Context()
+	_, kbID, effectiveTenantID, _, err := h.validateKnowledgeBaseAccess(c)
+	if err != nil {
+		c.Error(err)
+		return
+	}
+	ctx = context.WithValue(ctx, types.TenantIDContextKey, effectiveTenantID)
+	overview, err := h.kgService.GetKnowledgeProcessingOverview(ctx, kbID)
+	if err != nil {
+		c.Error(errors.NewInternalServerError(err.Error()))
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"success": true, "data": overview})
+}
+
 // ListKnowledgeFolders godoc
 // @Summary      获取知识库文件夹目录树
 // @Description  返回知识库内由文件夹上传形成的目录树，包含每个文件夹的直接文档数与含子目录的总数

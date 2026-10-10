@@ -84,6 +84,8 @@ type KnowledgeService interface {
 		page *types.Pagination,
 		filter types.KnowledgeListFilter,
 	) (*types.PageResult, error)
+	// GetKnowledgeProcessingOverview aggregates the whole KB, ignoring folders and pagination.
+	GetKnowledgeProcessingOverview(ctx context.Context, kbID string) (*types.KnowledgeProcessingOverview, error)
 	// ListKnowledgeFolderTree returns the folder hierarchy derived from the
 	// folder_path of every knowledge entry in a knowledge base, with per-folder
 	// document counts. It powers the document sidebar tree.
@@ -240,6 +242,7 @@ type KnowledgeRepository interface {
 	ListPagedKnowledgeByKnowledgeBaseID(ctx context.Context,
 		tenantID uint64, kbID string, page *types.Pagination, filter types.KnowledgeListFilter,
 	) ([]*types.Knowledge, int64, error)
+	ListKnowledgeProcessingStatusCounts(ctx context.Context, tenantID uint64, kbID string) ([]types.KnowledgeProcessingStatusCount, error)
 	UpdateKnowledge(ctx context.Context, knowledge *types.Knowledge) error
 	// UpdateKnowledgeBatch updates knowledge items in batch
 	UpdateKnowledgeBatch(ctx context.Context, knowledgeList []*types.Knowledge) error

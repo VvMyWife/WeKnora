@@ -67,3 +67,27 @@ func TestListPaged_ExcludesDeletingByDefault(t *testing.T) {
 	assert.Equal(t, deletingID, rows[0].ID)
 	assert.Equal(t, int64(1), total)
 }
+
+func TestListKnowledgeProcessingStatusCounts_WholeKBAndTenantScoped(t *testing.T) {
+	db := setupKnowledgeTestDB(t)
+	repo := NewKnowledgeRepository(db).(*knowledgeRepository)
+	ctx := context.Background()
+	kbID := uuid.New().String()
+	first := insertKnowledgeInKB(t, db, 1, kbID, types.ParseStatusCompleted)
+	require.NoError(t, db.Exec("UPDATE knowledges SET summary_status = ? WHERE id = ?",
+		types.SummaryStatusCompleted, first).Error)
+	insertKnowledgeInKB(t, db, 1, kbID, types.ParseStatusFinalizing)
+	insertKnowledgeInKB(t, db, 1, kbID, types.ParseStatusDeleting)
+	insertKnowledgeInKB(t, db, 2, kbID, types.ParseStatusFailed)
+	insertKnowledgeInKB(t, db, 1, uuid.New().String(), types.ParseStatusFailed)
+
+	counts, err := repo.ListKnowledgeProcessingStatusCounts(ctx, 1, kbID)
+	require.NoError(t, err)
+	var total int64
+	for _, row := range counts {
+		total += row.Count
+		assert.NotEqual(t, types.ParseStatusDeleting, row.ParseStatus)
+		assert.NotEqual(t, types.ParseStatusFailed, row.ParseStatus)
+	}
+	assert.Equal(t, int64(2), total)
+}

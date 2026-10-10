@@ -96,3 +96,23 @@ bash deploy/stop-bge-m3.sh
 ## 网页配置出现 SSRF validation failed
 
 如果网页版测试内网模型地址提示 SSRF validation failed，确认 `.env` 中包含 `SSRF_WHITELIST_EXTRA=10.20.0.15,...`，然后执行 `docker compose --env-file .env up -d --force-recreate app`。不要关闭 SSRF 防护，也不要把白名单设为 `*`。
+
+## 全库文档处理进度（开发与验收）
+
+知识库「文档」页的进度面板统计整个知识库，包含所有子文件夹，不受当前文件夹和列表分页影响。总完成率为 `completed / 全部文档`；解析完成率为 `(finalizing + completed) / 全部文档`；摘要完成率只统计已经进入摘要任务的文档；后处理完成率为 `completed / 已解析文档`。失败与取消单独列出，不算完成。单个文档在「优化中」时可能正在等待摘要、问题生成或图谱等后续任务，并非精确的单文件百分比。
+
+在服务器上逐步验证代码和接口（不要在大量文档仍在处理时重启 `app`）：
+
+```bash
+cd /home/ubuntu/RAG_Weknora
+docker volume create weknora-go-mod-cache
+docker volume create weknora-go-build-cache
+docker run --rm -v "$PWD:/src" -v weknora-go-mod-cache:/go/pkg/mod \
+  -v weknora-go-build-cache:/root/.cache/go-build -w /src \
+  -e GOPROXY=https://goproxy.cn,direct -e GOSUMDB=off \
+  golang:1.26-bookworm go test ./internal/application/repository ./internal/handler ./internal/application/service ./internal/router
+docker run --rm --network none -v "$PWD:/work" -w /work/frontend-custom \
+  node:22-bookworm sh -lc 'npm test -- src/views/knowledge/processingOverview.test.ts && npm run type-check && npm run build'
+```
+
+待后台处理批次完成后，使用仓库当前的构建配置重建并部署应用及前端；先确认 `docker compose --env-file .env ps`，再在浏览器登录、进入任意有子文件夹的知识库，核对面板总数与目录树根节点总数一致，切换子文件夹后总数保持不变，并观察后台处理时数值自动更新。接口可用已登录浏览器请求 `GET /api/v1/knowledge-bases/<知识库ID>/knowledge/overview` 验证。浏览器刷新后进度仍由服务端重新计算，不依赖本地缓存。

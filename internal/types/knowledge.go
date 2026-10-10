@@ -118,6 +118,21 @@ type KnowledgeListFilter struct {
 	FolderScope KnowledgeFolderScope
 }
 
+// KnowledgeProcessingStatusCount is one database group in a KB-wide status
+// snapshot. The overview is intentionally independent of the current folder
+// and document-list pagination.
+type KnowledgeProcessingStatusCount struct {
+	ParseStatus   string `json:"parse_status"`
+	SummaryStatus string `json:"summary_status"`
+	Count         int64  `json:"count"`
+}
+
+type KnowledgeProcessingOverview struct {
+	Total   int64            `json:"total"`
+	Parse   map[string]int64 `json:"parse"`
+	Summary map[string]int64 `json:"summary"`
+}
+
 // Knowledge represents a knowledge entity in the system.
 // It contains metadata about the knowledge source, its processing status,
 // and references to the physical file if applicable.

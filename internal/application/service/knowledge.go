@@ -565,6 +565,26 @@ func (s *knowledgeService) ListPagedKnowledgeByKnowledgeBaseID(ctx context.Conte
 	return types.NewPageResult(total, page, knowledges), nil
 }
 
+func (s *knowledgeService) GetKnowledgeProcessingOverview(
+	ctx context.Context, kbID string,
+) (*types.KnowledgeProcessingOverview, error) {
+	counts, err := s.repo.ListKnowledgeProcessingStatusCounts(
+		ctx, ctx.Value(types.TenantIDContextKey).(uint64), kbID)
+	if err != nil {
+		return nil, err
+	}
+	overview := &types.KnowledgeProcessingOverview{
+		Parse:   make(map[string]int64),
+		Summary: make(map[string]int64),
+	}
+	for _, row := range counts {
+		overview.Total += row.Count
+		overview.Parse[row.ParseStatus] += row.Count
+		overview.Summary[row.SummaryStatus] += row.Count
+	}
+	return overview, nil
+}
+
 // ListKnowledgeFolderTree returns the folder hierarchy of a knowledge base with
 // per-folder document counts, derived from the folder_path stored on each
 // knowledge entry.

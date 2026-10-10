@@ -206,6 +206,20 @@ func (r *knowledgeRepository) ListPagedKnowledgeByKnowledgeBaseID(
 	return knowledges, total, nil
 }
 
+// ListKnowledgeProcessingStatusCounts uses one grouped query rather than
+// fetching every document or issuing a separate count for each stage.
+func (r *knowledgeRepository) ListKnowledgeProcessingStatusCounts(
+	ctx context.Context, tenantID uint64, kbID string,
+) ([]types.KnowledgeProcessingStatusCount, error) {
+	var counts []types.KnowledgeProcessingStatusCount
+	err := r.db.WithContext(ctx).Model(&types.Knowledge{}).
+		Select("parse_status, summary_status, COUNT(*) AS count").
+		Where("tenant_id = ? AND knowledge_base_id = ? AND parse_status <> ?",
+			tenantID, kbID, types.ParseStatusDeleting).
+		Group("parse_status, summary_status").Scan(&counts).Error
+	return counts, err
+}
+
 // ListKnowledgeFolderCounts aggregates how many knowledge entries live directly
 // in each folder of a knowledge base. Rows mid-deletion are excluded so the
 // sidebar tree counts match the document list.

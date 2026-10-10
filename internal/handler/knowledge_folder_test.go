@@ -32,6 +32,7 @@ type stubFolderKGService struct {
 	gotFilter types.KnowledgeListFilter
 	tree      *types.KnowledgeFolderTree
 	treeErr   error
+	overview  *types.KnowledgeProcessingOverview
 }
 
 func (s *stubFolderKGService) ListPagedKnowledgeByKnowledgeBaseID(
@@ -51,6 +52,12 @@ func (s *stubFolderKGService) ListKnowledgeFolderTree(
 	return s.tree, s.treeErr
 }
 
+func (s *stubFolderKGService) GetKnowledgeProcessingOverview(
+	_ context.Context, _ string,
+) (*types.KnowledgeProcessingOverview, error) {
+	return s.overview, nil
+}
+
 func newFolderRouter(kg interfaces.KnowledgeService) *gin.Engine {
 	gin.SetMode(gin.TestMode)
 	r := gin.New()
@@ -62,8 +69,32 @@ func newFolderRouter(kg interfaces.KnowledgeService) *gin.Engine {
 	})
 	h := &KnowledgeHandler{kbService: &stubFolderKBService{}, kgService: kg}
 	r.GET("/knowledge-bases/:id/knowledge", h.ListKnowledge)
+	r.GET("/knowledge-bases/:id/knowledge/overview", h.GetKnowledgeProcessingOverview)
 	r.GET("/knowledge-bases/:id/knowledge/folders", h.ListKnowledgeFolders)
 	return r
+}
+
+func TestGetKnowledgeProcessingOverview_WholeKBSnapshot(t *testing.T) {
+	stub := &stubFolderKGService{overview: &types.KnowledgeProcessingOverview{
+		Total: 3, Parse: map[string]int64{"completed": 1, "finalizing": 2},
+		Summary: map[string]int64{"completed": 1},
+	}}
+	r := newFolderRouter(stub)
+	req := httptest.NewRequest(http.MethodGet, "/knowledge-bases/kb-1/knowledge/overview", nil)
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d, body = %s", w.Code, w.Body.String())
+	}
+	var body struct {
+		Data types.KnowledgeProcessingOverview `json:"data"`
+	}
+	if err := json.Unmarshal(w.Body.Bytes(), &body); err != nil {
+		t.Fatal(err)
+	}
+	if body.Data.Total != 3 || body.Data.Parse["finalizing"] != 2 {
+		t.Fatalf("unexpected overview: %+v", body.Data)
+	}
 }
 
 // The folder dimension is keyed off parameter presence, because an empty
