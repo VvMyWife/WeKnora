@@ -573,16 +573,42 @@ func (s *knowledgeService) GetKnowledgeProcessingOverview(
 	if err != nil {
 		return nil, err
 	}
+	pdfIntegrity, err := s.repo.ListKnowledgePDFIntegrityCounts(ctx, ctx.Value(types.TenantIDContextKey).(uint64), kbID)
+	if err != nil {
+		return nil, err
+	}
 	overview := &types.KnowledgeProcessingOverview{
-		Parse:   make(map[string]int64),
-		Summary: make(map[string]int64),
+		Parse:        make(map[string]int64),
+		Summary:      make(map[string]int64),
+		PDFIntegrity: pdfIntegrity,
 	}
 	for _, row := range counts {
 		overview.Total += row.Count
 		overview.Parse[row.ParseStatus] += row.Count
 		overview.Summary[row.SummaryStatus] += row.Count
 	}
+	details, err := s.repo.KnowledgeProgressDetails(ctx, ctx.Value(types.TenantIDContextKey).(uint64), kbID)
+	if err != nil {
+		return nil, err
+	}
+	if details != nil {
+		overview.Stages = details.Stages
+		overview.FailureCounts = details.FailureCounts
+		overview.FailuresTotal = details.FailuresTotal
+		overview.ActiveDocuments = details.ActiveDocuments
+	}
 	return overview, nil
+}
+
+func (s *knowledgeService) ListKnowledgeProcessingFailures(
+	ctx context.Context, kbID string, page *types.Pagination, stage ...string,
+) (*types.PageResult, error) {
+	items, total, err := s.repo.ListKnowledgeProcessingFailures(
+		ctx, ctx.Value(types.TenantIDContextKey).(uint64), kbID, page, stage...)
+	if err != nil {
+		return nil, err
+	}
+	return types.NewPageResult(total, page, items), nil
 }
 
 // ListKnowledgeFolderTree returns the folder hierarchy of a knowledge base with

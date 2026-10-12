@@ -1096,6 +1096,7 @@ func (s *knowledgeService) ProcessSummaryGeneration(ctx context.Context, t *asyn
 		logger.Warn(ctx, "Knowledge base summary model ID is empty, skipping summary generation")
 		_ = s.repo.UpdateKnowledgeColumn(ctx, payload.KnowledgeID, "summary_status", types.SummaryStatusFailed)
 		summaryOut["skipped"] = "no_summary_model"
+		summaryErr = errors.New("未配置摘要模型，无法生成摘要")
 		return nil
 	}
 
@@ -3677,6 +3678,10 @@ func (s *knowledgeService) convert(
 
 	logger.Infof(ctx, "[convert] kb=%s fileType=%s isURL=%v engine=%q rules=%+v",
 		kb.ID, fileType, isURL, parserEngine, eff.ChunkingConfig.ParserEngineRules)
+	isPaddlePDF := strings.EqualFold(fileType, "pdf") && parserEngine == docparser.PaddleOCRVLEngineName
+	if isPaddlePDF {
+		s.setPDFPageIntegrity(ctx, knowledge, "pending", nil)
+	}
 
 	var reader interfaces.DocReader = s.resolveDocReader(ctx, parserEngine, fileType, isURL, mergedOverrides)
 	if reader == nil {
@@ -3718,8 +3723,31 @@ func (s *knowledgeService) convert(
 		req.FileType = fileType
 	}
 
-	result, err := s.callDocReaderWithTimeout(ctx, reader, req)
+	if isPaddlePDF {
+		pages, countErr := docparser.CountPDFPages(req.FileContent)
+		if countErr != nil {
+			s.setPDFPageIntegrity(ctx, knowledge, "failed", nil)
+			knowledge.ParseStatus = types.ParseStatusFailed
+			knowledge.ErrorMessage = countErr.Error()
+			s.repo.UpdateKnowledge(ctx, knowledge)
+			s.failStage(ctx, knowledge.ID, types.StageDocReader, "pdf_invalid", countErr.Error(), nil)
+			return nil, nil
+		}
+		s.setPDFPageIntegrity(ctx, knowledge, "pending", map[string]string{"pdf_expected_pages": fmt.Sprint(pages)})
+	}
+	result, err := s.callDocReaderWithTimeout(ctx, knowledge.ID, reader, req)
 	if err != nil {
+		if isPaddlePDF {
+			var pageErr *docparser.PDFPageIntegrityError
+			if errors.As(err, &pageErr) {
+				s.setPDFPageIntegrity(ctx, knowledge, "failed", map[string]string{
+					"pdf_expected_pages":  fmt.Sprint(pageErr.Expected),
+					"pdf_processed_pages": fmt.Sprint(pageErr.Actual),
+				})
+			} else {
+				s.setPDFPageIntegrity(ctx, knowledge, "failed", nil)
+			}
+		}
 		// Distinguish DocReader timeout (a knowable user-facing
 		// failure) from generic read errors so the UI can suggest
 		// "split this large file" specifically when relevant.
@@ -3728,11 +3756,25 @@ func (s *knowledgeService) convert(
 			code = werrors.ErrCodeDocReaderTimeout
 		}
 		s.failStage(ctx, knowledge.ID, types.StageDocReader,
-			code, "document read failed", err)
+			code, err.Error(), err)
 		return s.failKnowledge(ctx, knowledge, isLastRetry, "document read failed: %v", err)
+	}
+	if result == nil {
+		result = &types.ReadResult{Error: "解析服务未返回结果"}
+	}
+	if isPaddlePDF && result.Error == "" && strings.TrimSpace(result.MarkdownContent) == "" {
+		s.setPDFPageIntegrity(ctx, knowledge, result.Metadata["pdf_page_integrity"], result.Metadata)
+		knowledge.ParseStatus = types.ParseStatusFailed
+		knowledge.ErrorMessage = "解析完成但未获得可索引正文"
+		s.repo.UpdateKnowledge(ctx, knowledge)
+		s.failStage(ctx, knowledge.ID, types.StageDocReader, "pdf_empty_text", knowledge.ErrorMessage, nil)
+		return nil, nil
 	}
 	sanitizeReadResult(result)
 	if result.Error != "" {
+		if isPaddlePDF {
+			s.setPDFPageIntegrity(ctx, knowledge, "failed", nil)
+		}
 		logger.Errorf(ctx, "[convert] parser returned error kb=%s knowledge=%s file=%q type=%s engine=%q: %s",
 			kb.ID, knowledge.ID, req.FileName, fileType, parserEngine, result.Error)
 		knowledge.ParseStatus = "failed"
@@ -3751,6 +3793,12 @@ func (s *knowledgeService) convert(
 	if pages := result.Metadata["pages"]; pages != "" {
 		docOutput["pages"] = pages
 	}
+	if isPaddlePDF {
+		s.setPDFPageIntegrity(ctx, knowledge, result.Metadata["pdf_page_integrity"], result.Metadata)
+		docOutput["pdf_page_integrity"] = result.Metadata["pdf_page_integrity"]
+		docOutput["pdf_expected_pages"] = result.Metadata["pdf_expected_pages"]
+		docOutput["pdf_processed_pages"] = result.Metadata["pdf_processed_pages"]
+	}
 	s.endStage(ctx, knowledge.ID, types.StageDocReader, docOutput)
 	return result, nil
 }
@@ -3764,14 +3812,40 @@ func (s *knowledgeService) convert(
 // On timeout we annotate the error so retries / dead-letter consumers can
 // distinguish "docreader was slow" from "docreader returned an error".
 func (s *knowledgeService) callDocReaderWithTimeout(
-	ctx context.Context, reader interfaces.DocReader, req *types.ReadRequest,
+	ctx context.Context, knowledgeID string, reader interfaces.DocReader, req *types.ReadRequest,
 ) (*types.ReadResult, error) {
 	timeout := 30 * time.Minute
-	if s.config != nil && s.config.KnowledgeBase != nil && s.config.KnowledgeBase.DocReaderCallTimeout > 0 {
+	if s.config != nil && s.config.KnowledgeBase != nil && s.config.KnowledgeBase.DocReaderCallTimeout != 0 {
 		timeout = s.config.KnowledgeBase.DocReaderCallTimeout
 	}
-	callCtx, cancel := context.WithTimeout(ctx, timeout)
+	callCtx := ctx
+	cancel := func() {}
+	if timeout > 0 {
+		callCtx, cancel = context.WithTimeout(ctx, timeout)
+	}
 	defer cancel()
+
+	// A long OCR call makes no stage transitions. Keep the knowledge row fresh
+	// while the worker is alive so housekeeping only recovers genuinely dead
+	// workers; cancellation stops this heartbeat immediately.
+	heartbeatCtx, stopHeartbeat := context.WithCancel(callCtx)
+	heartbeatDone := make(chan struct{})
+	go func() {
+		defer close(heartbeatDone)
+		ticker := time.NewTicker(30 * time.Second)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-heartbeatCtx.Done():
+				return
+			case <-ticker.C:
+				if err := s.repo.UpdateKnowledgeColumn(heartbeatCtx, knowledgeID, "updated_at", time.Now()); err != nil {
+					logger.Warnf(ctx, "[convert] OCR heartbeat failed for %s: %v", knowledgeID, err)
+				}
+			}
+		}
+	}()
+	defer func() { stopHeartbeat(); <-heartbeatDone }()
 
 	start := time.Now()
 	result, err := reader.Read(callCtx, req)
@@ -3789,6 +3863,40 @@ func (s *knowledgeService) callDocReaderWithTimeout(
 	}
 	logger.Infof(ctx, "[convert] docreader call ok in %s for %q", elapsed, req.FileName)
 	return result, nil
+}
+
+func (s *knowledgeService) setPDFPageIntegrity(
+	ctx context.Context, knowledge *types.Knowledge, status string, details map[string]string,
+) {
+	if status == "" {
+		status = "failed"
+	}
+	metadata := knowledge.GetMetadata()
+	if metadata == nil {
+		metadata = make(map[string]string)
+	}
+	metadata["pdf_page_integrity"] = status
+	if status == "pending" && details == nil {
+		metadata["pdf_started_at"] = time.Now().UTC().Format(time.RFC3339)
+	}
+	if status == "pending" && details == nil {
+		delete(metadata, "pdf_expected_pages")
+		delete(metadata, "pdf_processed_pages")
+	}
+	for _, key := range []string{"pdf_expected_pages", "pdf_processed_pages"} {
+		if details[key] != "" {
+			metadata[key] = details[key]
+		}
+	}
+	encoded, err := json.Marshal(metadata)
+	if err != nil {
+		logger.Warnf(ctx, "[convert] encode PDF integrity for %s: %v", knowledge.ID, err)
+		return
+	}
+	knowledge.Metadata = types.JSON(encoded)
+	if err := s.repo.UpdateKnowledgeColumn(ctx, knowledge.ID, "metadata", knowledge.Metadata); err != nil {
+		logger.Warnf(ctx, "[convert] persist PDF integrity for %s: %v", knowledge.ID, err)
+	}
 }
 
 // isLikelyRateLimitError performs a fuzzy classification of an error as a

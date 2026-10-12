@@ -184,6 +184,11 @@ const DefaultDocumentProcessTimeout = 2 * time.Hour
 // DocumentProcessTimeout returns the effective document-process task timeout.
 // Partial configs (e.g. unit tests) receive the default when unset.
 func DocumentProcessTimeout(cfg *Config) time.Duration {
+	if cfg != nil && cfg.KnowledgeBase != nil && cfg.KnowledgeBase.DocumentProcessTimeout < 0 {
+		// Asynq treats zero as its 30-minute default. Callers map this
+		// negative sentinel to a cancellable context without a deadline.
+		return -time.Second
+	}
 	if cfg != nil && cfg.KnowledgeBase != nil && cfg.KnowledgeBase.DocumentProcessTimeout > 0 {
 		return cfg.KnowledgeBase.DocumentProcessTimeout
 	}
@@ -755,7 +760,7 @@ func applyKnowledgeBaseEnvOverrides(cfg *Config) {
 	if cfg.KnowledgeBase == nil {
 		cfg.KnowledgeBase = &KnowledgeBaseConfig{}
 	}
-	if cfg.KnowledgeBase.DocumentProcessTimeout <= 0 {
+	if cfg.KnowledgeBase.DocumentProcessTimeout == 0 {
 		cfg.KnowledgeBase.DocumentProcessTimeout = DefaultDocumentProcessTimeout
 	}
 	if value := strings.TrimSpace(os.Getenv("WEKNORA_DOCUMENT_PROCESS_TIMEOUT")); value != "" {
@@ -763,11 +768,11 @@ func applyKnowledgeBaseEnvOverrides(cfg *Config) {
 			cfg.KnowledgeBase.DocumentProcessTimeout = d
 		}
 	}
-	if cfg.KnowledgeBase.DocReaderCallTimeout <= 0 {
+	if cfg.KnowledgeBase.DocReaderCallTimeout == 0 {
 		cfg.KnowledgeBase.DocReaderCallTimeout = 30 * time.Minute
 	}
 	if value := strings.TrimSpace(os.Getenv("WEKNORA_DOCREADER_CALL_TIMEOUT")); value != "" {
-		if d, err := time.ParseDuration(value); err == nil && d > 0 {
+		if d, err := time.ParseDuration(value); err == nil && d != 0 {
 			cfg.KnowledgeBase.DocReaderCallTimeout = d
 		}
 	}

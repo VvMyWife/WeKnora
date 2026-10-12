@@ -86,6 +86,7 @@ type KnowledgeService interface {
 	) (*types.PageResult, error)
 	// GetKnowledgeProcessingOverview aggregates the whole KB, ignoring folders and pagination.
 	GetKnowledgeProcessingOverview(ctx context.Context, kbID string) (*types.KnowledgeProcessingOverview, error)
+	ListKnowledgeProcessingFailures(ctx context.Context, kbID string, page *types.Pagination, stage ...string) (*types.PageResult, error)
 	// ListKnowledgeFolderTree returns the folder hierarchy derived from the
 	// folder_path of every knowledge entry in a knowledge base, with per-folder
 	// document counts. It powers the document sidebar tree.
@@ -243,6 +244,9 @@ type KnowledgeRepository interface {
 		tenantID uint64, kbID string, page *types.Pagination, filter types.KnowledgeListFilter,
 	) ([]*types.Knowledge, int64, error)
 	ListKnowledgeProcessingStatusCounts(ctx context.Context, tenantID uint64, kbID string) ([]types.KnowledgeProcessingStatusCount, error)
+	KnowledgeProgressDetails(ctx context.Context, tenantID uint64, kbID string) (*types.KnowledgeProcessingOverview, error)
+	ListKnowledgePDFIntegrityCounts(ctx context.Context, tenantID uint64, kbID string) (map[string]int64, error)
+	ListKnowledgeProcessingFailures(ctx context.Context, tenantID uint64, kbID string, page *types.Pagination, stage ...string) ([]types.KnowledgeProcessingFailure, int64, error)
 	UpdateKnowledge(ctx context.Context, knowledge *types.Knowledge) error
 	// UpdateKnowledgeBatch updates knowledge items in batch
 	UpdateKnowledgeBatch(ctx context.Context, knowledgeList []*types.Knowledge) error

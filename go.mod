@@ -92,6 +92,8 @@ require (
 	gorm.io/gorm v1.31.1
 )
 
+require rsc.io/pdf v0.1.1 // indirect
+
 require (
 	cloud.google.com/go/auth v0.20.0 // indirect
 	cloud.google.com/go/auth/oauth2adapt v0.2.8 // indirect
@@ -363,3 +365,6 @@ replace go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelg
 // The anydoc Go bindings are not published yet (firecrawl/anydoc#30 is still
 // open), so they are vendored. Drop this replace once upstream tags go/vX.Y.Z.
 replace github.com/firecrawl/anydoc/go => ./third_party/anydoc-go
+
+// Explicit unlimited task timeout, with cancellation and leases retained.
+replace github.com/hibiken/asynq => ./third_party/asynq

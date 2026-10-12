@@ -9,9 +9,14 @@ import (
 )
 
 func documentProcessTaskOptions(cfg *config.Config, extra ...asynq.Option) []asynq.Option {
+	timeout := config.DocumentProcessTimeout(cfg)
+	if timeout < 0 {
+		// The local Asynq patch treats negative seconds as no deadline.
+		timeout = -time.Second
+	}
 	opts := []asynq.Option{
 		asynq.Queue(types.QueueDefault),
-		asynq.Timeout(config.DocumentProcessTimeout(cfg)),
+		asynq.Timeout(timeout),
 		asynq.MaxRetry(3),
 	}
 	opts = append(opts, extra...)

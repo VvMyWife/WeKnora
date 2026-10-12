@@ -10,15 +10,20 @@ import (
 	"mime"
 	"net/http"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
+
+	"rsc.io/pdf"
 
 	"github.com/Tencent/WeKnora/internal/logger"
 	"github.com/Tencent/WeKnora/internal/types"
 	"github.com/Tencent/WeKnora/internal/utils"
 )
 
-const paddleOCRVLTimeout = 1000 * time.Second // large scanned PDFs can take a while
+// The request inherits the document task's cancellation context. A fixed HTTP
+// deadline here truncated large PDFs even when the task was still healthy.
+const paddleOCRVLTimeout time.Duration = 0
 
 // PaddleOCRVLReader calls a self-hosted PaddleOCR-VL pipeline service
 // (the full document-parsing API, not the bare VLM inference server).
@@ -56,7 +61,16 @@ func (c *PaddleOCRVLReader) Read(ctx context.Context, req *types.ReadRequest) (*
 	logger.Infof(context.Background(), "[PaddleOCR-VL] Parsing file=%s size=%d via %s",
 		req.FileName, len(content), c.endpoint)
 
-	mdContent, imagesB64, err := c.callLayoutParsing(ctx, req, content)
+	expectedPages := 0
+	if fileTypeCode(req) == 0 {
+		var err error
+		expectedPages, err = CountPDFPages(content)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	mdContent, imagesB64, actualPages, err := c.callLayoutParsing(ctx, req, content, expectedPages)
 	if err != nil {
 		return nil, fmt.Errorf("PaddleOCR-VL layout-parsing: %w", err)
 	}
@@ -73,10 +87,41 @@ func (c *PaddleOCRVLReader) Read(ctx context.Context, req *types.ReadRequest) (*
 	logger.Infof(context.Background(), "[PaddleOCR-VL] Parsed successfully, markdown=%d chars, images=%d",
 		len(mdContent), len(imageRefs))
 
+	metadata := map[string]string{}
+	if expectedPages > 0 {
+		metadata["pdf_page_integrity"] = "verified"
+		metadata["pdf_expected_pages"] = strconv.Itoa(expectedPages)
+		metadata["pdf_processed_pages"] = strconv.Itoa(actualPages)
+	}
 	return &types.ReadResult{
 		MarkdownContent: mdContent,
 		ImageRefs:       imageRefs,
+		Metadata:        metadata,
 	}, nil
+}
+
+// CountPDFPages reads the original page tree before any OCR request.
+func CountPDFPages(content []byte) (count int, err error) {
+	defer func() {
+		if recover() != nil {
+			count = 0
+			err = fmt.Errorf("PDF 无法打开或已损坏，不能读取真实页数")
+		}
+	}()
+	reader, err := pdf.NewReader(bytes.NewReader(content), int64(len(content)))
+	if err != nil {
+		return 0, fmt.Errorf("PDF 无法打开：文件已损坏或加密，不能读取真实页数")
+	}
+	count = reader.NumPage()
+	if count < 1 {
+		return 0, fmt.Errorf("PDF 没有可读取的页面")
+	}
+	for n := 1; n <= count; n++ {
+		if reader.Page(n).V.IsNull() {
+			return 0, fmt.Errorf("PDF 第 %d 页损坏", n)
+		}
+	}
+	return count, nil
 }
 
 // paddleOCRVLRecognitionParams returns the recognition / page-restructuring
@@ -130,7 +175,14 @@ type paddleOCRVLResponse struct {
 	ErrorCode int    `json:"errorCode"`
 	ErrorMsg  string `json:"errorMsg"`
 	Result    struct {
+		DataInfo struct {
+			NumPages       int `json:"numPages"`
+			ProcessedPages int `json:"processedPages"`
+		} `json:"dataInfo"`
 		LayoutParsingResults []struct {
+			PrunedResult struct {
+				PageIndex *int `json:"page_index"`
+			} `json:"prunedResult"`
 			Markdown struct {
 				Text   string            `json:"text"`
 				Images map[string]string `json:"images"`
@@ -139,9 +191,21 @@ type paddleOCRVLResponse struct {
 	} `json:"result"`
 }
 
+// PDFPageIntegrityError carries a count mismatch through the retry pipeline
+// so the progress panel can show the exact missing-page evidence.
+type PDFPageIntegrityError struct {
+	Expected int
+	Actual   int
+	Detail   string
+}
+
+func (e *PDFPageIntegrityError) Error() string {
+	return fmt.Sprintf("PDF 共 %d 页，实际处理 %d 页；%s", e.Expected, e.Actual, e.Detail)
+}
+
 func (c *PaddleOCRVLReader) callLayoutParsing(
-	ctx context.Context, req *types.ReadRequest, content []byte,
-) (string, map[string]string, error) {
+	ctx context.Context, req *types.ReadRequest, content []byte, expectedPages int,
+) (string, map[string]string, int, error) {
 	payload := paddleOCRVLRecognitionParams(c.useSeal, c.useChart)
 	payload["file"] = base64.StdEncoding.EncodeToString(content)
 	payload["fileType"] = fileTypeCode(req)
@@ -149,14 +213,14 @@ func (c *PaddleOCRVLReader) callLayoutParsing(
 
 	body, err := json.Marshal(payload)
 	if err != nil {
-		return "", nil, fmt.Errorf("marshal payload: %w", err)
+		return "", nil, 0, fmt.Errorf("marshal payload: %w", err)
 	}
 
 	httpReq, err := http.NewRequestWithContext(
 		ctx, http.MethodPost, c.endpoint+"/layout-parsing", bytes.NewReader(body),
 	)
 	if err != nil {
-		return "", nil, fmt.Errorf("create request: %w", err)
+		return "", nil, 0, fmt.Errorf("create request: %w", err)
 	}
 	httpReq.Header.Set("Content-Type", "application/json")
 
@@ -166,31 +230,70 @@ func (c *PaddleOCRVLReader) callLayoutParsing(
 	})
 	resp, err := client.Do(httpReq)
 	if err != nil {
-		return "", nil, fmt.Errorf("HTTP request: %w", err)
+		return "", nil, 0, fmt.Errorf("HTTP request: %w", err)
 	}
 	defer resp.Body.Close()
 
 	respBody, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return "", nil, fmt.Errorf("read response body: %w", err)
+		return "", nil, 0, fmt.Errorf("read response body: %w", err)
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return "", nil, fmt.Errorf("PaddleOCR-VL API status %d: %s", resp.StatusCode, string(respBody))
+		return "", nil, 0, fmt.Errorf("PaddleOCR-VL 服务返回 HTTP %d，请查看服务诊断日志", resp.StatusCode)
 	}
 
 	var result paddleOCRVLResponse
 	if err := json.Unmarshal(respBody, &result); err != nil {
-		return "", nil, fmt.Errorf("decode response: %w", err)
+		return "", nil, 0, fmt.Errorf("decode response: %w", err)
 	}
 	if result.ErrorCode != 0 {
-		return "", nil, fmt.Errorf("PaddleOCR-VL error %d: %s", result.ErrorCode, result.ErrorMsg)
+		return "", nil, 0, fmt.Errorf("PaddleOCR-VL error %d: %s", result.ErrorCode, result.ErrorMsg)
 	}
+	return mergeLayoutParsingResult(&result, expectedPages)
+}
 
+func mergeLayoutParsingResult(result *paddleOCRVLResponse, expectedPages int) (string, map[string]string, int, error) {
 	pages := result.Result.LayoutParsingResults
 	if len(pages) == 0 {
 		logger.Errorf(context.Background(), "[PaddleOCR-VL] response has no layoutParsingResults")
-		return "", nil, nil
+		return "", nil, 0, fmt.Errorf("PaddleOCR-VL returned zero pages")
+	}
+	if expectedPages > 0 {
+		seen := make(map[int]bool)
+		detail := ""
+		for _, page := range pages {
+			index := page.PrunedResult.PageIndex
+			if index == nil {
+				detail = "服务未返回可校验页码"
+				continue
+			}
+			if *index < 0 || *index >= expectedPages {
+				detail = "返回页码超出原件范围"
+			}
+			if seen[*index] {
+				detail = "返回重复页码"
+			}
+			seen[*index] = true
+		}
+		missing := []string{}
+		for i := 0; i < expectedPages; i++ {
+			if !seen[i] {
+				missing = append(missing, strconv.Itoa(i+1))
+			}
+		}
+		if len(missing) > 0 {
+			detail += "；缺少第 " + strings.Join(missing, "、") + " 页"
+		}
+		if result.Result.DataInfo.NumPages != expectedPages {
+			detail += "；服务原件页数与原文件不一致或未提供"
+		}
+		if result.Result.DataInfo.ProcessedPages != len(pages) {
+			detail += "；服务处理页数与结果数量不一致或未提供"
+		}
+		if len(pages) != expectedPages || detail != "" {
+			return "", nil, len(pages), &PDFPageIntegrityError{Expected: expectedPages, Actual: len(pages), Detail: strings.TrimPrefix(detail, "；")}
+		}
 	}
 
 	// Merge per-page markdown and image dicts into one document.
@@ -208,7 +311,7 @@ func (c *PaddleOCRVLReader) callLayoutParsing(
 	}
 
 	logger.Infof(context.Background(), "[PaddleOCR-VL] parsed %d page(s), images=%d", len(pages), len(images))
-	return strings.Join(texts, "\n\n"), images, nil
+	return strings.Join(texts, "\n\n"), images, len(pages), nil
 }
 
 // processImages decodes the inline base64 images returned by PaddleOCR-VL and

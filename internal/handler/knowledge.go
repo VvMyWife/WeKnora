@@ -1059,6 +1059,33 @@ func (h *KnowledgeHandler) GetKnowledgeProcessingOverview(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"success": true, "data": overview})
 }
 
+// ListKnowledgeProcessingFailures returns paginated failures across every
+// folder in a knowledge base, protected by the same read-access gate as the
+// document list. Reasons are the user-facing error message, never raw stacks.
+func (h *KnowledgeHandler) ListKnowledgeProcessingFailures(c *gin.Context) {
+	ctx := c.Request.Context()
+	_, kbID, effectiveTenantID, _, err := h.validateKnowledgeBaseAccess(c)
+	if err != nil {
+		c.Error(err)
+		return
+	}
+	ctx = context.WithValue(ctx, types.TenantIDContextKey, effectiveTenantID)
+	var pagination types.Pagination
+	if err := c.ShouldBindQuery(&pagination); err != nil {
+		c.Error(errors.NewBadRequestError(err.Error()))
+		return
+	}
+	result, err := h.kgService.ListKnowledgeProcessingFailures(ctx, kbID, &pagination, c.Query("stage"))
+	if err != nil {
+		c.Error(errors.NewInternalServerError(err.Error()))
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{
+		"success": true, "data": result.Data, "total": result.Total,
+		"page": result.Page, "page_size": result.PageSize,
+	})
+}
+
 // ListKnowledgeFolders godoc
 // @Summary      获取知识库文件夹目录树
 // @Description  返回知识库内由文件夹上传形成的目录树，包含每个文件夹的直接文档数与含子目录的总数

@@ -128,9 +128,34 @@ type KnowledgeProcessingStatusCount struct {
 }
 
 type KnowledgeProcessingOverview struct {
-	Total   int64            `json:"total"`
-	Parse   map[string]int64 `json:"parse"`
-	Summary map[string]int64 `json:"summary"`
+	Total           int64                        `json:"total"`
+	Parse           map[string]int64             `json:"parse"`
+	Summary         map[string]int64             `json:"summary"`
+	PDFIntegrity    map[string]int64             `json:"pdf_integrity"`
+	Stages          map[string]map[string]int64  `json:"stages"`
+	FailureCounts   map[string]int64             `json:"failure_counts"`
+	FailuresTotal   int64                        `json:"failures_total"`
+	ActiveDocuments []KnowledgeProcessingFailure `json:"active_documents"`
+}
+
+// KnowledgeProcessingFailure is a KB-wide failure row for the progress panel.
+// It deliberately excludes the original file bytes and raw span error detail.
+type KnowledgeProcessingFailure struct {
+	ID             string    `json:"id"`
+	FileName       string    `json:"file_name"`
+	FolderPath     string    `json:"folder_path"`
+	ParseStatus    string    `json:"parse_status"`
+	SummaryStatus  string    `json:"summary_status"`
+	Stage          string    `json:"stage"`
+	Attempt        int       `json:"attempt"`
+	Reason         string    `json:"reason"`
+	ErrorCode      string    `json:"error_code"`
+	RetryStatus    string    `json:"retry_status"`
+	ElapsedSeconds int64     `json:"elapsed_seconds"`
+	PDFIntegrity   string    `json:"pdf_integrity"`
+	ExpectedPages  string    `json:"expected_pages,omitempty"`
+	ProcessedPages string    `json:"processed_pages,omitempty"`
+	UpdatedAt      time.Time `json:"updated_at"`
 }
 
 // Knowledge represents a knowledge entity in the system.

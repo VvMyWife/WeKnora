@@ -38,9 +38,6 @@ func TestDocumentProcessTaskOptions_defaults(t *testing.T) {
 		{"nil config", nil},
 		{"nil knowledge base", &config.Config{}},
 		{"zero timeout", &config.Config{KnowledgeBase: &config.KnowledgeBaseConfig{}}},
-		{"negative timeout", &config.Config{
-			KnowledgeBase: &config.KnowledgeBaseConfig{DocumentProcessTimeout: -time.Minute},
-		}},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -53,6 +50,13 @@ func TestDocumentProcessTaskOptions_defaults(t *testing.T) {
 			assert.Equal(t, 3, *maxRetry)
 		})
 	}
+}
+
+func TestDocumentProcessTaskOptions_unbounded(t *testing.T) {
+	t.Parallel()
+	cfg := &config.Config{KnowledgeBase: &config.KnowledgeBaseConfig{DocumentProcessTimeout: -time.Second}}
+	_, timeout, _ := parseDocumentProcessOpts(t, documentProcessTaskOptions(cfg))
+	assert.Equal(t, -time.Second, timeout)
 }
 
 func TestDocumentProcessTaskOptions_configuredTimeout(t *testing.T) {

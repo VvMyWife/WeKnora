@@ -220,6 +220,29 @@ func (r *knowledgeRepository) ListKnowledgeProcessingStatusCounts(
 	return counts, err
 }
 
+func (r *knowledgeRepository) ListKnowledgePDFIntegrityCounts(
+	ctx context.Context, tenantID uint64, kbID string,
+) (map[string]int64, error) {
+	type row struct {
+		Status string `gorm:"column:status"`
+		Count  int64  `gorm:"column:count"`
+	}
+	var rows []row
+	err := r.db.WithContext(ctx).Model(&types.Knowledge{}).
+		Select("COALESCE(NULLIF(metadata->>'pdf_page_integrity', ''), 'unverified') AS status, COUNT(*) AS count").
+		Where("tenant_id = ? AND knowledge_base_id = ? AND LOWER(file_type) = 'pdf' AND parse_status <> ?",
+			tenantID, kbID, types.ParseStatusDeleting).
+		Group("status").Scan(&rows).Error
+	if err != nil {
+		return nil, err
+	}
+	counts := map[string]int64{"verified": 0, "pending": 0, "failed": 0, "unverified": 0}
+	for _, row := range rows {
+		counts[row.Status] += row.Count
+	}
+	return counts, nil
+}
+
 // ListKnowledgeFolderCounts aggregates how many knowledge entries live directly
 // in each folder of a knowledge base. Rows mid-deletion are excluded so the
 // sidebar tree counts match the document list.
