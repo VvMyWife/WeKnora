@@ -229,14 +229,26 @@ func (h *KnowledgeHandler) resolveKnowledgeAndValidateKBAccess(c *gin.Context, k
 // handleDuplicateKnowledgeError handles cases where duplicate knowledge is detected
 // Returns true if the error was a duplicate error and was handled, false otherwise
 func (h *KnowledgeHandler) handleDuplicateKnowledgeError(c *gin.Context,
-	err error, knowledge *types.Knowledge, duplicateType string,
+	err error, knowledge *types.Knowledge, duplicateType string, requestedPath ...string,
 ) bool {
 	if dupErr, ok := err.(*types.DuplicateKnowledgeError); ok {
 		ctx := c.Request.Context()
-		logger.Warnf(ctx, "Detected duplicate %s: %s", duplicateType, secutils.SanitizeForLog(dupErr.Error()))
+		message := dupErr.Error()
+		if duplicateType == "file" && dupErr.Knowledge != nil && len(requestedPath) > 0 {
+			existingPath := dupErr.Knowledge.FileName
+			if dupErr.Knowledge.FolderPath != "" {
+				existingPath = dupErr.Knowledge.FolderPath + "/" + existingPath
+			}
+			message = fmt.Sprintf("上传文件与已存在文件内容重复：%s", existingPath)
+			logger.Warnf(ctx, "[KnowledgeUploadFailure] reason=duplicate_file requested=%q duplicate_of=%q duplicate_id=%s kb_id=%s",
+				secutils.SanitizeForLog(requestedPath[0]), secutils.SanitizeForLog(existingPath),
+				secutils.SanitizeForLog(dupErr.Knowledge.ID), secutils.SanitizeForLog(dupErr.Knowledge.KnowledgeBaseID))
+		} else {
+			logger.Warnf(ctx, "Detected duplicate %s: %s", duplicateType, secutils.SanitizeForLog(dupErr.Error()))
+		}
 		c.JSON(http.StatusConflict, gin.H{
 			"success": false,
-			"message": dupErr.Error(),
+			"message": message,
 			"data":    knowledge, // knowledge contains the existing document
 			"code":    fmt.Sprintf("duplicate_%s", duplicateType),
 		})
@@ -424,9 +436,11 @@ func (h *KnowledgeHandler) CreateKnowledgeFromFile(c *gin.Context) {
 	knowledge, err := h.kgService.CreateKnowledgeFromFile(ctx, kbID, file, metadata, enableMultimodel, customFileName, tagIDs, channel, processOverrides)
 	// Check for duplicate knowledge error
 	if err != nil {
-		if h.handleDuplicateKnowledgeError(c, err, knowledge, "file") {
+		if h.handleDuplicateKnowledgeError(c, err, knowledge, "file", displayFileName) {
 			return
 		}
+		logger.Warnf(ctx, "[KnowledgeUploadFailure] reason=create_failed kb_id=%s requested=%q cause=%s",
+			secutils.SanitizeForLog(kbID), secutils.SanitizeForLog(displayFileName), secutils.SanitizeForLog(err.Error()))
 		if appErr, ok := errors.IsAppError(err); ok {
 			c.Error(appErr)
 			return

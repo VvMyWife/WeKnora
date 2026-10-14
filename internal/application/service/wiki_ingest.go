@@ -178,16 +178,11 @@ return proposed
 	// materially prolonging task runtime when the remote is genuinely down.
 	wikiLLMMaxAttempts = 3
 
-	// wikiLLMMaxTokens is the completion-token budget for every LLM call
-	// routed through generateWithTemplate. Combined wiki extraction emits a
-	// single large JSON document (entities + concepts + details). When
-	// MaxTokens is left at 0, OpenAI-compatible clients omit max_tokens and
-	// providers such as DeepSeek apply a default of 8192 — long extracts are
-	// truncated mid-JSON with finish_reason=length, and parse fails with
-	// "unexpected end of JSON input" (EXTRACT_FAILED). Raising the budget to
-	// 32768 matches verified complete outputs for large Chinese policy docs;
-	// shorter replies still stop early via finish_reason=stop. See #2604.
-	wikiLLMMaxTokens = 32768
+	// wikiLLMMaxTokens is the requested completion-token budget. Keep room
+	// for the input prompt inside a 32768-token local vLLM context. Requesting
+	// all 32768 tokens for output makes every non-empty prompt fail with 400.
+	// Large outputs may still need page-level splitting instead of a larger cap.
+	wikiLLMMaxTokens = 8192
 
 	// wikiLLMBackoffBase is the base delay for the exponential backoff
 	// between retry attempts. The nth retry waits base << (n-1) — so with

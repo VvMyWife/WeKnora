@@ -35,6 +35,7 @@ import (
 	"github.com/Tencent/WeKnora/internal/application/repository"
 	"github.com/Tencent/WeKnora/internal/logger"
 	"github.com/Tencent/WeKnora/internal/types"
+	secutils "github.com/Tencent/WeKnora/internal/utils"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
@@ -509,6 +510,15 @@ func (t *spanTracker) FailSpan(ctx context.Context, span *Span, errorCode, error
 	if err := t.repo.Upsert(ctx, row); err != nil {
 		logger.Warnf(ctx, "[SpanTracker] FailSpan failed span=%s: %v", span.SpanID, err)
 	}
+	// One searchable line for every actual pipeline failure. The full cause
+	// remains in knowledge_processing_spans.error_detail for diagnostics.
+	logDetail := detail
+	if len(logDetail) > 1024 {
+		logDetail = logDetail[:1024]
+	}
+	logger.Warnf(ctx, "[KnowledgeProcessFailure] knowledge_id=%s attempt=%d span=%s stage=%q code=%q message=%q cause=%q",
+		span.KnowledgeID, span.Attempt, span.SpanID, secutils.SanitizeForLog(span.Name),
+		secutils.SanitizeForLog(errorCode), secutils.SanitizeForLog(errorMessage), secutils.SanitizeForLog(logDetail))
 	// Cascade: anything downstream of this span gets cancelled. The
 	// reason string is what the UI surfaces under each cancelled
 	// child's tooltip — keep it short and human.
