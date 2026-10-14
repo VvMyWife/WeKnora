@@ -16,6 +16,19 @@ git diff --check
 docker run --rm -v "$PWD:/src" -v "$PWD/.go-modcache:/go/pkg/mod" -v weknora-go-build-cache:/root/.cache/go-build -w /src weknora-builder:pdf-unlimited go test ./internal/handler ./internal/application/service ./internal/application/repository
 ```
 
+构建与上线（确认当前批处理允许短暂重启后执行）：
+
+```bash
+cd /home/ubuntu/RAG_Weknora
+docker run --rm -v "$PWD:/src" -v "$PWD/.go-modcache:/go/pkg/mod" -v weknora-go-build-cache:/root/.cache/go-build -w /src weknora-builder:pdf-unlimited go build -buildvcs=false -o runtime/WeKnora.diagnostics-20261014 ./cmd/server
+BUILDKIT_PROGRESS=plain docker build -f deploy/processing-diagnostics/Dockerfile.runtime --build-arg BINARY_FILE=WeKnora.diagnostics-20261014 -t weknora-app:diagnostics-20261014 runtime
+docker compose -f docker-compose.yml -f deploy/pdf-unlimited/compose.yaml config --services
+docker compose -f docker-compose.yml -f deploy/pdf-unlimited/compose.yaml up -d --no-deps app
+docker inspect WeKnora-app --format '{{.Config.Image}} {{.State.Health.Status}}'
+```
+
+旧运行容器的二进制备份在 `runtime/WeKnora.pre-diagnostics-20261014`，回退镜像是 `weknora-app:pre-diagnostics-20261014`。如需回退，先将 `deploy/pdf-unlimited/compose.yaml` 中的 app 镜像改为该回退标签，再执行同一条 `docker compose ... up -d --no-deps app`。不要删除回退镜像或二进制，直至新版本验证完成。重启可能使正在执行的 Asynq 子任务中断并重新入队；先观察任务数是否继续推进。
+
 重传一份内容与已存在文档相同、但文件名或文件夹不同的 `.md`。应收到 HTTP 409；响应 `code` 为 `duplicate_file`，`message` 包含已存在文档路径。按文档 ID 查原始处理轨迹：
 
 ```bash
