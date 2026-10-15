@@ -162,6 +162,8 @@ type KnowledgeProcessingFailure struct {
 // It contains metadata about the knowledge source, its processing status,
 // and references to the physical file if applicable.
 type Knowledge struct {
+	// Browser metadata only; no physical storage paths or changes to retrieval IDs.
+	ArchiveSource any `json:"archive_source,omitempty" gorm:"-"`
 	// Unique identifier of the knowledge
 	ID string `json:"id"                 gorm:"type:varchar(36);primaryKey"`
 	// Workspace ID

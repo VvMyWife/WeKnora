@@ -110,6 +110,9 @@ func (s *knowledgeService) cloneKnowledge(
 			WithField("error", err).Errorf("MoveKnowledge move chunks failed")
 		return
 	}
+	if err = s.cloneArchiveFiles(ctx, src, dst, targetKB); err != nil {
+		return
+	}
 	return
 }
 

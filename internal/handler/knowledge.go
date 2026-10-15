@@ -662,6 +662,7 @@ func (h *KnowledgeHandler) GetKnowledge(c *gin.Context) {
 
 	logger.Infof(ctx, "Knowledge retrieved successfully, ID: %s, title: %s",
 		secutils.SanitizeForLog(knowledge.ID), secutils.SanitizeForLog(knowledge.Title))
+	h.enrichArchiveSource(effCtx, knowledge)
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"data":    knowledge,
@@ -1608,7 +1609,7 @@ func (h *KnowledgeHandler) DownloadKnowledgeFile(c *gin.Context) {
 	}
 	logger.Infof(ctx, "Retrieving knowledge file, ID: %s", secutils.SanitizeForLog(id))
 
-	file, filename, err := h.kgService.GetKnowledgeFile(effCtx, id)
+	file, filename, err := h.selectedKnowledgeFile(c, effCtx, id)
 	if err != nil {
 		logger.ErrorWithFields(ctx, err, nil)
 		c.Error(errors.NewInternalServerError("Failed to retrieve file").WithDetails(err.Error()))
@@ -1677,7 +1678,7 @@ func (h *KnowledgeHandler) PreviewKnowledgeFile(c *gin.Context) {
 		return
 	}
 
-	file, filename, err := h.kgService.GetKnowledgeFile(effCtx, id)
+	file, filename, err := h.selectedKnowledgeFile(c, effCtx, id)
 	if err != nil {
 		logger.ErrorWithFields(ctx, err, nil)
 		c.Error(errors.NewInternalServerError("Failed to retrieve file").WithDetails(err.Error()))
@@ -1693,7 +1694,9 @@ func (h *KnowledgeHandler) PreviewKnowledgeFile(c *gin.Context) {
 		disposition = "attachment"
 	}
 	c.Header("Content-Disposition", mime.FormatMediaType(disposition, map[string]string{"filename": filename}))
-	c.Header("Cache-Control", "private, max-age=3600")
+	// A binding can change without changing knowledge ID. Never cache an old
+	// source across replacement or rollback.
+	c.Header("Cache-Control", "private, no-store")
 
 	c.Stream(func(w io.Writer) bool {
 		if _, err := io.Copy(w, file); err != nil {
@@ -1843,6 +1846,9 @@ func (h *KnowledgeHandler) GetKnowledgeBatch(c *gin.Context) {
 
 	logger.Infof(ctx, "Batch knowledge retrieval successful, requested count: %d, returned count: %d",
 		len(req.IDs), len(knowledges))
+	for _, knowledge := range knowledges {
+		h.enrichArchiveSource(ctx, knowledge)
+	}
 
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,

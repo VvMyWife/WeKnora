@@ -82,3 +82,26 @@ func TestPlanBindScopeVersionsAndIdempotence(t *testing.T) {
 	require.NoError(t, s.DB.Model(&types.Knowledge{}).Count(&count).Error)
 	require.EqualValues(t, 2, count)
 }
+func TestArchiveQuotaAndCleanup(t *testing.T) {
+	s := fixture(t)
+	ctx := context.Background()
+	b, items, e := s.Plan(ctx, 1, "kb", "政策_MD", "u", []ManifestFile{{"甲/办法.pdf", 1001}})
+	require.NoError(t, e)
+	called := false
+	_, e = s.Bind(ctx, 1, "kb", b.ID, items[0].ID, "", "u", "h", 1001, false, func(string) (string, error) { called = true; return "resource://x", nil })
+	require.Error(t, e)
+	require.False(t, called)
+	var used int64
+	require.NoError(t, s.DB.Table("tenants").Select("storage_used").Row().Scan(&used))
+	require.Zero(t, used)
+	b, items, e = s.Plan(ctx, 1, "kb", "政策_MD", "u", []ManifestFile{{"甲/办法.pdf", 20}})
+	require.NoError(t, e)
+	v, e := s.Bind(ctx, 1, "kb", b.ID, items[0].ID, "", "u", "h", 20, false, func(string) (string, error) { return "resource://x", nil })
+	require.NoError(t, e)
+	require.NoError(t, s.RemoveVersion(ctx, 1, "a", v.ID))
+	active, e := s.Active(ctx, 1, "a")
+	require.NoError(t, e)
+	require.Nil(t, active)
+	require.NoError(t, s.DB.Table("tenants").Select("storage_used").Row().Scan(&used))
+	require.Zero(t, used)
+}

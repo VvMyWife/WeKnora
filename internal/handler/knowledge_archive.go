@@ -28,6 +28,17 @@ func AttachArchiveStore(h *KnowledgeHandler, s *archivemapping.Store) *Knowledge
 	h.archiveStore = s
 	return h
 }
+func (h *KnowledgeHandler) enrichArchiveSource(ctx context.Context, k *types.Knowledge) {
+	if k == nil || h.archiveStore == nil {
+		return
+	}
+	v, e := h.archiveStore.Active(ctx, k.TenantID, k.ID)
+	if e != nil {
+		logger.Warnf(ctx, "[ArchiveMapping] metadata knowledge=%s error=%v", k.ID, e)
+		return
+	}
+	k.ArchiveSource = v
+}
 
 type archiveFiles interface {
 	SaveArchiveFile(context.Context, string, *multipart.FileHeader, string) (string, error)

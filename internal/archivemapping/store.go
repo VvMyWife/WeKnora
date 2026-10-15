@@ -169,6 +169,9 @@ func (s *Store) Bind(ctx context.Context, tenant uint64, kb, batch, item, target
 		if it.Status == "bound" {
 			var v Version
 			e := tx.Where("id = ? AND tenant_id = ?", it.VersionID, tenant).First(&v).Error
+			if e == nil && (v.SHA256 != hash || v.FileSize != size || (target != "" && target != it.KnowledgeID)) {
+				return fmt.Errorf("已完成项的文件或目标发生变化，请新建批次")
+			}
 			result = &v
 			return e
 		}

@@ -249,6 +249,7 @@ func (s *knowledgeService) DeleteKnowledge(ctx context.Context, id string) error
 
 	// Best-effort physical cleanup. Errors here only leak storage; they must not
 	// fail the delete now that the row is already gone.
+	s.cleanupArchiveFiles(ctx, knowledge)
 	if knowledge.FilePath != "" {
 		if err := kbFileSvc.DeleteFile(ctx, knowledge.FilePath); err != nil {
 			logger.GetLogger(ctx).WithField("error", err).Errorf("DeleteKnowledge delete file failed")
@@ -714,6 +715,7 @@ func (s *knowledgeService) DeleteKnowledgeList(ctx context.Context, ids []string
 
 	storageAdjust := int64(0)
 	for _, knowledge := range knowledgeList {
+		s.cleanupArchiveFiles(ctx, knowledge)
 		if knowledge.FilePath != "" {
 			fSvc := kbFileServices[knowledge.KnowledgeBaseID]
 			if err := fSvc.DeleteFile(ctx, knowledge.FilePath); err != nil {
