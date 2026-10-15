@@ -1,0 +1,7 @@
+# Preserve every existing VLM/PDF/diagnostics/pause customization.
+FROM weknora-app:processing-pause-20261015
+ARG BINARY_FILE=WeKnora.archive-mapping-20261015
+COPY ${BINARY_FILE} /app/WeKnora
+COPY archive-migrations/versioned/ /app/migrations/versioned/
+COPY archive-migrations/sqlite/ /app/migrations/sqlite/
+RUN chmod +x /app/WeKnora

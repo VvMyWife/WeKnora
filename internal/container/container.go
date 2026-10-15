@@ -118,7 +118,7 @@ func BuildContainer(container *dig.Container) *dig.Container {
 	must(container.Provide(config.LoadConfig))
 	must(container.Provide(initLangfuse))
 	must(container.Provide(initDatabase))
-	must(container.Provide(archivemapping.NewStore))
+	must(container.Provide(archivemapping.NewRuntimeStore))
 	must(container.Provide(initFileService))
 	must(container.Provide(initRedisClient))
 	must(container.Provide(initAntsPool))

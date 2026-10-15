@@ -41,7 +41,7 @@ func (h *KnowledgeHandler) enrichArchiveSource(ctx context.Context, k *types.Kno
 }
 
 type archiveFiles interface {
-	SaveArchiveFile(context.Context, string, *multipart.FileHeader, string) (string, error)
+	SaveArchiveFile(context.Context, string, *multipart.FileHeader, string, string) (string, error)
 	OpenArchiveFile(context.Context, string, string) (io.ReadCloser, error)
 	DeleteArchiveFile(context.Context, string, string) error
 }
@@ -152,6 +152,13 @@ func (h *KnowledgeHandler) UploadArchiveItem(c *gin.Context) {
 		archiveError(c, fmt.Errorf("批次中不存在该文件"))
 		return
 	}
+	// Bound the body by the declared original size plus multipart overhead,
+	// rather than applying the unrelated parser's 50 MB limit.
+	if planned.FileSize > (1 << 60) {
+		archiveError(c, fmt.Errorf("清单文件大小无效"))
+		return
+	}
+	c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, planned.FileSize+(2<<20))
 	// No inherited parsing upload size cap: original storage is streamed to disk
 	// by multipart with a bounded memory threshold, then through FileService.
 	if e = c.Request.ParseMultipartForm(8 << 20); e != nil {
@@ -186,8 +193,12 @@ func (h *KnowledgeHandler) UploadArchiveItem(c *gin.Context) {
 		return
 	}
 	saved := ""
+	target := c.PostForm("knowledge_id")
+	if target == "" {
+		target = planned.KnowledgeID
+	}
 	v, e := h.archiveStore.Bind(ctx, tenant, kb, batch, item, c.PostForm("knowledge_id"), c.GetString(types.UserIDContextKey.String()), hex.EncodeToString(digest.Sum(nil)), n, c.PostForm("replace") == "true", func(version string) (string, error) {
-		stored, err := files.SaveArchiveFile(ctx, kb, f, version)
+		stored, err := files.SaveArchiveFile(ctx, kb, f, target, version)
 		saved = stored
 		return stored, err
 	})
@@ -262,7 +273,7 @@ func (h *KnowledgeHandler) SetArchiveSource(c *gin.Context) {
 		archiveError(c, e)
 		return
 	}
-	logger.Infof(ctx, "[ArchiveMapping] source_changed kb_id=%s knowledge_id=%s version_id=%s", k.KnowledgeBaseID, k.ID, *req.VersionID)
+	h.archiveLog(ctx, k.TenantID, k.KnowledgeBaseID, "", "source_changed", k.ID, map[string]string{"version_id": *req.VersionID})
 	c.JSON(200, gin.H{"success": true})
 }
 
@@ -274,12 +285,34 @@ func (h *KnowledgeHandler) archiveLog(ctx context.Context, tenant uint64, kb, ba
 	if _, e := uuid.Parse(kb); e != nil {
 		return
 	}
+	root := os.Getenv("ARCHIVE_MAPPING_LOG_DIR")
+	if root == "" {
+		root = filepath.Join("data", "processing-logs")
+	}
+	if batch == "" {
+		archiveLogMu.Lock()
+		defer archiveLogMu.Unlock()
+		dir := filepath.Join(root, kb, "archive-mapping")
+		err := os.MkdirAll(dir, 0750)
+		if err == nil {
+			var f *os.File
+			f, err = os.OpenFile(filepath.Join(dir, "source-events.jsonl"), os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0640)
+			if err == nil {
+				err = json.NewEncoder(f).Encode(map[string]any{"time": time.Now().UTC(), "event": event, "knowledge_id": item, "detail": detail})
+				f.Close()
+			}
+		}
+		if err != nil {
+			logger.Errorf(ctx, "[ArchiveMapping] source_log_export_failed kb=%s error=%v", kb, err)
+		}
+		return
+	}
 	if _, e := uuid.Parse(batch); e != nil {
 		return
 	}
 	archiveLogMu.Lock()
 	defer archiveLogMu.Unlock()
-	dir := filepath.Join("data", "processing-logs", kb, "archive-mapping", batch)
+	dir := filepath.Join(root, kb, "archive-mapping", batch)
 	err := os.MkdirAll(dir, 0750)
 	if err == nil {
 		var f *os.File

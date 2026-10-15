@@ -7,6 +7,17 @@ import (
 	"gorm.io/gorm"
 )
 
+// Runtime startup must fail explicitly if its additive migration was skipped;
+// otherwise every mapped preview could fail behind a misleading healthy app.
+func NewRuntimeStore(db *gorm.DB) (*Store, error) {
+	for _, model := range []any{&Batch{}, &Item{}, &Version{}, &Link{}} {
+		if !db.Migrator().HasTable(model) {
+			return nil, fmt.Errorf("archive mapping migration missing for %T; apply PostgreSQL 91 / SQLite 13 before startup", model)
+		}
+	}
+	return NewStore(db), nil
+}
+
 func adjustStorage(tx *gorm.DB, tenant uint64, delta int64) error {
 	// A single conditional update serializes quota reservation with other uploads.
 	q := tx.Model(&types.Tenant{}).Where("id = ?", tenant)

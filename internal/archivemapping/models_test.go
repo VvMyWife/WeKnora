@@ -105,3 +105,22 @@ func TestArchiveQuotaAndCleanup(t *testing.T) {
 	require.NoError(t, s.DB.Table("tenants").Select("storage_used").Row().Scan(&used))
 	require.Zero(t, used)
 }
+func TestIndependentCopiesAndRuntimeMigrationGuard(t *testing.T) {
+	s := fixture(t)
+	ctx := context.Background()
+	_, e := NewRuntimeStore(s.DB)
+	require.NoError(t, e)
+	v := Version{ID: "copied", KnowledgeID: "b", TenantID: 1, FileSize: 10, StoragePath: "resource://independent"}
+	require.NoError(t, s.AddCopies(ctx, []Version{v}, v.ID))
+	active, e := s.Active(ctx, 1, "b")
+	require.NoError(t, e)
+	require.Equal(t, v.StoragePath, active.StoragePath)
+	// Removing a source that has no copy ownership cannot delete the copy.
+	require.Error(t, s.RemoveVersion(ctx, 1, "a", v.ID))
+	active, e = s.Active(ctx, 1, "b")
+	require.NoError(t, e)
+	require.NotNil(t, active)
+	require.NoError(t, s.DB.Migrator().DropTable(&Link{}))
+	_, e = NewRuntimeStore(s.DB)
+	require.Error(t, e)
+}

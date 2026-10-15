@@ -28,7 +28,7 @@ func (s *archiveFileStub) GetKnowledgeFile(context.Context, string) (io.ReadClos
 	s.opened = "parsed"
 	return io.NopCloser(strings.NewReader("# MD")), "法规.md", nil
 }
-func (s *archiveFileStub) SaveArchiveFile(context.Context, string, *multipart.FileHeader, string) (string, error) {
+func (s *archiveFileStub) SaveArchiveFile(context.Context, string, *multipart.FileHeader, string, string) (string, error) {
 	return "", nil
 }
 func (s *archiveFileStub) OpenArchiveFile(_ context.Context, _ string, p string) (io.ReadCloser, error) {

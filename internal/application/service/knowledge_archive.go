@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"mime/multipart"
+	"path"
 
 	"github.com/Tencent/WeKnora/internal/archivemapping"
 	"github.com/Tencent/WeKnora/internal/logger"
@@ -21,15 +22,27 @@ func AttachArchiveStore(s interfaces.KnowledgeService, store *archivemapping.Sto
 	}
 	return s
 }
-func (s *knowledgeService) SaveArchiveFile(ctx context.Context, kbID string, f *multipart.FileHeader, owner string) (string, error) {
+func (s *knowledgeService) SaveArchiveFile(ctx context.Context, kbID string, f *multipart.FileHeader, knowledgeID, versionID string) (string, error) {
 	kb, e := s.kbService.GetKnowledgeBaseByID(ctx, kbID)
 	if e != nil {
 		return "", e
 	}
-	return s.resolveFileService(ctx, kb).SaveFile(ctx, f, kb.TenantID, owner)
+	ctx, e = s.archiveOwnerContext(ctx, kb.TenantID)
+	if e != nil {
+		return "", e
+	}
+	// The catalog owner is a real knowledge ID, while each physical object gets
+	// a version-specific name even on providers that preserve uploaded filenames.
+	header := *f
+	header.Filename = versionID + "_" + path.Base(f.Filename)
+	return s.resolveFileService(ctx, kb).SaveFile(ctx, &header, kb.TenantID, knowledgeID)
 }
 func (s *knowledgeService) OpenArchiveFile(ctx context.Context, kbID, stored string) (io.ReadCloser, error) {
 	kb, e := s.kbService.GetKnowledgeBaseByID(ctx, kbID)
+	if e != nil {
+		return nil, e
+	}
+	ctx, e = s.archiveOwnerContext(ctx, kb.TenantID)
 	if e != nil {
 		return nil, e
 	}
@@ -40,7 +53,22 @@ func (s *knowledgeService) DeleteArchiveFile(ctx context.Context, kbID, stored s
 	if e != nil {
 		return e
 	}
+	ctx, e = s.archiveOwnerContext(ctx, kb.TenantID)
+	if e != nil {
+		return e
+	}
 	return s.resolveFileServiceForPath(ctx, kb, stored).DeleteFile(ctx, stored)
+}
+func (s *knowledgeService) archiveOwnerContext(ctx context.Context, tenantID uint64) (context.Context, error) {
+	current, _ := ctx.Value(types.TenantInfoContextKey).(*types.Tenant)
+	if current == nil || current.ID != tenantID {
+		owner, e := s.tenantRepo.GetTenantByID(ctx, tenantID)
+		if e != nil {
+			return ctx, e
+		}
+		ctx = context.WithValue(ctx, types.TenantInfoContextKey, owner)
+	}
+	return context.WithValue(ctx, types.TenantIDContextKey, tenantID), nil
 }
 func (s *knowledgeService) cleanupArchiveFiles(ctx context.Context, k *types.Knowledge) {
 	if s.archiveStore == nil {
@@ -87,7 +115,7 @@ func (s *knowledgeService) cloneArchiveFiles(ctx context.Context, src, dst *type
 		v.ID = uuid.NewString()
 		v.TenantID = dst.TenantID
 		v.KnowledgeID = dst.ID
-		v.StoragePath, e = copyOwnedObject(ctx, s.resolveFileServiceForPath(ctx, sourceKB, v.StoragePath), s.resolveFileService(ctx, targetKB), v.StoragePath, dst.TenantID, v.ID)
+		v.StoragePath, e = copyOwnedObject(ctx, s.resolveFileServiceForPath(ctx, sourceKB, v.StoragePath), s.resolveFileService(ctx, targetKB), v.StoragePath, dst.TenantID, dst.ID)
 		if e != nil {
 			for _, c := range copied {
 				_ = s.DeleteArchiveFile(ctx, dst.KnowledgeBaseID, c.StoragePath)
