@@ -1,6 +1,6 @@
 services:
   app:
-    image: weknora-app:diagnostics-20261014
+    image: weknora-app:processing-pause-20261015
     environment:
       WEKNORA_DOCUMENT_PROCESS_TIMEOUT: -1s
       WEKNORA_DOCREADER_CALL_TIMEOUT: -1s

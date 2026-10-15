@@ -54,6 +54,15 @@ sha256sum runtime/WeKnora.processing-pause-20261015
 
 ## 日志与回退
 
+## 2026-10-15 运行验收
+
+- 后端镜像 `weknora-app:processing-pause-20261015` 健康，容器二进制与构建产物 SHA256 一致。
+- custom 前端在 18180 上已验证暂停、刷新后保留暂停状态、继续处理；正式知识库始终保持 running。
+- 独立样例排队期间未执行，恢复后进入处理。样例最终向量化失败是 `18082/v1/embeddings connection refused`，与暂停控制无关，未擅自调整模型服务。
+- 新产生的图谱阶段输入已实际记录 `max_output_tokens: 8192`。
+
+## 日志与回退命令
+
 ```bash
 cd /home/ubuntu/RAG_Weknora
 docker logs --since 30m WeKnora-app 2>&1 | grep 'KnowledgeProcessingControl'
