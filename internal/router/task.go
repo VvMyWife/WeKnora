@@ -14,15 +14,20 @@ import (
 	"github.com/Tencent/WeKnora/internal/common"
 	"github.com/Tencent/WeKnora/internal/logger"
 	"github.com/Tencent/WeKnora/internal/middleware/asynqdl"
+	"github.com/Tencent/WeKnora/internal/processingcontrol"
 	"github.com/Tencent/WeKnora/internal/tracing/langfuse"
 	"github.com/Tencent/WeKnora/internal/types"
 	"github.com/Tencent/WeKnora/internal/types/interfaces"
 	"github.com/hibiken/asynq"
+	"github.com/redis/go-redis/v9"
 	"go.uber.org/dig"
 )
 
 type AsynqTaskParams struct {
 	dig.In
+	RedisClient        *redis.Client `optional:"true"`
+	PauseTaskEnqueuer  interfaces.TaskEnqueuer
+	PauseTaskInspector *asynq.Inspector `optional:"true"`
 
 	// Dedicated servers provide minimum capacity for parse, post-process,
 	// enrichment, maintenance, and Wiki work. SharedServer is the elastic tier:
@@ -118,6 +123,9 @@ const wikiIngestRetryDelay = 15 * time.Second
 // progress for 7–10 minutes while the orphan lock expires AND the retry
 // schedule catches up.
 func asynqRetryDelayFunc(n int, e error, t *asynq.Task) time.Duration {
+	if errors.Is(e, processingcontrol.ErrPaused) {
+		return processingcontrol.RetryDelay
+	}
 	if errors.Is(e, service.ErrWikiIngestConcurrent) {
 		return wikiIngestRetryDelay
 	}
@@ -140,6 +148,12 @@ func newAsynqServer(concurrency int, queues map[string]int) *asynq.Server {
 			Concurrency:    concurrency,
 			Queues:         queues,
 			RetryDelayFunc: asynqRetryDelayFunc,
+			IsFailure:      asynqTaskIsFailure,
+			ErrorHandler: asynq.ErrorHandlerFunc(func(ctx context.Context, task *asynq.Task, err error) {
+				if asynqTaskIsFailure(err) {
+					logger.Errorf(ctx, "[BackgroundTask] type=%s error=%v", task.Type(), err)
+				}
+			}),
 		},
 	)
 }
@@ -228,8 +242,13 @@ func NewWikiAsynqServer(svc interfaces.SystemSettingService) *asynq.Server {
 func RunAsynqServer(params AsynqTaskParams) *asynq.ServeMux {
 	// Create a new mux and register all handlers
 	mux := asynq.NewServeMux()
+	control := processingcontrol.New(params.RedisClient)
+	processingcontrol.Install(control)
+	mux.Use(knowledgePauseMiddleware(control, params.KnowledgeService, params.PauseTaskEnqueuer, params.PauseTaskInspector))
 
-	// Install the dead-letter middleware FIRST so it sees the raw error
+	// Install dead-letter handling inside the pause guard so parked tasks never
+	// become dead letters, including tasks already on their final allowed retry.
+	// It sees the raw error
 	// returned by the handler, before any other middleware that might
 	// transform it. The middleware records one task_dead_letters row per
 	// task that exhausts its retry budget — operators can then SQL-query

@@ -75,6 +75,8 @@ func RegisterKnowledgeRoutes(r *gin.RouterGroup, handler *handler.KnowledgeHandl
 		kb.POST("/manual", g.OwnedKBOrAdmin(), g.KBAccessWrite("id"), handler.CreateManualKnowledge)
 		kbRead.GET("", g.Viewer(), g.KBAccessRead("id"), handler.ListKnowledge)
 		kbRead.GET("/overview", g.Viewer(), g.KBAccessRead("id"), handler.GetKnowledgeProcessingOverview)
+		kbRead.GET("/processing-control", g.Viewer(), g.KBAccessRead("id"), handler.GetKnowledgeProcessingControl)
+		kb.PUT("/processing-control", g.OwnedKBOrAdmin(), g.KBAccessWrite("id"), handler.SetKnowledgeProcessingControl)
 		kbRead.GET("/failures", g.Viewer(), g.KBAccessRead("id"), handler.ListKnowledgeProcessingFailures)
 		kbRead.GET("/folders", g.Viewer(), g.KBAccessRead("id"), handler.ListKnowledgeFolders)
 		kb.PUT("/folders", g.OwnedKBOrAdmin(), g.KBAccessWrite("id"), handler.RenameKnowledgeFolder)
