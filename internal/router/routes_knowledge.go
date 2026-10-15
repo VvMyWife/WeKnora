@@ -71,6 +71,11 @@ func RegisterKnowledgeRoutes(r *gin.RouterGroup, handler *handler.KnowledgeHandl
 	kbRead := kb.With(apiKeyRetrieve(apiKeyFullAccess()))
 	{
 		kb.POST("/file", g.OwnedKBOrAdmin(), g.KBAccessWrite("id"), handler.CreateKnowledgeFromFile)
+		kb.POST("/archive-mapping/batches", g.OwnedKBOrAdmin(), g.KBAccessWrite("id"), handler.CreateArchiveBatch)
+		kbRead.GET("/archive-mapping/batches", g.Viewer(), g.KBAccessRead("id"), handler.ListArchiveBatches)
+		kbRead.GET("/archive-mapping/batches/:batch_id", g.Viewer(), g.KBAccessRead("id"), handler.GetArchiveBatch)
+		kb.POST("/archive-mapping/batches/:batch_id/items/:item_id/file", g.OwnedKBOrAdmin(), g.KBAccessWrite("id"), handler.UploadArchiveItem)
+		kb.PUT("/archive-mapping/batches/:batch_id/items/:item_id/skip", g.OwnedKBOrAdmin(), g.KBAccessWrite("id"), handler.SkipArchiveItem)
 		kb.POST("/url", g.OwnedKBOrAdmin(), g.KBAccessWrite("id"), handler.CreateKnowledgeFromURL)
 		kb.POST("/manual", g.OwnedKBOrAdmin(), g.KBAccessWrite("id"), handler.CreateManualKnowledge)
 		kbRead.GET("", g.Viewer(), g.KBAccessRead("id"), handler.ListKnowledge)
@@ -105,6 +110,8 @@ func RegisterKnowledgeRoutes(r *gin.RouterGroup, handler *handler.KnowledgeHandl
 		// (k.DELETE("/:id"), k.POST("/:id/reparse"), k.PUT("/:id")).
 		kRead.GET("/batch", g.Viewer(), handler.GetKnowledgeBatch)
 		kRead.GET("/:id", g.Viewer(), g.KBAccessReadFromKnowledgeIDParam("id"), handler.GetKnowledge)
+		kRead.GET("/:id/archive-source", g.Viewer(), g.KBAccessReadFromKnowledgeIDParam("id"), handler.GetArchiveSource)
+		k.PUT("/:id/archive-source", g.OwnedKnowledgeKBOrAdmin(), g.KBAccessWriteFromKnowledgeIDParam("id"), handler.SetArchiveSource)
 		kRead.GET("/:id/stages", g.Viewer(), g.KBAccessReadFromKnowledgeIDParam("id"), handler.GetKnowledgeSpans)
 		kRead.GET("/:id/spans", g.Viewer(), g.KBAccessReadFromKnowledgeIDParam("id"), handler.GetKnowledgeSpans)
 		k.DELETE("/:id", g.OwnedKnowledgeKBOrAdmin(), g.KBAccessWriteFromKnowledgeIDParam("id"), handler.DeleteKnowledge)

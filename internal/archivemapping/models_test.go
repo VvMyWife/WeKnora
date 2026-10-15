@@ -30,6 +30,8 @@ func fixture(t *testing.T) *Store {
 	sql.SetMaxOpenConns(1)
 	t.Cleanup(func() { sql.Close() })
 	require.NoError(t, db.AutoMigrate(&Batch{}, &Item{}, &Version{}, &Link{}))
+	require.NoError(t, db.Exec("CREATE TABLE tenants (id INTEGER PRIMARY KEY, storage_used INTEGER NOT NULL, storage_quota INTEGER NOT NULL, updated_at DATETIME, deleted_at DATETIME)").Error)
+	require.NoError(t, db.Exec("INSERT INTO tenants(id,storage_used,storage_quota) VALUES(1,0,1000)").Error)
 	require.NoError(t, db.Exec("CREATE TABLE knowledges (id TEXT PRIMARY KEY, tenant_id INTEGER, knowledge_base_id TEXT, file_name TEXT, folder_path TEXT, file_type TEXT, title TEXT, deleted_at DATETIME)").Error)
 	for _, row := range []struct{ id, folder string }{{"a", "政策_MD/甲"}, {"b", "政策_MD/乙"}} {
 		require.NoError(t, db.Exec("INSERT INTO knowledges(id,tenant_id,knowledge_base_id,file_name,folder_path,file_type,title) VALUES (?,1,'kb','办法.md',?,'md','办法')", row.id, row.folder).Error)

@@ -204,6 +204,9 @@ func (s *Store) Bind(ctx context.Context, tenant uint64, kb, batch, item, target
 			if current != nil && !replace {
 				return fmt.Errorf("目标已有不同原件，请明确选择替换")
 			}
+			if e = adjustStorage(tx, tenant, size); e != nil {
+				return e
+			}
 			v := Version{ID: uuid.NewString(), TenantID: tenant, KnowledgeID: target, FileName: pathBase(it.RelativePath), RelativePath: it.RelativePath, FileType: extension(it.RelativePath), FileSize: size, SHA256: hash, CreatedBy: user, CreatedAt: time.Now().UTC()}
 			v.StoragePath, e = save(v.ID)
 			if e != nil {
