@@ -252,9 +252,10 @@ func (s *ChunkExtractService) Handle(ctx context.Context, t *asynq.Task) error {
 				fmt.Sprintf("postprocess.graph.chunk[%d]", p.ChunkIndex),
 				types.SpanKindSubSpan,
 				types.JSONMap{
-					"chunk_id":    p.ChunkID,
-					"chunk_index": p.ChunkIndex,
-					"model_id":    p.ModelID,
+					"chunk_id":          p.ChunkID,
+					"chunk_index":       p.ChunkIndex,
+					"model_id":          p.ModelID,
+					"max_output_tokens": chatpipeline.GraphExtractionMaxTokens,
 				})
 		}
 	}
@@ -350,7 +351,7 @@ func (s *ChunkExtractService) Handle(ctx context.Context, t *asynq.Task) error {
 			},
 		},
 	}
-	extractor := chatpipeline.NewExtractor(chatModel, template)
+	extractor := chatpipeline.NewGraphExtractor(chatModel, template)
 	graph, err := extractor.Extract(ctx, chunk.Content)
 	if err != nil {
 		handleErr = err

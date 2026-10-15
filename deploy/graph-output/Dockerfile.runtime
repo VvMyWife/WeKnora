@@ -1,0 +1,4 @@
+FROM weknora-app:diagnostics-20261014
+ARG BINARY_FILE
+COPY ${BINARY_FILE} /app/WeKnora
+RUN chmod 0755 /app/WeKnora

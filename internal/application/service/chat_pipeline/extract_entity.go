@@ -177,6 +177,17 @@ func NewExtractor(
 	}
 }
 
+// GraphExtractionMaxTokens is the completion budget for background graph tasks.
+const GraphExtractionMaxTokens = 8192
+
+// NewGraphExtractor allows a larger completion for background graph extraction.
+// Query-time entity extraction keeps NewExtractor's smaller default budget.
+func NewGraphExtractor(chatModel chat.Chat, template *types.PromptTemplateStructured) Extractor {
+	extractor := NewExtractor(chatModel, template)
+	extractor.chatOpt.MaxTokens = GraphExtractionMaxTokens
+	return extractor
+}
+
 // Extract extracts entities from content
 func (e *Extractor) Extract(ctx context.Context, content string) (*types.GraphData, error) {
 	generator := NewQAPromptGenerator(e.formater, e.template)
