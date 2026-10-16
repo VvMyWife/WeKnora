@@ -1,0 +1,5 @@
+FROM weknora-app:wiki-output-12288-20261016
+COPY WeKnora.external-chunks-20261016 /app/WeKnora
+COPY external-migrations/versioned/ /app/migrations/versioned/
+COPY external-migrations/sqlite/ /app/migrations/sqlite/
+RUN chmod +x /app/WeKnora
