@@ -152,9 +152,10 @@ func setLink(tx *gorm.DB, tenant uint64, id, version string) error {
 	return tx.Clauses(clause.OnConflict{Columns: []clause.Column{{Name: "knowledge_id"}}, DoUpdates: clause.AssignmentColumns([]string{"tenant_id", "version_id", "updated_at"})}).Create(&l).Error
 }
 
-// Bind holds the knowledge lock through storage and metadata publication. A
-// concurrent replace cannot silently overwrite another upload. Save is called
-// only after all scope/conflict/idempotency checks pass.
+// Bind publishes staged-object metadata under a knowledge lock. The callback
+// only supplies an already-stored path; it must not perform I/O or DB operations
+// (in particular, SQLite has only one connection). Concurrent replacements are
+// checked again here and rejected publication is cleaned up by the caller.
 func (s *Store) Bind(ctx context.Context, tenant uint64, kb, batch, item, target, user, hash string, size int64, replace bool, save func(string) (string, error)) (*Version, error) {
 	var result *Version
 	err := s.DB.WithContext(ctx).Transaction(func(tx *gorm.DB) error {

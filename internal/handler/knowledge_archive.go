@@ -187,32 +187,65 @@ func (h *KnowledgeHandler) UploadArchiveItem(c *gin.Context) {
 		h.archiveUploadFailure(c, ctx, tenant, kb, batch, item, e)
 		return
 	}
-	files, ok := h.kgService.(archiveFiles)
-	if !ok {
-		archiveError(c, fmt.Errorf("原件存储不可用"))
-		return
-	}
-	saved := ""
 	target := c.PostForm("knowledge_id")
 	if target == "" {
 		target = planned.KnowledgeID
 	}
-	v, e := h.archiveStore.Bind(ctx, tenant, kb, batch, item, c.PostForm("knowledge_id"), c.GetString(types.UserIDContextKey.String()), hex.EncodeToString(digest.Sum(nil)), n, c.PostForm("replace") == "true", func(version string) (string, error) {
-		stored, err := files.SaveArchiveFile(ctx, kb, f, target, version)
-		saved = stored
-		return stored, err
-	})
+	v, e := h.bindArchiveUpload(ctx, tenant, kb, batch, planned, target, c.GetString(types.UserIDContextKey.String()), hex.EncodeToString(digest.Sum(nil)), n, c.PostForm("replace") == "true", f)
 	if e != nil {
-		if saved != "" {
-			if cleanupErr := files.DeleteArchiveFile(context.WithoutCancel(ctx), kb, saved); cleanupErr != nil {
-				logger.Errorf(ctx, "[ArchiveMapping] rollback cleanup batch=%s item=%s error=%v", batch, item, cleanupErr)
-			}
-		}
 		h.archiveUploadFailure(c, ctx, tenant, kb, batch, item, e)
 		return
 	}
 	h.archiveLog(ctx, tenant, kb, batch, "item_bound", item, v)
 	c.JSON(200, gin.H{"success": true, "data": v})
+}
+func (h *KnowledgeHandler) bindArchiveUpload(ctx context.Context, tenant uint64, kb, batch string, item *archivemapping.Item, target, user, hash string, size int64, replace bool, f *multipart.FileHeader) (*archivemapping.Version, error) {
+	files, ok := h.kgService.(archiveFiles)
+	if !ok {
+		return nil, fmt.Errorf("原件存储不可用")
+	}
+	k, e := h.kgService.GetKnowledgeByID(ctx, target)
+	if e != nil {
+		return nil, e
+	}
+	if k == nil || k.ID != target || k.TenantID != tenant || k.KnowledgeBaseID != kb || (k.FileType != "md" && k.FileType != "markdown") {
+		return nil, fmt.Errorf("目标必须是当前知识库的 MD 文档")
+	}
+	if size != item.FileSize || !archivemapping.AllowedOriginal(item.RelativePath) {
+		return nil, fmt.Errorf("原件格式或大小与清单不一致")
+	}
+	current, e := h.archiveStore.Active(ctx, tenant, target)
+	if e != nil {
+		return nil, e
+	}
+	saved := ""
+	// Catalog registration uses the database too. Store the object BEFORE the
+	// metadata transaction: doing I/O inside Bind deadlocks SQLite's one-connection
+	// pool and holds PostgreSQL row/quota locks for the entire large-file copy.
+	if item.Status != "bound" && (current == nil || current.SHA256 != hash) {
+		if current != nil && !replace {
+			return nil, fmt.Errorf("目标已有不同原件，请明确选择替换")
+		}
+		saved, e = files.SaveArchiveFile(ctx, kb, f, target, uuid.NewString())
+		if e != nil {
+			return nil, e
+		}
+		h.archiveLog(ctx, tenant, kb, batch, "item_staged", item.ID, map[string]string{"resource": saved, "sha256": hash})
+	}
+	v, e := h.archiveStore.Bind(ctx, tenant, kb, batch, item.ID, target, user, hash, size, replace, func(string) (string, error) {
+		if saved == "" {
+			return "", fmt.Errorf("关联状态已变化，请重试")
+		}
+		return saved, nil
+	})
+	// A concurrent identical upload may have won; remove our unused staging copy
+	// on both a rejected publication and an idempotent winner.
+	if saved != "" && (e != nil || v == nil || v.StoragePath != saved) {
+		if cleanupErr := files.DeleteArchiveFile(context.WithoutCancel(ctx), kb, saved); cleanupErr != nil {
+			logger.Errorf(ctx, "[ArchiveMapping] staged cleanup batch=%s item=%s resource=%s error=%v", batch, item.ID, saved, cleanupErr)
+		}
+	}
+	return v, e
 }
 func (h *KnowledgeHandler) archiveUploadFailure(c *gin.Context, ctx context.Context, tenant uint64, kb, batch, item string, e error) {
 	persist := context.WithoutCancel(ctx)
