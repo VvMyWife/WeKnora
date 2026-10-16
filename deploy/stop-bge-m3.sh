@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
-cd "$(dirname "$0")/.."
-if [ -f logs/bge-m3.pid ]; then kill "$(cat logs/bge-m3.pid)" 2>/dev/null || true; rm -f logs/bge-m3.pid; fi
+# Manual stop is respected by Restart=always. Do not kill a stale PID that may
+# now belong to another process after a reboot.
+sudo systemctl stop weknora-bge-m3.service
+systemctl is-active weknora-bge-m3.service || true

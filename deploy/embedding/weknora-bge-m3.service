@@ -1,0 +1,29 @@
+[Unit]
+Description=WeKnora BGE-M3 embedding adapter (18082)
+Wants=network-online.target
+After=network-online.target
+StartLimitIntervalSec=300
+StartLimitBurst=10
+
+[Service]
+Type=exec
+User=ubuntu
+Group=ubuntu
+WorkingDirectory=/home/ubuntu/RAG_Weknora
+Environment=CUDA_VISIBLE_DEVICES=3
+Environment=BGE_DEVICE=cuda
+Environment=BGE_M3_MODEL=/home/ubuntu/RAG/runtime/models/BAAI/bge-m3
+Environment=HF_ENDPOINT=https://hf-mirror.com
+Environment=HF_HUB_OFFLINE=1
+Environment=TRANSFORMERS_OFFLINE=1
+Environment=PYTHONUNBUFFERED=1
+ExecStartPre=/usr/bin/test -r /home/ubuntu/RAG/runtime/models/BAAI/bge-m3/config.json
+ExecStart=/home/ubuntu/RAG/runtime/eval-venv/bin/python -m uvicorn adapters.bge_m3.server:app --host 0.0.0.0 --port 18082
+Restart=always
+RestartSec=10
+TimeoutStopSec=90
+StandardOutput=append:/home/ubuntu/RAG_Weknora/logs/bge-m3.log
+StandardError=append:/home/ubuntu/RAG_Weknora/logs/bge-m3.log
+
+[Install]
+WantedBy=multi-user.target
