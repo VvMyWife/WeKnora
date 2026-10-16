@@ -10,6 +10,7 @@ const (
 	WorkerPoolMaintenance = "maintenance"
 	WorkerPoolShared      = "shared"
 	WorkerPoolWiki        = "wiki"
+	WorkerPoolGraph       = "graph"
 
 	// Upstream defaults are explicit guarantees plus an elastic pool. The
 	// shared pool may consume core and enrichment queues, so idle capacity in
@@ -76,7 +77,7 @@ var queueDefinitions = []QueueDefinition{
 		TypeSummaryGeneration, TypeDataTableSummary, TypeKnowledgeAutoTag,
 	}},
 	{Name: QueueMultimodal, Pool: WorkerPoolEnrichment, Weight: 1, SharedWeight: 1, TaskTypes: []string{TypeImageMultimodal}},
-	{Name: QueueGraph, Pool: WorkerPoolEnrichment, Weight: 1, SharedWeight: 1, TaskTypes: []string{TypeChunkExtract}},
+	{Name: QueueGraph, Pool: WorkerPoolGraph, Weight: 1, TaskTypes: []string{TypeChunkExtract}},
 	{Name: QueueQuestion, Pool: WorkerPoolEnrichment, Weight: 1, SharedWeight: 1, TaskTypes: []string{TypeQuestionGeneration}},
 	{Name: QueueMemory, Pool: WorkerPoolEnrichment, Weight: 1, SharedWeight: 1, TaskTypes: []string{TypeMemoryExtract}},
 	{Name: QueueSync, Pool: WorkerPoolMaintenance, Weight: 2, TaskTypes: []string{TypeDataSourceSync}},
@@ -292,7 +293,9 @@ type ExtractChunkPayload struct {
 	// ChunkIndex is the 0-based ordinal of this chunk inside the parent
 	// knowledge's text-chunk set, used as the subspan name suffix
 	// ("postprocess.graph.chunk[3]") so the timeline preserves order.
-	ChunkIndex int `json:"chunk_index,omitempty"`
+	ChunkIndex       int   `json:"chunk_index,omitempty"`
+	RecoveryID       int64 `json:"recovery_id,omitempty"`
+	RecoveryDispatch int64 `json:"recovery_dispatch,omitempty"`
 }
 
 // DocumentProcessPayload represents the document process task payload

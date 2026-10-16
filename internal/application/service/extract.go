@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"strings"
@@ -221,6 +222,7 @@ func (s *ChunkExtractService) tracker() SpanTracker {
 
 // Handle handles the chunk extraction task
 func (s *ChunkExtractService) Handle(ctx context.Context, t *asynq.Task) error {
+	ctx = types.WithGraphTask(ctx)
 	var p types.ExtractChunkPayload
 	if err := json.Unmarshal(t.Payload(), &p); err != nil {
 		logger.Errorf(ctx, "failed to unmarshal task payload: %v", err)
@@ -266,9 +268,15 @@ func (s *ChunkExtractService) Handle(ctx context.Context, t *asynq.Task) error {
 		// completed (or terminally-failed) per-chunk extract releases its
 		// slot in pending_subtasks_count. KnowledgeID is the new (post-#? )
 		// payload field; legacy in-flight tasks without it are skipped.
-		finalizeSubtaskDetached(ctx, s.knowledgeRepo, p.KnowledgeID,
-			fmt.Sprintf("graph_chunk[%d]", p.ChunkIndex),
-			handleErr, false, isFinalAsynqAttempt(ctx))
+		if p.RecoveryID > 0 {
+			if err := completeEnrichmentRecovery(ctx, p.RecoveryID, p.RecoveryDispatch, handleErr); err != nil {
+				logger.Warnf(ctx, "graph recovery completion: %v", err)
+			}
+		} else {
+			finalizeSubtaskDetached(ctx, s.knowledgeRepo, p.KnowledgeID,
+				fmt.Sprintf("graph_chunk[%d]", p.ChunkIndex),
+				handleErr, false, isFinalAsynqAttempt(ctx) && !errors.Is(handleErr, context.Canceled))
+		}
 		if gSpan == nil {
 			return
 		}

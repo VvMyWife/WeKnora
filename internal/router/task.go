@@ -39,6 +39,7 @@ type AsynqTaskParams struct {
 	MaintenanceServer    *asynq.Server `name:"maintenanceAsynqServer"`
 	SharedServer         *asynq.Server `name:"sharedAsynqServer"`
 	WikiServer           *asynq.Server `name:"wikiAsynqServer"`
+	GraphServer          *asynq.Server `name:"graphAsynqServer"`
 	KnowledgeService     interfaces.KnowledgeService
 	KnowledgeBaseService interfaces.KnowledgeBaseService
 	TagService           interfaces.KnowledgeTagService
@@ -53,6 +54,7 @@ type AsynqTaskParams struct {
 	MemoryService        interfaces.MemoryService
 	DeadLetterRepo       interfaces.TaskDeadLetterRepository
 	SpanTracker          service.SpanTracker
+	Recovery             *service.EnrichmentRecovery
 }
 
 // defaultRedisOpTimeout is the previous hard-coded read timeout. The 100ms
@@ -128,6 +130,9 @@ func asynqRetryDelayFunc(n int, e error, t *asynq.Task) time.Duration {
 	}
 	if errors.Is(e, service.ErrWikiIngestConcurrent) {
 		return wikiIngestRetryDelay
+	}
+	if t != nil && (t.Type() == types.TypeChunkExtract || t.Type() == types.TypeWikiIngest || t.Type() == types.TypeWikiFinalize) {
+		return 30 * time.Minute
 	}
 	return asynq.DefaultRetryDelayFunc(n, e, t)
 }
@@ -233,6 +238,11 @@ func NewSharedAsynqServer(svc interfaces.SystemSettingService) *asynq.Server {
 // budget (WEKNORA_WIKI_ASYNQ_CONCURRENCY, default 8) is spent exclusively on
 // wiki generation. This is the hard capacity isolation that prevents the parse
 // pipeline from starving wiki (and vice-versa) during concurrent uploads.
+func NewGraphAsynqServer() *asynq.Server {
+	log.Printf("asynq graph-pool server starting with concurrency=8")
+	return newAsynqServer(8, types.QueueWeightsForPool(types.WorkerPoolGraph))
+}
+
 func NewWikiAsynqServer(svc interfaces.SystemSettingService) *asynq.Server {
 	concurrency := resolveWorkerPoolConcurrency(svc).Wiki
 	log.Printf("asynq wiki-pool server starting with concurrency=%d", concurrency)
@@ -244,6 +254,9 @@ func RunAsynqServer(params AsynqTaskParams) *asynq.ServeMux {
 	mux := asynq.NewServeMux()
 	control := processingcontrol.New(params.RedisClient)
 	processingcontrol.Install(control)
+	if params.Recovery != nil {
+		go params.Recovery.Run(context.Background())
+	}
 	mux.Use(knowledgePauseMiddleware(control, params.KnowledgeService, params.PauseTaskEnqueuer, params.PauseTaskInspector))
 
 	// Install dead-letter handling inside the pause guard so parked tasks never
@@ -262,6 +275,15 @@ func RunAsynqServer(params AsynqTaskParams) *asynq.ServeMux {
 	// "processing" until housekeeping cron caught it minutes later — the
 	// UI signal users actually see.
 	knowledgeFailer := newDeadLetterKnowledgeFailer(params.KnowledgeService, params.SpanTracker)
+	mux.Use(func(next asynq.Handler) asynq.Handler {
+		return asynq.HandlerFunc(func(ctx context.Context, t *asynq.Task) error {
+			err := next.ProcessTask(ctx, t)
+			if (t.Type() == types.TypeChunkExtract || t.Type() == types.TypeWikiIngest || t.Type() == types.TypeWikiFinalize) && errors.Is(err, context.Canceled) {
+				return processingcontrol.ErrPaused
+			}
+			return err
+		})
+	})
 	mux.Use(asynqdl.MiddlewareWithCallback(params.DeadLetterRepo, knowledgeFailer))
 
 	// Mark every asynq worker execution as a background task so the chat
@@ -350,6 +372,7 @@ func RunAsynqServer(params AsynqTaskParams) *asynq.ServeMux {
 	runPool("maintenance-pool", params.MaintenanceServer)
 	runPool("shared-pool", params.SharedServer)
 	runPool("wiki-pool", params.WikiServer)
+	runPool("graph-pool", params.GraphServer)
 	return mux
 }
 

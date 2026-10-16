@@ -20,6 +20,7 @@ package service
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"strings"
 	"sync"
@@ -27,6 +28,7 @@ import (
 
 	"github.com/Tencent/WeKnora/internal/config"
 	"github.com/Tencent/WeKnora/internal/logger"
+	"github.com/Tencent/WeKnora/internal/processingcontrol"
 	"github.com/Tencent/WeKnora/internal/types"
 	"github.com/Tencent/WeKnora/internal/types/interfaces"
 	"github.com/robfig/cron/v3"
@@ -145,6 +147,7 @@ func (h *HousekeepingService) runSweep(ctx context.Context) {
 		return
 	}
 
+	candidates = filterPausedHousekeepingCandidates(ctx, candidates)
 	stuck := h.filterByLastSpanActivity(ctx, candidates, cutoff)
 	spanSkipped := len(candidates) - len(stuck)
 
@@ -396,4 +399,26 @@ func housekeepingEnabled() bool {
 		return false
 	}
 	return true
+}
+
+func filterPausedHousekeepingCandidates(ctx context.Context, candidates []types.Knowledge) []types.Knowledge {
+	if control := processingcontrol.Current(); control != nil && control.Supported() {
+		paused := map[string]bool{}
+		filtered := candidates[:0]
+		for _, k := range candidates {
+			key := fmt.Sprintf("%d:%s", k.TenantID, k.KnowledgeBaseID)
+			skip, ok := paused[key]
+			if !ok {
+				state, e := control.State(ctx, k.TenantID, k.KnowledgeBaseID)
+				skip = e != nil || state.RequestedPaused
+				paused[key] = skip
+			}
+			if !skip {
+				filtered = append(filtered, k)
+			}
+		}
+		return filtered
+	}
+
+	return candidates
 }

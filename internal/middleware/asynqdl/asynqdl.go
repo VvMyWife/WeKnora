@@ -16,6 +16,7 @@ package asynqdl
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"time"
 
 	"github.com/Tencent/WeKnora/internal/logger"
@@ -77,6 +78,13 @@ func MiddlewareWithCallback(repo interfaces.TaskDeadLetterRepository, cb OnDeadL
 				attempts = retried + 1
 			}
 			if repo != nil {
+				var replay struct {
+					RecoveryID int64 `json:"recovery_id"`
+				}
+				_ = json.Unmarshal(t.Payload(), &replay)
+				if replay.RecoveryID > 0 || errors.Is(err, context.Canceled) {
+					return err
+				}
 				dl := buildDeadLetter(t, err, attempts)
 				if dl != nil {
 					if insertErr := repo.Insert(context.Background(), dl); insertErr != nil {

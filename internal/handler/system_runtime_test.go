@@ -73,6 +73,7 @@ func (runtimeTestInspector) WorkerServerStats(context.Context) ([]types.WorkerSe
 		{Concurrency: 4, Active: 1, Status: "active", Queues: types.QueueWeightsForPool(types.WorkerPoolMaintenance)},
 		{Concurrency: 6, Active: 3, Status: "active", Queues: types.QueueWeightsForSharedPool()},
 		{Concurrency: 8, Active: 2, Status: "active", Queues: types.QueueWeightsForPool(types.WorkerPoolWiki)},
+		{Concurrency: 8, Active: 2, Status: "active", Queues: types.QueueWeightsForPool(types.WorkerPoolGraph)},
 		{Concurrency: 99, Active: 0, Status: "stopped", Queues: types.QueueWeightsForPool(types.WorkerPoolCore)},
 	}, true, nil
 }
@@ -237,10 +238,11 @@ func TestGetRuntimeQueuesReportsIsolatedPoolCapacity(t *testing.T) {
 	}{
 		types.WorkerPoolCore:        {8, 2},
 		types.WorkerPoolPostProcess: {2, 1},
-		types.WorkerPoolEnrichment:  {12, 5},
+		types.WorkerPoolEnrichment:  {12, 4},
 		types.WorkerPoolMaintenance: {4, 2},
-		types.WorkerPoolShared:      {6, 7},
+		types.WorkerPoolShared:      {6, 6},
 		types.WorkerPoolWiki:        {8, 1},
+		types.WorkerPoolGraph:       {8, 1},
 	}
 	if len(response.Pools) != len(want) {
 		t.Fatalf("pool count = %d, want %d", len(response.Pools), len(want))

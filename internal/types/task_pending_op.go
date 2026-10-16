@@ -54,7 +54,8 @@ type TaskPendingOp struct {
 	// exclusion (e.g. wiki:active:<kbID> Redis SetNX). Reserved column
 	// so future no-lock parallel workers can flip it inside a row-level
 	// lock without another migration.
-	ClaimedAt *time.Time `json:"claimed_at,omitempty"`
+	ClaimedAt   *time.Time `json:"claimed_at,omitempty"`
+	AvailableAt *time.Time `json:"available_at,omitempty"`
 }
 
 // TableName binds TaskPendingOp to the `task_pending_ops` table.

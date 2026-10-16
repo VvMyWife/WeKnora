@@ -40,6 +40,9 @@ func preparePendingOp(op *types.TaskPendingOp) error {
 	if op.TaskType == "" || op.Scope == "" || op.ScopeID == "" {
 		return errors.New("task pending ops: task_type, scope, scope_id are required")
 	}
+	if op.EnqueuedAt.IsZero() {
+		op.EnqueuedAt = time.Now()
+	}
 	if op.Op == "" {
 		return errors.New("task pending ops: op is required")
 	}
@@ -177,7 +180,8 @@ func (r *taskPendingOpsRepository) PeekBatch(
 	var ops []*types.TaskPendingOp
 	if err := r.db.WithContext(ctx).
 		Where("task_type = ? AND scope = ? AND scope_id = ?", taskType, scope, scopeID).
-		Order("id ASC").
+		Where("dedup_key NOT IN (SELECT dedup_key FROM task_pending_ops WHERE task_type=? AND scope=? AND scope_id=? AND available_at > ?)", taskType, scope, scopeID, time.Now()).
+		Order("enqueued_at ASC, id ASC").
 		Limit(limit).
 		Find(&ops).Error; err != nil {
 		return nil, err
@@ -247,23 +251,24 @@ func (r *taskPendingOpsRepository) ClaimBatch(
 SELECT dedup_key FROM task_pending_ops
 WHERE id IN (
 	SELECT id FROM (
-		SELECT id, ROW_NUMBER() OVER (PARTITION BY dedup_key ORDER BY id) AS rn
+		SELECT id, ROW_NUMBER() OVER (PARTITION BY dedup_key ORDER BY enqueued_at, id) AS rn
 		FROM task_pending_ops
 		WHERE task_type = ? AND scope = ? AND scope_id = ?
 			AND (claimed_at IS NULL OR claimed_at < ?)
+            AND (available_at IS NULL OR available_at <= ?)
 			AND dedup_key NOT IN (
 				SELECT dedup_key FROM task_pending_ops
 				WHERE task_type = ? AND scope = ? AND scope_id = ?
-					AND claimed_at IS NOT NULL AND claimed_at >= ?
+					AND ((claimed_at IS NOT NULL AND claimed_at >= ?) OR available_at > ?)
 			)
 	) anchors WHERE anchors.rn = 1
 )
-ORDER BY id ASC
+ORDER BY enqueued_at ASC, id ASC
 LIMIT ?
 FOR UPDATE SKIP LOCKED`
 			if err := tx.Raw(anchorSQL,
-				taskType, scope, scopeID, staleBefore,
-				taskType, scope, scopeID, staleBefore,
+				taskType, scope, scopeID, staleBefore, now,
+				taskType, scope, scopeID, staleBefore, now,
 				limit).
 				Scan(&keys).Error; err != nil {
 				return err
@@ -272,13 +277,13 @@ FOR UPDATE SKIP LOCKED`
 			freshKeys := tx.Model(&types.TaskPendingOp{}).
 				Select("dedup_key").
 				Where("task_type = ? AND scope = ? AND scope_id = ?", taskType, scope, scopeID).
-				Where("claimed_at IS NOT NULL AND claimed_at >= ?", staleBefore)
+				Where("(claimed_at IS NOT NULL AND claimed_at >= ?) OR available_at > ?", staleBefore, now)
 			if err := tx.Model(&types.TaskPendingOp{}).
 				Where("task_type = ? AND scope = ? AND scope_id = ?", taskType, scope, scopeID).
 				Where("(claimed_at IS NULL OR claimed_at < ?)", staleBefore).
 				Where("dedup_key NOT IN (?)", freshKeys).
 				Group("dedup_key").
-				Order("MIN(id) ASC").
+				Order("MIN(enqueued_at) ASC, MIN(id) ASC").
 				Limit(limit).
 				Pluck("dedup_key", &keys).Error; err != nil {
 				return err
@@ -297,7 +302,7 @@ FOR UPDATE SKIP LOCKED`
 			Where("task_type = ? AND scope = ? AND scope_id = ?", taskType, scope, scopeID).
 			Where("dedup_key IN ?", keys).
 			Where("(claimed_at IS NULL OR claimed_at < ?)", staleBefore).
-			Order("id ASC").
+			Order("enqueued_at ASC, id ASC").
 			Pluck("id", &ids).Error; err != nil {
 			return err
 		}
@@ -309,7 +314,7 @@ FOR UPDATE SKIP LOCKED`
 			Update("claimed_at", now).Error; err != nil {
 			return err
 		}
-		return tx.Where("id IN ?", ids).Order("id ASC").Find(&claimed).Error
+		return tx.Where("id IN ?", ids).Order("enqueued_at ASC, id ASC").Find(&claimed).Error
 	})
 	if err != nil {
 		return nil, err
@@ -361,15 +366,38 @@ func (r *taskPendingOpsRepository) DeleteByScope(ctx context.Context, scope, sco
 // A missing row returns (0, nil): the caller's ID may have been removed
 // by a concurrent DeleteByIDs (e.g. dead-letter path), which is benign.
 func (r *taskPendingOpsRepository) IncrFailCount(ctx context.Context, id int64) (int, error) {
-	var newCount int
-	err := r.db.WithContext(ctx).Raw(
-		`UPDATE task_pending_ops SET fail_count = fail_count + 1 WHERE id = ? RETURNING fail_count`,
-		id,
-	).Scan(&newCount).Error
-	if err != nil {
-		return 0, err
+	var count int
+	err := r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		var op types.TaskPendingOp
+		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).First(&op, id).Error; err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return nil
+			}
+			return err
+		}
+		if op.TaskType != "wiki:ingest" {
+			return tx.Raw("UPDATE task_pending_ops SET fail_count=fail_count+1 WHERE id=? RETURNING fail_count", id).Scan(&count).Error
+		}
+		now := time.Now()
+		available := now.Add(30 * time.Minute)
+		var maxCount int
+		if err := tx.Model(&types.TaskPendingOp{}).Where("task_type=? AND scope=? AND scope_id=? AND dedup_key=?", op.TaskType, op.Scope, op.ScopeID, op.DedupKey).Select("coalesce(max(fail_count),0)").Scan(&maxCount).Error; err != nil {
+			return err
+		}
+		count = maxCount + 1
+		return tx.Model(&types.TaskPendingOp{}).Where("task_type=? AND scope=? AND scope_id=? AND dedup_key=?", op.TaskType, op.Scope, op.ScopeID, op.DedupKey).Updates(map[string]interface{}{"fail_count": count, "enqueued_at": now, "available_at": available, "claimed_at": nil}).Error
+	})
+	return count, err
+}
+
+// NextAvailableAt returns the next time a durable queue has eligible work.
+func (r *taskPendingOpsRepository) NextAvailableAt(ctx context.Context, taskType, scope, scopeID string) (time.Time, error) {
+	var result struct{ At *time.Time }
+	err := r.db.WithContext(ctx).Select("MIN(ready_at) AS at").Table("(SELECT MAX(COALESCE(available_at,enqueued_at)) AS ready_at FROM task_pending_ops WHERE task_type=? AND scope=? AND scope_id=? GROUP BY dedup_key) ready", taskType, scope, scopeID).Scan(&result).Error
+	if result.At == nil {
+		return time.Time{}, err
 	}
-	return newCount, nil
+	return *result.At, err
 }
 
 // PendingCount returns how many rows are currently queued for the
@@ -520,4 +548,16 @@ func (r *taskDeadLetterRepository) DeleteByID(ctx context.Context, id int64) err
 	return r.db.WithContext(ctx).
 		Where("id = ?", id).
 		Delete(&types.TaskDeadLetter{}).Error
+}
+
+// DeferGroup leaves the failure budget unchanged for lock contention.
+func (r *taskPendingOpsRepository) DeferGroup(ctx context.Context, id int64) error {
+	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		var op types.TaskPendingOp
+		if err := tx.First(&op, id).Error; err != nil {
+			return err
+		}
+		now := time.Now()
+		return tx.Model(&types.TaskPendingOp{}).Where("task_type=? AND scope=? AND scope_id=? AND dedup_key=?", op.TaskType, op.Scope, op.ScopeID, op.DedupKey).Updates(map[string]interface{}{"claimed_at": nil, "enqueued_at": now, "available_at": now.Add(30 * time.Minute)}).Error
+	})
 }

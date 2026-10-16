@@ -32,6 +32,7 @@ CREATE TABLE IF NOT EXISTS task_pending_ops (
     payload     TEXT NOT NULL DEFAULT '{}',
     fail_count  INTEGER NOT NULL DEFAULT 0,
     enqueued_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    available_at DATETIME,
     claimed_at  DATETIME
 );
 `
@@ -421,10 +422,11 @@ func TestTaskPendingOps_IncrFailCount_ReturnsNewValueAndPersists(t *testing.T) {
 	assert.Equal(t, 2, n)
 
 	// Persisted value matches what was returned.
-	rows, err := repo.PeekBatch(ctx, "wiki:ingest", "knowledge_base", "kb", 10)
-	require.NoError(t, err)
-	require.Len(t, rows, 1)
-	assert.Equal(t, 2, rows[0].FailCount)
+	var stored types.TaskPendingOp
+	require.NoError(t, db.First(&stored, op.ID).Error)
+	assert.Equal(t, 2, stored.FailCount)
+	require.NotNil(t, stored.AvailableAt)
+	assert.True(t, stored.AvailableAt.After(time.Now().Add(29*time.Minute)))
 }
 
 // TestTaskPendingOps_PendingCount_ScopedTuple confirms the count covers
@@ -834,4 +836,33 @@ func TestTaskDeadLetter_DeleteByID_IsIdempotent(t *testing.T) {
 	rows, _, err := repo.ListByScope(ctx, "knowledge_base", "kb", "", 10)
 	require.NoError(t, err)
 	assert.Len(t, rows, 0)
+}
+
+func TestWikiFailureMovesWholeGroupToTailAndCoolsDown(t *testing.T) {
+	db := setupTaskQueueTestDB(t)
+	repo := NewTaskPendingOpsRepository(db)
+	ctx := context.Background()
+	a := makePendingOp("wiki:ingest", "knowledge_base", "kb", "ingest", "A", nil)
+	b := makePendingOp("wiki:ingest", "knowledge_base", "kb", "ingest", "B", nil)
+	c := makePendingOp("wiki:ingest", "knowledge_base", "kb", "ingest", "C", nil)
+	for _, op := range []*types.TaskPendingOp{a, b, c} {
+		require.NoError(t, repo.Enqueue(ctx, op))
+	}
+	_, err := repo.IncrFailCount(ctx, a.ID)
+	require.NoError(t, err)
+	sibling := makePendingOp("wiki:ingest", "knowledge_base", "kb", "ingest", "A", nil)
+	require.NoError(t, repo.Enqueue(ctx, sibling))
+	rows, err := repo.ClaimBatch(ctx, "wiki:ingest", "knowledge_base", "kb", 10, time.Now().Add(-time.Hour))
+	require.NoError(t, err)
+	require.Len(t, rows, 2)
+	assert.Equal(t, "B", rows[0].DedupKey)
+	assert.Equal(t, "C", rows[1].DedupKey)
+	require.NoError(t, repo.ReleaseByIDs(ctx, []int64{b.ID, c.ID}))
+	require.NoError(t, db.Model(&types.TaskPendingOp{}).Where("dedup_key=?", "A").Update("available_at", time.Now().Add(-time.Second)).Error)
+	rows, err = repo.ClaimBatch(ctx, "wiki:ingest", "knowledge_base", "kb", 10, time.Now().Add(-time.Hour))
+	require.NoError(t, err)
+	require.Len(t, rows, 4)
+	assert.Equal(t, "B", rows[0].DedupKey)
+	assert.Equal(t, "C", rows[1].DedupKey)
+	assert.Equal(t, "A", rows[2].DedupKey)
 }

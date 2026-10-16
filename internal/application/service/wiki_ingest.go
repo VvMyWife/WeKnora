@@ -176,7 +176,7 @@ return proposed
 	// every LLM call routed through generateWithTemplate. 3 was chosen to
 	// absorb transient 504/timeouts from upstream gateways without
 	// materially prolonging task runtime when the remote is genuinely down.
-	wikiLLMMaxAttempts = 3
+	wikiLLMMaxAttempts = 1
 
 	// wikiLLMMaxTokens is the requested completion-token budget. Keep room
 	// for the input prompt inside a 32768-token local vLLM context. Requesting
@@ -324,8 +324,12 @@ const (
 // unexported and excluded from JSON so the persisted payload does not
 // duplicate the column.
 type WikiPendingOp struct {
-	Op          string `json:"op"`
-	KnowledgeID string `json:"knowledge_id"`
+	RecoveryID       int64  `json:"recovery_id,omitempty"`
+	RecoveryDispatch int64  `json:"recovery_dispatch,omitempty"`
+	LastError        string `json:"-"`
+	Deferred         bool   `json:"-"`
+	Op               string `json:"op"`
+	KnowledgeID      string `json:"knowledge_id"`
 	// Ingest fields
 	Language string `json:"language,omitempty"`
 	// Retract fields
@@ -1152,7 +1156,13 @@ func (s *wikiIngestService) trimPendingList(ctx context.Context, ids []int64) er
 // already zero: FinalizeSubtask guards both the decrement (count > 0) and
 // the promote (parse_status = finalizing AND count = 0), so an op enqueued
 // before this accounting shipped is a harmless no-op.
-func (s *wikiIngestService) finalizeWikiSubtask(ctx context.Context, knowledgeID string) {
+func (s *wikiIngestService) finalizeWikiSubtask(ctx context.Context, knowledgeID string, recoveryIDs ...int64) {
+	if len(recoveryIDs) > 1 && recoveryIDs[0] > 0 {
+		if err := completeEnrichmentRecovery(ctx, recoveryIDs[0], recoveryIDs[1], nil); err != nil {
+			logger.Warnf(ctx, "wiki recovery completion: %v", err)
+		}
+		return
+	}
 	// Wiki is only finalized when its op reaches a terminal state, so this is
 	// always an intended drain (retErr=nil, final=true). Detached context: the
 	// wiki batch worker may be mid-shutdown or have a cancelled ctx when this
@@ -1179,7 +1189,36 @@ func (s *wikiIngestService) requeueFailedOps(ctx context.Context, payload WikiIn
 		return nil
 	}
 	var settleErrs []error
+	seen := map[string]bool{}
 	for _, op := range ops {
+		if seen[op.KnowledgeID] {
+			continue
+		}
+		seen[op.KnowledgeID] = true
+		if op.Deferred {
+			if d, ok := s.pendingRepo.(interface {
+				DeferGroup(context.Context, int64) error
+			}); ok {
+				if e := d.DeferGroup(ctx, op.dbID); e != nil {
+					settleErrs = append(settleErrs, e)
+				}
+			} else {
+				if e := s.pendingRepo.ReleaseByIDs(ctx, []int64{op.dbID}); e != nil {
+					settleErrs = append(settleErrs, e)
+				}
+			}
+			continue
+		}
+		if op.RecoveryID > 0 {
+			if err := completeEnrichmentRecovery(ctx, op.RecoveryID, op.RecoveryDispatch, errors.New(op.LastError)); err != nil {
+				settleErrs = append(settleErrs, err)
+				continue
+			}
+			if err := s.pendingRepo.DeleteByIDs(ctx, []int64{op.dbID}); err != nil {
+				settleErrs = append(settleErrs, err)
+			}
+			continue
+		}
 		if op.dbID == 0 {
 			// Op was never persisted (synthetic / test) — nothing to
 			// retry against.
@@ -1226,7 +1265,7 @@ func (s *wikiIngestService) requeueFailedOps(ctx context.Context, payload WikiIn
 				ScopeID:   payload.KnowledgeBaseID,
 				RelatedID: op.KnowledgeID,
 				Payload:   payloadBytes,
-				LastError: fmt.Sprintf("exceeded wikiMaxFailRetries=%d (in-batch retries)", wikiMaxFailRetries),
+				LastError: fmt.Sprintf("exceeded wikiMaxFailRetries=%d: %s", wikiMaxFailRetries, op.LastError),
 				FailCount: count,
 			}); dlErr != nil {
 				logger.Warnf(ctx, "wiki ingest: failed to archive op %s to dead letters: %v", op.KnowledgeID, dlErr)
@@ -1248,9 +1287,11 @@ type wikiIngestPageRef struct {
 }
 
 type docIngestResult struct {
-	KnowledgeID string
-	DocTitle    string
-	Summary     string // one-line summary of the document (from summary page)
+	RecoveryID       int64
+	RecoveryDispatch int64
+	KnowledgeID      string
+	DocTitle         string
+	Summary          string // one-line summary of the document (from summary page)
 	// Pages records the wiki pages this document touched, carrying both
 	// the slug used for link/retract bookkeeping and its human-readable title.
 	Pages []wikiIngestPageRef

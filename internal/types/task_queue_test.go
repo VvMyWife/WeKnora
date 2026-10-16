@@ -14,6 +14,7 @@ func TestQueueDefinitionsAreUniqueAndConsumable(t *testing.T) {
 		WorkerPoolEnrichment:  true,
 		WorkerPoolMaintenance: true,
 		WorkerPoolWiki:        true,
+		WorkerPoolGraph:       true,
 	}
 	seen := make(map[string]bool, len(definitions))
 	seenTaskTypes := make(map[string]string)
@@ -132,5 +133,14 @@ func TestResolveWorkerPoolConcurrencyFallsBackPerPool(t *testing.T) {
 	}
 	if allocation.Shared != DefaultSharedWorkerConcurrency {
 		t.Fatalf("shared = %d, want fallback %d", allocation.Shared, DefaultSharedWorkerConcurrency)
+	}
+}
+
+func TestGraphPoolIsDedicated(t *testing.T) {
+	if QueueWeightsForPool(WorkerPoolGraph)[QueueGraph] != 1 {
+		t.Fatal("graph missing")
+	}
+	if QueueWeightsForPool(WorkerPoolEnrichment)[QueueGraph] != 0 || QueueWeightsForSharedPool()[QueueGraph] != 0 {
+		t.Fatal("graph shared with another pool")
 	}
 }

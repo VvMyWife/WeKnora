@@ -1715,6 +1715,7 @@ type RuntimeWorkerPool struct {
 }
 
 type RuntimeQueuesResponse struct {
+	EnrichmentRetry       map[string]interface{}     `json:"enrichment_retry"`
 	Available             bool                       `json:"available"`
 	UpstreamConcurrency   int                        `json:"upstream_concurrency"`
 	ParseConcurrency      int                        `json:"parse_concurrency"` // compatibility alias for upstream_concurrency
@@ -1734,6 +1735,7 @@ func aggregateRuntimeWorkerPools(pools []RuntimeWorkerPool, servers []types.Work
 		types.WorkerPoolMaintenance: types.QueueWeightsForPool(types.WorkerPoolMaintenance),
 		types.WorkerPoolShared:      types.QueueWeightsForSharedPool(),
 		types.WorkerPoolWiki:        types.QueueWeightsForPool(types.WorkerPoolWiki),
+		types.WorkerPoolGraph:       types.QueueWeightsForPool(types.WorkerPoolGraph),
 	}
 	indexes := make(map[string]int, len(pools))
 	for i := range pools {
@@ -1799,6 +1801,7 @@ func (h *SystemHandler) GetRuntimeQueues(c *gin.Context) {
 		queueCounts[definition.Pool]++
 	}
 	resp := RuntimeQueuesResponse{
+		EnrichmentRetry:     service.EnrichmentRecoveryRuntime(ctx),
 		UpstreamConcurrency: allocation.UpstreamTotal(),
 		ParseConcurrency:    allocation.UpstreamTotal(),
 		WikiConcurrency:     allocation.Wiki,
@@ -1809,6 +1812,7 @@ func (h *SystemHandler) GetRuntimeQueues(c *gin.Context) {
 			{Name: types.WorkerPoolMaintenance, Concurrency: allocation.Maintenance, QueueCount: queueCounts[types.WorkerPoolMaintenance]},
 			{Name: types.WorkerPoolShared, Concurrency: allocation.Shared, QueueCount: len(types.QueueWeightsForSharedPool())},
 			{Name: types.WorkerPoolWiki, Concurrency: allocation.Wiki, QueueCount: queueCounts[types.WorkerPoolWiki]},
+			{Name: types.WorkerPoolGraph, Concurrency: 8, QueueCount: queueCounts[types.WorkerPoolGraph]},
 		},
 		Timestamp: time.Now().Unix(),
 	}

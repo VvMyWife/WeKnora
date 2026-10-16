@@ -35,6 +35,14 @@ func (w *concurrencyChat) GetModelName() string { return w.inner.GetModelName() 
 func (w *concurrencyChat) GetModelID() string   { return w.inner.GetModelID() }
 
 func (w *concurrencyChat) Chat(ctx context.Context, messages []Message, opts *ChatOptions) (*types.ChatResponse, error) {
+	if types.IsGraphTask(ctx) {
+		callCtx, release, err := limiter.AcquireGraph(ctx, w.inner.GetModelID(), w.inner.GetModelName())
+		if err != nil {
+			return nil, err
+		}
+		defer release()
+		return w.inner.Chat(callCtx, messages, opts)
+	}
 	release := limiter.GateNamedN(ctx, w.inner.GetModelID(), w.inner.GetModelName(), w.limit)
 	defer release()
 	return w.inner.Chat(ctx, messages, opts)

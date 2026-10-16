@@ -47,6 +47,18 @@ func (s *wikiIngestService) scheduleFollowUp(ctx context.Context, payload WikiIn
 		return false
 	}
 
+	if next, ok := s.pendingRepo.(interface {
+		NextAvailableAt(context.Context, string, string, string) (time.Time, error)
+	}); ok {
+		at, e := next.NextAvailableAt(ctx, wikiTaskType, wikiTaskScope, payload.KnowledgeBaseID)
+		if e != nil {
+			logger.Warnf(ctx, "wiki next available: %v", e)
+			return false
+		}
+		if wait := time.Until(at); wait > delay {
+			delay = wait
+		}
+	}
 	logger.Infof(ctx, "wiki ingest: %d more documents pending for KB %s, scheduling follow-up in %s", count, payload.KnowledgeBaseID, delay)
 
 	langfuse.InjectTracing(ctx, &payload)
@@ -516,6 +528,7 @@ func (s *wikiIngestService) ProcessWikiIngest(ctx context.Context, t *asynq.Task
 			if err != nil {
 				mapMu.Lock()
 				ingestFailed++
+				op.LastError = err.Error()
 				failedOps = append(failedOps, op)
 				if isLikelyRateLimitError(err) {
 					rateLimited = true
@@ -528,6 +541,8 @@ func (s *wikiIngestService) ProcessWikiIngest(ctx context.Context, t *asynq.Task
 			if result != nil {
 				mapMu.Lock()
 				ingestSucceeded++
+				result.RecoveryID = op.RecoveryID
+				result.RecoveryDispatch = op.RecoveryDispatch
 				docResults = append(docResults, result)
 				docPreview = append(docPreview, fmt.Sprintf("ingest[%s]: title=%s summary=%s", previewText(result.KnowledgeID, 24), previewText(result.DocTitle, 40), previewText(result.Summary, 64)))
 				for _, u := range updates {
@@ -555,12 +570,15 @@ func (s *wikiIngestService) ProcessWikiIngest(ctx context.Context, t *asynq.Task
 				// "finalizing" until the housekeeping sweep marks it
 				// failed. The matching +1 was seeded by
 				// KnowledgePostProcess.SetFinalizing.
-				s.finalizeWikiSubtask(mapCtx, op.KnowledgeID)
+				s.finalizeWikiSubtask(mapCtx, op.KnowledgeID, op.RecoveryID, op.RecoveryDispatch)
 			}
 			return nil
 		})
 	}
 	_ = eg.Wait()
+	if ctx.Err() != nil {
+		return ctx.Err()
+	}
 
 	// Re-read identity claims after every map worker has chosen a slug so
 	// concurrent romanizations of the same title collapse before taxonomy
@@ -599,13 +617,17 @@ func (s *wikiIngestService) ProcessWikiIngest(ctx context.Context, t *asynq.Task
 	// reduce). requeueFailedOps' fail_count budget bounds the retries and
 	// dead-letters a document whose slug fails/stays hot permanently.
 	unappliedSlugKIDs := make(map[string]struct{})
+	unappliedErrors := map[string]error{}
 	// collectUnapplied records every knowledge_id backing a slug we failed
 	// to apply. Caller holds no lock; it takes reduceMu itself.
-	collectUnapplied := func(updates []SlugUpdate) {
+	collectUnapplied := func(updates []SlugUpdate, cause error) {
 		reduceMu.Lock()
 		for _, u := range updates {
 			if u.KnowledgeID != "" {
 				unappliedSlugKIDs[u.KnowledgeID] = struct{}{}
+				if previous := unappliedErrors[u.KnowledgeID]; previous == nil || errors.Is(previous, ErrWikiIngestConcurrent) {
+					unappliedErrors[u.KnowledgeID] = cause
+				}
 			}
 		}
 		reduceMu.Unlock()
@@ -640,7 +662,7 @@ func (s *wikiIngestService) ProcessWikiIngest(ctx context.Context, t *asynq.Task
 				return reduceErr
 			})
 			if lockErr != nil {
-				collectUnapplied(updates)
+				collectUnapplied(updates, lockErr)
 				// ctx cancelled (batch timeout / shutdown) — stop quietly.
 				return nil
 			}
@@ -651,7 +673,7 @@ func (s *wikiIngestService) ProcessWikiIngest(ctx context.Context, t *asynq.Task
 				// them (via the failed-op retry budget) for a later,
 				// hopefully-uncontended batch instead of deleting their rows.
 				logger.Warnf(reduceCtx, "wiki ingest: slug %s busy > %s, deferring update", slug, wikiSlugLockWait)
-				collectUnapplied(updates)
+				collectUnapplied(updates, ErrWikiIngestConcurrent)
 				return nil
 			}
 			if reduceErr != nil {
@@ -660,7 +682,7 @@ func (s *wikiIngestService) ProcessWikiIngest(ctx context.Context, t *asynq.Task
 				// fail_count budget as a map failure) so a later batch retries
 				// instead of silently dropping the row at trim time.
 				logger.Warnf(reduceCtx, "wiki ingest: reduce failed for slug %s: %v", slug, reduceErr)
-				collectUnapplied(updates)
+				collectUnapplied(updates, reduceErr)
 				if isLikelyRateLimitError(reduceErr) {
 					reduceMu.Lock()
 					rateLimited = true
@@ -686,6 +708,9 @@ func (s *wikiIngestService) ProcessWikiIngest(ctx context.Context, t *asynq.Task
 		})
 	}
 	_ = egReduce.Wait()
+	if ctx.Err() != nil {
+		return ctx.Err()
+	}
 
 	tailCtx, tailCancel := wikiIngestCleanupContext(ctx)
 	defer tailCancel()
@@ -793,7 +818,7 @@ func (s *wikiIngestService) ProcessWikiIngest(ctx context.Context, t *asynq.Task
 		// held — the retry (or the dead-letter drain in requeueFailedOps)
 		// releases it once the op reaches a real terminal state.
 		if _, unapplied := unappliedSlugKIDs[r.KnowledgeID]; !unapplied {
-			s.finalizeWikiSubtask(ctx, r.KnowledgeID)
+			s.finalizeWikiSubtask(ctx, r.KnowledgeID, r.RecoveryID, r.RecoveryDispatch)
 		}
 		if r.WikiSpan == nil {
 			continue
@@ -848,6 +873,10 @@ func (s *wikiIngestService) ProcessWikiIngest(ctx context.Context, t *asynq.Task
 			}
 			if _, already := failedKIDs[op.KnowledgeID]; already {
 				continue
+			}
+			if cause := unappliedErrors[op.KnowledgeID]; cause != nil {
+				op.LastError = cause.Error()
+				op.Deferred = errors.Is(cause, ErrWikiIngestConcurrent)
 			}
 			failedOps = append(failedOps, op)
 			failedKIDs[op.KnowledgeID] = struct{}{}
