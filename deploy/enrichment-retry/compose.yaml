@@ -1,12 +1,13 @@
 services:
   app:
-    image: ${ENRICHMENT_APP_IMAGE:-weknora-app:enrichment-retry-20261016}
+    image: ${ENRICHMENT_APP_IMAGE:-weknora-app:archive-mapping-20261016}
     environment:
-      ARCHIVE_MAPPING_LOG_DIR: null
-    # Match the running container; do not activate unrelated pending mounts.
+      ARCHIVE_MAPPING_LOG_DIR: /app/data/processing-logs
+    # Preserve enrichment deployment mounts and persist archive batch logs.
     volumes: !override
       - data-files:/data/files
       - docreader-tmp:/tmp/docreader:ro
       - ./config/config.yaml:/app/config/config.yaml
       - ./skills/preloaded:/app/skills/preloaded
       - /var/run/docker.sock:/var/run/docker.sock
+      - ./data/processing-logs:/app/data/processing-logs

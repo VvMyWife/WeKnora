@@ -64,25 +64,35 @@ less data/processing-logs/知识库ID/archive-mapping/批次ID/status.txt
 
 ```bash
 cd /home/ubuntu/RAG_Weknora
-docker run --rm -v "$PWD:/src" -v "$PWD/.go-modcache:/go/pkg/mod" -v weknora-go-build-cache:/root/.cache/go-build -w /src weknora-builder:pdf-unlimited sh -lc 'go test ./internal/archivemapping ./internal/handler ./internal/router -count=1 && go test ./internal/application/service -run "Archive|Clone|DeleteKnowledge" -count=1 && go build -buildvcs=false -o runtime/WeKnora.archive-mapping-20261015 ./cmd/server'
+docker run --rm -v "$PWD:/src" -v "$PWD/.go-modcache:/go/pkg/mod" -v weknora-go-build-cache:/root/.cache/go-build -w /src weknora-builder:pdf-unlimited sh -lc 'go test ./internal/archivemapping ./internal/handler ./internal/router -count=1 && go test ./internal/application/service -run "Archive|Clone|DeleteKnowledge" -count=1 && go build -buildvcs=false -o runtime/WeKnora.archive-mapping-20261016 ./cmd/server'
 mkdir -p runtime/archive-migrations/versioned runtime/archive-migrations/sqlite
 cp migrations/versioned/000091_archive_mapping.* runtime/archive-migrations/versioned/
 cp migrations/sqlite/000013_archive_mapping.* runtime/archive-migrations/sqlite/
-docker build --progress=plain -f deploy/archive-mapping/Dockerfile.runtime -t weknora-app:archive-mapping-20261015 runtime
+docker build --progress=plain -f deploy/archive-mapping/Dockerfile.runtime -t weknora-app:archive-mapping-20261016 runtime
 docker tag archive-intelligence-ui:0.1.0 archive-intelligence-ui:before-archive-mapping-20261015
 ./frontendctl build custom
 mkdir -p data/processing-logs
 # 日志目录继承当前目录组，便于 ubuntu 从主机读取容器日志
 chmod g+s data/processing-logs
-# 将 deploy/pdf-unlimited/compose.yaml 中 app.image 改为新镜像后：
-docker compose -f docker-compose.yml -f deploy/pdf-unlimited/compose.yaml config --quiet
-docker compose -f docker-compose.yml -f deploy/pdf-unlimited/compose.yaml up -d --no-deps --timeout 120 app
+# 两个覆盖文件均已固定新版；不要漏掉 enrichment-retry 覆盖文件：
+docker compose -f docker-compose.yml -f deploy/pdf-unlimited/compose.yaml -f deploy/enrichment-retry/compose.yaml config --quiet
+docker compose -f docker-compose.yml -f deploy/pdf-unlimited/compose.yaml -f deploy/enrichment-retry/compose.yaml up -d --no-deps --timeout 120 app
 ./frontendctl switch custom
 docker inspect WeKnora-app --format '{{.Config.Image}} {{.State.Health.Status}}'
 docker exec WeKnora-app sha256sum /app/WeKnora
-sha256sum runtime/WeKnora.archive-mapping-20261015
+sha256sum runtime/WeKnora.archive-mapping-20261016
 ```
 
-新版镜像继承 `weknora-app:processing-pause-20261015`，携带新增 PostgreSQL 91 / SQLite 13 迁移，不重建或丢弃现有 VLM、PDF、暂停及日志定制。上线后检查新表存在、后台任务继续运行、样例原件和解析 MD 分别可读、替换与解除关联有效，且知识数量与 chunk ID 未改变。最后记录验收结果并分别提交部署与 custom 前端变更。
+新版镜像继承 `weknora-app:enrichment-retry-20261016`，保留今天新增的图谱独立并发和持久化重试，以及现有 VLM、PDF、暂停及日志定制。携带 PostgreSQL 91 / SQLite 13 档案迁移，底层镜像已有的 92 迁移不删除。上传二进制文件在元数据事务外执行，再锁定发布关联，避免存储资源登记与单连接数据库相互等待；跨文件存储与数据库不承诺原子事务，失败暂存清理和日志用于追踪。
 
-回退：保留映射表、日志和已存原件，恢复 compose 的 app 镜像为 `weknora-app:processing-pause-20261015`；把 `archive-intelligence-ui:before-archive-mapping-20261015` 重新标记为 `archive-intelligence-ui:0.1.0` 后切换 custom。不要执行 down migration、清空数据库或删除原版前端。所有源码回退使用对应提交的 `git revert`，先核对工作树。
+回退：保留映射表、日志和已存原件，使用 `ENRICHMENT_APP_IMAGE=weknora-app:enrichment-retry-20261016` 配合上述三个 compose 文件启动 app；把 `archive-intelligence-ui:before-archive-mapping-20261015` 重新标记为 `archive-intelligence-ui:0.1.0` 后切换 custom。不要执行 down migration、清空数据库或删除原版前端。所有源码回退使用对应提交的 `git revert`，先核对工作树。
+
+## 2026-10-16 实机验收
+
+- 后端 `weknora-app:archive-mapping-20261016` healthy；运行二进制与构建文件 SHA256 一致：`d664ff94b83d7e19d851c654b72a6c459779e810b872db045aabe4cb43c5e952`。
+- custom 前端已在 18180 上线，原版 frontend 不变。正式库 `8575ca20-5e7e-48c4-9fc0-786d979fdf5d` 重启后仍为 paused / active_tasks=0。
+- 独立样例库 `4a75bae0-49e8-479a-b9d6-ecabbb667566`：国家、地方目录各有同名 MD，各自正确匹配对应的两页 PDF。界面批次上传 2/2；实际 auto 预览返回 application/pdf，parsed 返回原 MD。
+- 新批次显示已有原件冲突；明确替换后保存两个版本。重复提交不增加版本，回退旧版、解除关联恢复 MD、再恢复新版均通过 API 实测。
+- 两份样例重解析完成且向量化 2/2，依旧只产生 MD 的一个片段，不读取已关联 PDF 重新 OCR。样例库没有配置摘要模型，因此其摘要失败不属于 embedding 故障，也不作为摘要验收结果。
+- 主机批次 status.txt / events.jsonl 已产生并可由 ubuntu 读取。原件绑定本身不触发解析或模型任务。
+- 自动化目录选择使用 File/DataTransfer 触发真实页面的选择处理；浏览器原生操作系统目录选择器未做自动化验收。路径/权限/配额/事务及生命周期另有后端回归测试。
