@@ -21,6 +21,10 @@ env = dict(os.environ)
 env['REDIS_ADDR'] = redis['NetworkSettings']['Networks'][network]['IPAddress'] + ':6379'
 env['REDIS_PASSWORD'] = config.get('REDIS_PASSWORD','')
 env['REDIS_DB'] = config.get('REDIS_DB','0')
+dicts = sorted(pathlib.Path('.go-modcache/github.com/yanyiwu').glob('gojieba@*/deps/cppjieba/dict'))
+if not dicts:
+    raise SystemExit('persistent gojieba dictionary cache not found')
+env['JIEBA_DICT_DIR'] = str(dicts[-1].resolve())
 peak = 0
 stop = threading.Event()
 def metrics():

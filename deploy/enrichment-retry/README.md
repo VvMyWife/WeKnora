@@ -122,3 +122,19 @@ docker inspect WeKnora-app --format '{{.Config.Image}} {{.State.Health.Status}}'
 ```
 
 9B 如需恢复旧容量，从 `docker-compose-scu.yml.before-enrichment-*` 中选择本次保存的确切备份，核对 diff 后恢复并仅重建 `scu-qwen35-9b`。应用回退本身不要求降低模型容量。不要自动执行数据库 down migration 或整库还原。
+
+## 本次上线验收记录
+
+2026-10-16 10:57（北京时间）：运行镜像为 `weknora-app:enrichment-retry-20261016`，健康状态正常；运行二进制与构建产物 SHA-256 一致，数据库版本 92。9B 容器实际参数为 `max-num-seqs=12`。
+
+真实模型验收输出：
+
+```text
+global_default=2; graph limit=8; active=8; waiting=1
+completed=9 failed=0 provider_http_peak=8
+vllm_running_peak=8
+```
+
+正式知识库保持暂停，634 份文档中 completed=91、finalizing=543；28,306 个未结束计数与对应 Redis 图谱任务逐份完全一致。已依据备份清单恢复 9 份仅被旧 housekeeping 误判的文档、共 10 个计数，未重新解析正文。25 条有效 Wiki 死信为 ready、额外尝试数 0，首次最早在北京时间 12:52 后且知识库恢复处理时派发。
+
+完整证据位于 `runtime/enrichment-delivery-evidence.json`、`runtime/enrichment-live-acceptance.log`、`runtime/enrichment-integration-final.log`、`runtime/enrichment-release-tests.log`。原有三处 archive 未提交改动保留。
