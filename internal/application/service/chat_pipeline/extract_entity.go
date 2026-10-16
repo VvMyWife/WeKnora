@@ -178,7 +178,7 @@ func NewExtractor(
 }
 
 // GraphExtractionMaxTokens is the completion budget for background graph tasks.
-const GraphExtractionMaxTokens = 8192
+const GraphExtractionMaxTokens = 12288
 
 // NewGraphExtractor allows a larger completion for background graph extraction.
 // Query-time entity extraction keeps NewExtractor's smaller default budget.

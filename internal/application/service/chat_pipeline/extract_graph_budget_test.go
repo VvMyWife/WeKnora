@@ -31,7 +31,7 @@ func TestExtractionCompletionBudgets(t *testing.T) {
 		build func(chat.Chat, *types.PromptTemplateStructured) Extractor
 		want  int
 	}{
-		{"background_graph", NewGraphExtractor, 8192},
+		{"background_graph", NewGraphExtractor, 12288},
 		{"query_entities", NewExtractor, 4096},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
