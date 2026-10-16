@@ -213,8 +213,9 @@ func BuildContainer(container *dig.Container) *dig.Container {
 	must(container.Provide(service.NewKBShareService)) // KBShareService must be registered before KnowledgeService and KnowledgeTagService
 	must(container.Provide(service.NewAgentShareService))
 	must(container.Provide(service.NewKnowledgeService))
-	must(container.Decorate(service.AttachArchiveStore))
-	must(container.Decorate(service.AttachExternalChunkStore))
+	must(container.Decorate(func(s interfaces.KnowledgeService, archive *archivemapping.Store, external *externalchunks.Store) interfaces.KnowledgeService {
+		return service.AttachExternalChunkStore(service.AttachArchiveStore(s, archive), external)
+	}))
 	must(container.Provide(service.NewSpanTracker))
 	must(container.Provide(service.NewChunkService))
 	must(container.Provide(service.NewKnowledgeTagService))
@@ -405,8 +406,9 @@ func BuildContainer(container *dig.Container) *dig.Container {
 	must(container.Provide(handler.NewAuditLogHandler))
 	must(container.Provide(handler.NewKnowledgeBaseHandler))
 	must(container.Provide(handler.NewKnowledgeHandler))
-	must(container.Decorate(handler.AttachArchiveStore))
-	must(container.Decorate(handler.AttachExternalChunkStore))
+	must(container.Decorate(func(h *handler.KnowledgeHandler, archive *archivemapping.Store, external *externalchunks.Store) *handler.KnowledgeHandler {
+		return handler.AttachExternalChunkStore(handler.AttachArchiveStore(h, archive), external)
+	}))
 	must(container.Provide(handler.NewChunkHandler))
 	must(container.Provide(handler.NewFAQHandler))
 	must(container.Provide(handler.NewTagHandler))
