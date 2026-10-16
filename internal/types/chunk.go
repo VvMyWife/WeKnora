@@ -3,6 +3,7 @@
 package types
 
 import (
+	"encoding/json"
 	"strings"
 	"time"
 
@@ -204,6 +205,16 @@ func (c *Chunk) EmbeddingContent() string {
 		return ""
 	}
 	body := strings.TrimSpace(c.Content)
+	if c.ContentRevision == 0 && len(c.Metadata) > 0 {
+		var meta struct {
+			External *struct {
+				RetrievalText string `json:"retrieval_text"`
+			} `json:"external_import"`
+		}
+		if json.Unmarshal(c.Metadata, &meta) == nil && meta.External != nil && meta.External.RetrievalText != "" {
+			return meta.External.RetrievalText
+		}
+	}
 	if c.ContextHeader == "" {
 		return body
 	}

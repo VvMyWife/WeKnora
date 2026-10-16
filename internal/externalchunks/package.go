@@ -5,6 +5,7 @@ import (
 	"archive/zip"
 	"bufio"
 	"crypto/sha256"
+	_ "embed"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -17,11 +18,17 @@ import (
 
 const Format = "weknora-chunks-v1"
 
+//go:embed manifest.schema.json
+var manifestSchema []byte
+
+func SchemaHash() string { sum := sha256.Sum256(manifestSchema); return hex.EncodeToString(sum[:]) }
+
 type Entry struct {
 	SHA256 string `json:"sha256"`
 	Size   int64  `json:"size"`
 }
 type Manifest struct {
+	SchemaSHA256     string           `json:"schema_sha256"`
 	Format           string           `json:"format"`
 	PackageID        string           `json:"package_id"`
 	SourceSystem     string           `json:"source_system"`
@@ -134,8 +141,8 @@ func Read(filename string) (*Package, error) {
 		if !SafePath(f.Name) || files[f.Name] != nil || f.Mode()&os.ModeSymlink != 0 || !f.Mode().IsRegular() || f.Flags&1 != 0 {
 			return nil, fmt.Errorf("unsafe/duplicate ZIP member: %s", f.Name)
 		}
-		if f.FileInfo().IsDir() || f.Mode()&0111 != 0 {
-			return nil, fmt.Errorf("directories/executable members not accepted: %s", f.Name)
+		if f.FileInfo().IsDir() {
+			return nil, fmt.Errorf("directory members not accepted: %s", f.Name)
 		}
 		total += f.UncompressedSize64
 		if total > 32<<30 || f.UncompressedSize64 > 32<<30 {
@@ -167,6 +174,9 @@ func Read(filename string) (*Package, error) {
 		return nil, e
 	}
 	m := p.Manifest
+	if m.SchemaSHA256 != SchemaHash() {
+		return nil, fmt.Errorf("protocol schema checksum mismatch")
+	}
 	if m.Format != Format || m.PackageID == "" || m.SourceSystem == "" || m.DatasetID == "" || m.GenerationID == "" {
 		return nil, fmt.Errorf("invalid format or source identity")
 	}

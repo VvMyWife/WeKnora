@@ -13,6 +13,7 @@ import (
 	"github.com/Tencent/WeKnora/internal/application/service/retriever"
 	"github.com/Tencent/WeKnora/internal/common"
 	werrors "github.com/Tencent/WeKnora/internal/errors"
+	"github.com/Tencent/WeKnora/internal/externalchunks"
 	"github.com/Tencent/WeKnora/internal/infrastructure/chunker"
 	"github.com/Tencent/WeKnora/internal/infrastructure/docparser"
 	"github.com/Tencent/WeKnora/internal/logger"
@@ -32,6 +33,9 @@ func (s *knowledgeService) cloneKnowledge(
 	src *types.Knowledge,
 	targetKB *types.KnowledgeBase,
 ) (err error) {
+	if src.Source == "external_chunks" {
+		return werrors.NewBadRequestError("外部分块文档请向目标知识库导入同一 ZIP，避免复制后丢失来源 ID 映射")
+	}
 	if src.ParseStatus != "completed" {
 		logger.GetLogger(ctx).WithField("knowledge_id", src.ID).Errorf("MoveKnowledge parse status is not completed")
 		return nil
@@ -157,6 +161,8 @@ func (s *knowledgeService) processDocumentFromPassage(ctx context.Context,
 
 // ProcessChunksOptions contains options for processing chunks
 type ProcessChunksOptions struct {
+	ExternalPayload          *externalchunks.DocumentPayload
+	ExternalRecordID         string
 	EnableQuestionGeneration bool
 	QuestionCount            int
 	EnableMultimodel         bool
@@ -450,6 +456,18 @@ func (s *knowledgeService) processChunks(ctx context.Context,
 		}
 
 		// Wire up ParentChunkID for child chunks
+		if options.ExternalPayload != nil {
+			original := options.ExternalPayload.Chunks[idx]
+			textChunk.ID = externalchunks.MappedID(options.ExternalRecordID, original.ID)
+			textChunk.SourceContent = original.Content
+			textChunk.Metadata, _ = json.Marshal(map[string]any{"external_import": map[string]any{
+				"record_id": options.ExternalRecordID, "chunk_id": original.ID,
+				"retrieval_text": original.RetrievalText, "context_text": original.ContextText,
+				"source_anchors": original.SourceAnchors, "metadata": original.Metadata,
+			}})
+		}
+
+		// Wire up ParentChunkID for child chunks
 		if hasParentChild && chunkData.ParentIndex >= 0 && chunkData.ParentIndex < len(parentDBChunks) {
 			textChunk.ParentChunkID = parentDBChunks[chunkData.ParentIndex].ID
 		}
@@ -497,7 +515,11 @@ func (s *knowledgeService) processChunks(ctx context.Context,
 	s.beginStage(ctx, knowledge.ID, types.StageChunking, types.JSONMap{
 		"chunks_planned": len(insertChunks),
 	})
-	if err := s.chunkService.CreateChunks(ctx, insertChunks); err != nil {
+	createChunks := s.chunkService.CreateChunks
+	if options.ExternalPayload != nil {
+		createChunks = s.persistExternalChunks
+	}
+	if err := createChunks(ctx, insertChunks); err != nil {
 		knowledge.ParseStatus = types.ParseStatusFailed
 		knowledge.ErrorMessage = err.Error()
 		knowledge.UpdatedAt = time.Now()
@@ -2510,6 +2532,25 @@ func (s *knowledgeService) ReparseKnowledge(
 		return existing, nil
 	}
 
+	if existing.Source == "external_chunks" {
+		r, e := s.externalStore.ForKnowledge(ctx, tenantID, existing.ID)
+		if e != nil {
+			return nil, e
+		}
+		if e = s.cleanupKnowledgeResources(ctx, existing); e != nil {
+			return nil, e
+		}
+		resetKnowledgeForReparse(existing, kb)
+		if e = s.repo.UpdateKnowledge(ctx, existing); e != nil {
+			return nil, e
+		}
+		if e = s.enqueueExternalDocument(ctx, existing, r, reparseAttempt); e != nil {
+			return nil, e
+		}
+		recordReparseStarted()
+		return existing, nil
+	}
+
 	// For non-manual knowledge, cleanup synchronously then enqueue document processing
 	logger.Infof(ctx, "Cleaning up existing resources for knowledge: %s", knowledgeID)
 	if err := s.cleanupKnowledgeResources(ctx, existing); err != nil {
@@ -3296,6 +3337,20 @@ func (s *knowledgeService) ProcessDocument(ctx context.Context, t *asynq.Task) e
 		}
 	}
 	ctx = withAttempt(ctx, attempt)
+
+	if knowledge.Source == "external_chunks" {
+		if externalErr := s.processExternalDocument(ctx, kb, knowledge); externalErr != nil {
+			knowledge.ParseStatus = types.ParseStatusFailed
+			knowledge.ErrorMessage = externalErr.Error()
+			_ = s.repo.UpdateKnowledge(ctx, knowledge)
+			s.failStage(ctx, knowledge.ID, types.StageEmbedding, "EXTERNAL_INDEX_FAILED", externalErr.Error(), externalErr)
+			if r, e := s.externalStore.ForKnowledge(ctx, knowledge.TenantID, knowledge.ID); e == nil {
+				_ = s.externalStore.Update(ctx, r, "failed", "embedding", externalErr.Error())
+			}
+			return externalErr
+		}
+		return nil
+	}
 
 	// 检查多模态配置（仅对文件导入）
 	if payload.FilePath != "" && !payload.EnableMultimodel && IsImageType(payload.FileType) {

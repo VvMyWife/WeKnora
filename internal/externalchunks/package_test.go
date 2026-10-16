@@ -28,7 +28,7 @@ func writePackage(t *testing.T, mutate func(map[string][]byte), corrupt bool) st
 	if mutate != nil {
 		mutate(files)
 	}
-	m := Manifest{Format: Format, PackageID: "test", SourceSystem: "archive-rag", DatasetID: "fixture", GenerationID: "g1", GenerationConfig: json.RawMessage(`{}`), Counts: map[string]int{"documents": 1, "chunks": 1, "source_units": 1}, Files: map[string]Entry{}}
+	m := Manifest{Format: Format, SchemaSHA256: SchemaHash(), PackageID: "test", SourceSystem: "archive-rag", DatasetID: "fixture", GenerationID: "g1", GenerationConfig: json.RawMessage(`{}`), Counts: map[string]int{"documents": 1, "chunks": 1, "source_units": 1}, Files: map[string]Entry{}}
 	for n, b := range files {
 		h := sha256.Sum256(b)
 		m.Files[n] = Entry{hex.EncodeToString(h[:]), int64(len(b))}

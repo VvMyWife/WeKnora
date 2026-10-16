@@ -71,6 +71,11 @@ func RegisterKnowledgeRoutes(r *gin.RouterGroup, handler *handler.KnowledgeHandl
 	kbRead := kb.With(apiKeyRetrieve(apiKeyFullAccess()))
 	{
 		kb.POST("/file", g.OwnedKBOrAdmin(), g.KBAccessWrite("id"), handler.CreateKnowledgeFromFile)
+		kb.POST("/external-chunks/batches", g.OwnedKBOrAdmin(), g.KBAccessWrite("id"), handler.PreviewExternalChunks)
+		kbRead.GET("/external-chunks/batches", g.Viewer(), g.KBAccessRead("id"), handler.ListExternalChunks)
+		kbRead.GET("/external-chunks/batches/:batch_id", g.Viewer(), g.KBAccessRead("id"), handler.GetExternalChunks)
+		kb.POST("/external-chunks/batches/:batch_id/documents/:record_id/start", g.OwnedKBOrAdmin(), g.KBAccessWrite("id"), handler.StartExternalChunks)
+		kbRead.GET("/external-chunks/batches/:batch_id/id-map", g.Viewer(), g.KBAccessRead("id"), handler.ExternalChunkIDMap)
 		kb.POST("/archive-mapping/batches", g.OwnedKBOrAdmin(), g.KBAccessWrite("id"), handler.CreateArchiveBatch)
 		kbRead.GET("/archive-mapping/batches", g.Viewer(), g.KBAccessRead("id"), handler.ListArchiveBatches)
 		kbRead.GET("/archive-mapping/batches/:batch_id", g.Viewer(), g.KBAccessRead("id"), handler.GetArchiveBatch)

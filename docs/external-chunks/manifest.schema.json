@@ -2,9 +2,10 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "urn:archive-intelligence:weknora-chunks-v1:manifest",
   "type": "object",
-  "required": ["format", "package_id", "source_system", "dataset_id", "generation_id", "producer_commit", "generation_config", "counts", "files"],
+  "required": ["format", "schema_sha256", "package_id", "source_system", "dataset_id", "generation_id", "producer_commit", "generation_config", "counts", "files"],
   "properties": {
     "format": {"const": "weknora-chunks-v1"},
+    "schema_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
     "package_id": {"type": "string", "minLength": 1},
     "source_system": {"type": "string", "minLength": 1},
     "dataset_id": {"type": "string", "minLength": 1},

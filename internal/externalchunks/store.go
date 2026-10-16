@@ -6,8 +6,10 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"os"
 	"time"
 
+	"github.com/Tencent/WeKnora/internal/types"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
@@ -56,7 +58,10 @@ type DocumentPayload struct {
 	Chunks      []Chunk      `json:"chunks"`
 	SourceUnits []SourceUnit `json:"source_units"`
 }
-type Store struct{ DB *gorm.DB }
+type Store struct {
+	DB            *gorm.DB
+	RuntimeChecks bool
+}
 
 func NewRuntimeStore(db *gorm.DB) (*Store, error) {
 	for _, table := range []any{&Batch{}, &Record{}, &Membership{}} {
@@ -64,7 +69,7 @@ func NewRuntimeStore(db *gorm.DB) (*Store, error) {
 			return nil, fmt.Errorf("external chunk migration missing")
 		}
 	}
-	return &Store{DB: db}, nil
+	return &Store{DB: db, RuntimeChecks: true}, nil
 }
 func Identity(tenant uint64, kb string, m Manifest, old string) string {
 	raw, _ := json.Marshal([]any{tenant, kb, m.SourceSystem, m.DatasetID, m.GenerationID, old})
@@ -83,13 +88,39 @@ func (s *Store) Plan(ctx context.Context, tenant uint64, kb, filename string, p 
 	b.ManifestJSON = string(raw)
 	var result []Record
 	err := s.DB.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		if e := tx.Clauses(clause.OnConflict{DoNothing: true}).Create(b).Error; e != nil {
-			return e
+		created := tx.Clauses(clause.OnConflict{DoNothing: true}).Create(b)
+		if created.Error != nil {
+			return created.Error
+		}
+		if s.RuntimeChecks && created.RowsAffected == 1 {
+			info, e := os.Stat(filename)
+			if e != nil {
+				return e
+			}
+			reserved := tx.Model(&types.Tenant{}).Where("id = ? AND (storage_quota <= 0 OR storage_used + ? <= storage_quota)", tenant, info.Size()).Update("storage_used", gorm.Expr("storage_used + ?", info.Size()))
+			if reserved.Error != nil {
+				return reserved.Error
+			}
+			if reserved.RowsAffected != 1 {
+				return fmt.Errorf("存储额度不足：无法保存外部分块导入包")
+			}
 		}
 		if e := tx.Where("id = ? AND tenant_id = ? AND knowledge_base_id = ?", b.ID, tenant, kb).First(b).Error; e != nil {
 			return e
 		}
 		for _, d := range p.Documents {
+			if s.RuntimeChecks {
+				folder, file := types.SplitKnowledgeRelativePath(d.RelativePath)
+				var existing types.Knowledge
+				q := tx.Where("tenant_id = ? AND knowledge_base_id = ? AND folder_path = ? AND file_name = ?", tenant, kb, folder, file).Limit(1).Find(&existing)
+				if q.Error != nil {
+					return q.Error
+				}
+				reservedID := MappedID(Identity(tenant, kb, p.Manifest, d.ID), "knowledge")
+				if q.RowsAffected > 0 && existing.ID != reservedID {
+					return fmt.Errorf("相对路径已存在文档 %s（knowledge_id=%s）；本次不覆盖，请使用新知识库", d.RelativePath, existing.ID)
+				}
+			}
 			payload := DocumentPayload{Document: d, Chunks: []Chunk{}, SourceUnits: []SourceUnit{}}
 			for _, c := range p.Chunks {
 				if c.DocumentID == d.ID {
@@ -102,11 +133,27 @@ func (s *Store) Plan(ctx context.Context, tenant uint64, kb, filename string, p 
 				}
 			}
 			raw, _ := json.Marshal(payload)
-			digest := sha256.Sum256(raw)
+			// Parsed attachment bytes are part of source identity too: unchanged
+			// chunks must not silently legitimize a changed preview document.
+			digestInput := append(append([]byte{}, raw...), []byte("\x00"+p.Manifest.Files[d.ParsedFile].SHA256)...)
+			digest := sha256.Sum256(digestInput)
 			id := Identity(tenant, kb, p.Manifest, d.ID)
 			record := Record{ID: id, TenantID: tenant, KnowledgeBaseID: kb, BatchID: b.ID, ExternalDocumentID: d.ID, KnowledgeID: MappedID(id, "knowledge"), RelativePath: d.RelativePath, ContentHash: hex.EncodeToString(digest[:]), Payload: string(raw), Status: "preview", Stage: "import", UpdatedAt: time.Now().UTC()}
-			if e := tx.Clauses(clause.OnConflict{DoNothing: true}).Create(&record).Error; e != nil {
-				return e
+			createdRecord := tx.Clauses(clause.OnConflict{DoNothing: true}).Create(&record)
+			if createdRecord.Error != nil {
+				return createdRecord.Error
+			}
+			if s.RuntimeChecks && createdRecord.RowsAffected == 1 {
+				// Reserve the saved source payload and parsed MD separately from the
+				// retained ZIP; originals reserve their bytes through archive mapping.
+				delta := int64(len(raw)) + p.Manifest.Files[d.ParsedFile].Size
+				q := tx.Model(&types.Tenant{}).Where("id = ? AND (storage_quota <= 0 OR storage_used + ? <= storage_quota)", tenant, delta).Update("storage_used", gorm.Expr("storage_used + ?", delta))
+				if q.Error != nil {
+					return q.Error
+				}
+				if q.RowsAffected != 1 {
+					return fmt.Errorf("存储额度不足：无法保存来源分块和解析文件")
+				}
 			}
 			var actual Record
 			if e := tx.Where("id = ? AND tenant_id = ? AND knowledge_base_id = ?", id, tenant, kb).First(&actual).Error; e != nil {
