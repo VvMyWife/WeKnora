@@ -1,6 +1,6 @@
 services:
   app:
-    image: ${ENRICHMENT_APP_IMAGE:-weknora-app:archive-mapping-20261016}
+    image: ${ENRICHMENT_APP_IMAGE:-weknora-app:wiki-output-12288-20261016}
     environment:
       ARCHIVE_MAPPING_LOG_DIR: /app/data/processing-logs
     # Preserve enrichment deployment mounts and persist archive batch logs.

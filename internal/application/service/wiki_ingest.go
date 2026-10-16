@@ -178,11 +178,11 @@ return proposed
 	// materially prolonging task runtime when the remote is genuinely down.
 	wikiLLMMaxAttempts = 1
 
-	// wikiLLMMaxTokens is the requested completion-token budget. Keep room
-	// for the input prompt inside a 32768-token local vLLM context. Requesting
-	// all 32768 tokens for output makes every non-empty prompt fail with 400.
-	// Large outputs may still need page-level splitting instead of a larger cap.
-	wikiLLMMaxTokens = 8192
+	// wikiLLMMaxTokens leaves input headroom in local model contexts while
+	// allowing combined extraction JSON to exceed the previous 8192-token cap.
+	// This is an output budget, not a model context-length setting; unusually
+	// large outputs can still require splitting instead of a larger cap.
+	wikiLLMMaxTokens = 12288
 
 	// wikiLLMBackoffBase is the base delay for the exponential backoff
 	// between retry attempts. The nth retry waits base << (n-1) — so with
