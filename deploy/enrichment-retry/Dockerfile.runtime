@@ -1,0 +1,4 @@
+FROM weknora-app:pre-enrichment-20261016
+COPY WeKnora /app/WeKnora
+COPY migrations/ /app/migrations/versioned/
+RUN chmod 0755 /app/WeKnora
