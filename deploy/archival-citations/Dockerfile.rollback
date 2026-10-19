@@ -1,0 +1,5 @@
+# Retain the old binary and all old runtime customizations, but keep the new
+# migration source available: an old migrator must still recognize version 94.
+ARG RUNTIME_BASE
+FROM ${RUNTIME_BASE}
+COPY migrations/ /app/migrations/

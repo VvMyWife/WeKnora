@@ -1,0 +1,5 @@
+services:
+  app:
+    image: ${ARCHIVAL_APP_IMAGE:?set ARCHIVAL_APP_IMAGE to the verified release image}
+    environment:
+      ARCHIVAL_CITATIONS_ENABLED: ${ARCHIVAL_CITATIONS_ENABLED:-false}

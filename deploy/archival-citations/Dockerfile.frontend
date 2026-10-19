@@ -1,0 +1,6 @@
+ARG RUNTIME_BASE
+FROM ${RUNTIME_BASE}
+ARG SOURCE_REVISION
+LABEL org.opencontainers.image.revision=${SOURCE_REVISION} \
+      com.yifang.frontend.edition=custom
+COPY dist/ /usr/share/nginx/html/
