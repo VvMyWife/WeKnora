@@ -175,3 +175,107 @@ docker build --pull=false \
 首次维护迁移不会自动执行上述镜像的生产切换。正式部署前，需先说明重启、后台任务和账本衔接影响，并核对正在运行的容器配置。
 保留原镜像和数据库备份。涉及不兼容数据库变更时，回退包含数据库恢复，不能只切回旧镜像。
 仅建立fork和调整Git远端不需要重启应用，也不会自动更新前端。
+
+## 8. 重做隔离数据库验收
+
+以下命令仅操作本次创建的测试容器和测试库，不连接生产容器。先核对专用标记；标记不符立即停止。
+
+~~~bash
+cd /home/ubuntu/RAG_Weknora
+test "$(docker inspect -f '{{index .Config.Labels "ljc.operation"}}' ljc-weknora-migration-postgres)" = weknora-fork-20261019
+docker start ljc-weknora-migration-postgres
+docker exec ljc-weknora-migration-postgres sh -c 'pg_isready -h 127.0.0.1 -U "$POSTGRES_USER"'
+~~~
+
+等待上述TCP检查成功后，恢复专用副本。这会清空 ljc_migration_test 测试库，生产库不在此容器中。
+
+~~~bash
+docker exec ljc-weknora-migration-postgres sh -ec '
+dropdb -U "$POSTGRES_USER" --if-exists --force ljc_migration_test
+createdb -U "$POSTGRES_USER" -T template0 ljc_migration_test
+pg_restore -U "$POSTGRES_USER" -d ljc_migration_test --no-owner --no-privileges --exit-on-error /backup/database.dump
+'
+~~~
+
+再执行第6节的Go恢复验收命令，成功后查询账本应得到90和4，dirty均为false：
+
+~~~bash
+docker exec ljc-weknora-migration-postgres sh -c 'psql -U "$POSTGRES_USER" -d ljc_migration_test -Atc "select version,dirty from schema_migrations; select version,dirty from ljc_schema_migrations;"'
+docker stop ljc-weknora-migration-postgres
+~~~
+
+测试卷和备份保留，停止测试容器不影响生产。
+
+## 9. 当前服务器没有推送密钥时手动发布
+
+本机Windows已有GitHub SSH授权；服务器不复制本机私钥。先在服务器生成仅包含维护分支的Git bundle，完成公开检查后再下载，勿传私有备份：
+
+~~~bash
+cd /home/ubuntu/RAG_Weknora
+python3 scripts/ljc_status.py
+git status --short
+git bundle create /home/ubuntu/weknora-fork-migration/20261019/public-custom.bundle ljc/custom
+git bundle verify /home/ubuntu/weknora-fork-migration/20261019/public-custom.bundle
+~~~
+
+在Windows PowerShell中，进入已有本地克隆目录或准备新的E盘发布目录，下载时隐藏输入Ubuntu密码：
+
+~~~powershell
+New-Item -ItemType Directory -Force E:/weknora-publish | Out-Null
+Set-Location E:/weknora-publish
+@'
+import getpass
+import paramiko
+c = paramiko.SSHClient()
+c.load_system_host_keys()
+c.set_missing_host_key_policy(paramiko.RejectPolicy())
+c.connect("10.20.0.15", username="ubuntu", password=getpass.getpass("Ubuntu SSH password: "), allow_agent=False, look_for_keys=False, timeout=15)
+try:
+    with c.open_sftp() as s:
+        s.get("/home/ubuntu/weknora-fork-migration/20261019/public-custom.bundle", "public-custom.bundle")
+finally:
+    c.close()
+'@ | python -
+~~~
+
+首次连接需通过可信渠道核对服务器SSH主机指纹并保存到known_hosts；不要关闭主机密钥校验。首次发布可建立独立bare仓库：
+
+~~~powershell
+git init --bare publish.git
+git -C publish.git remote add origin git@github.com:VvMyWife/WeKnora.git
+~~~
+
+后续每次在同一目录执行：
+
+~~~powershell
+git -C publish.git fetch ../public-custom.bundle refs/heads/ljc/custom:refs/heads/ljc/custom
+git -C publish.git push origin refs/heads/ljc/custom:refs/heads/ljc/custom
+git -C publish.git ls-remote origin refs/heads/ljc/custom
+~~~
+
+核对输出SHA与服务器git rev-parse HEAD一致。只推指定分支，不使用push --all、--mirror或--force。
+
+## 10. 本次阶段记录与源码回退
+
+| 阶段 | 已完成提交 |
+| --- | --- |
+| 原始服务器定制基线 | 5cb8382b80ac7395feec1654bb92195a9812f44e |
+| 基线与fork维护规则 | a355b077f3e32c6deeebf67d5d790b937b4aef597 |
+| 冻结前端纳入统一源码 | 741624726acbc958380df1d64ca769ea2abd6647 |
+| Git中断检测和冻结校验 | f20cf2fa4f3c5010cf48d004ea0ea82dd9c0e710 |
+| 官方及个人迁移账本隔离 | 250b3299e99a70e016e6707fcd5ec1fa909f2203 |
+| 测试及维护使用说明 | 31634e52c193e0735fbed1327a55d0ff636bf687 |
+
+本次候选后端镜像源提交为31634e52，属于准备完成但未部署的产物。完整对应信息见delivery.json。
+生产仍运行原来的document-graph镜像，生产账本仍为94；只有恢复副本执行了90+4衔接。
+
+查看原始源码无需切换现有前端工作目录，可从保留的原始分支建立独立回退工作区：
+
+~~~bash
+cd /home/ubuntu/RAG_Weknora
+git show --stat 5cb8382b80ac7395feec1654bb92195a9812f44e
+git worktree add -b ljc/rollback-review-YYYYMMDD /home/ubuntu/RAG_Weknora-rollback-YYYYMMDD 5cb8382b80ac7395feec1654bb92195a9812f44e
+~~~
+
+原独立前端Git历史另有frontend.bundle，完整后端历史为backend.bundle，私有配置归档和database.dump均保留在/home/ubuntu/weknora-fork-migration/20261019。
+不要把这些私有恢复材料推送到公开fork。已发布错误优先revert；真正恢复数据库之前必须核对停机范围和备份时间。

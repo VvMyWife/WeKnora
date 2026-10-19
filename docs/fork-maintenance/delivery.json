@@ -1,0 +1,21 @@
+{
+  "fork": "https://github.com/VvMyWife/WeKnora",
+  "authoritative": "/home/ubuntu/RAG_Weknora",
+  "branch": "ljc/custom",
+  "baseline_tag": "ljc-baseline-20261020",
+  "candidate_backend_commit": "31634e52c193e0735fbed1327a55d0ff636bf687",
+  "candidate_image": "weknora-app:ljc-fork-20261019",
+  "candidate_image_id": "sha256:2af4249023eab848e84454c2c9eb7cd7c367c38289ad5e0f2e3afc930e02dbb2",
+  "candidate_binary_sha256": "dc2fb745c96e18297b71b54a2f0e50e43f74bff7fa3fdea0cbb58bccc7d0e512",
+  "state": "source_published_candidate_not_deployed",
+  "production_backend_image": "weknora-app:document-graph-20261019-195330",
+  "production_backend_source_commit": "5cb8382b80ac7395feec1654bb92195a9812f44e",
+  "frozen_frontend_source_commit": "30095372d73d168f659ed859ba770d4722ca696d",
+  "production_database_version": 94,
+  "isolated_verified_database_versions": {
+    "official": 90,
+    "ljc": 4
+  },
+  "upstream_features_imported": [],
+  "frontends_changed": false
+}
