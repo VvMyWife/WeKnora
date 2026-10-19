@@ -648,6 +648,9 @@ const (
 // handler always clamps `Limit` into a safe range before calling the
 // service so external traffic can never request an uncapped graph.
 type WikiGraphRequest struct {
+	Scope           string   // kb (default) | documents
+	KnowledgeIDs    []string // authorized document IDs in this KB; max 50
+	View            string   // union (default) | connections
 	KnowledgeBaseID string
 	Mode            string   // "overview" (default) | "ego"
 	Center          string   // ego mode center slug (required when Mode == "ego")
@@ -671,21 +674,26 @@ type WikiGraphData struct {
 // knowledge base graph. The frontend uses `Truncated` to decide whether to
 // surface a "showing X of Y" hint and to enable ego-expansion UI.
 type WikiGraphMeta struct {
-	Mode      string `json:"mode"`
-	Total     int    `json:"total"`            // total node count in the KB before filtering/limit
-	Returned  int    `json:"returned"`         // number of nodes actually returned
-	Truncated bool   `json:"truncated"`        // true when Returned < Total (after filters)
-	Center    string `json:"center,omitempty"` // populated in ego mode
-	Depth     int    `json:"depth,omitempty"`  // populated in ego mode
+	Scope     string                      `json:"scope,omitempty"`
+	View      string                      `json:"view,omitempty"`
+	Documents []WikiGraphDocumentCoverage `json:"documents,omitempty"`
+	Mode      string                      `json:"mode"`
+	Total     int                         `json:"total"`            // total node count in the KB before filtering/limit
+	Returned  int                         `json:"returned"`         // number of nodes actually returned
+	Truncated bool                        `json:"truncated"`        // true when Returned < Total (after filters)
+	Center    string                      `json:"center,omitempty"` // populated in ego mode
+	Depth     int                         `json:"depth,omitempty"`  // populated in ego mode
 	// FamiliarCount is how many returned nodes are lit up for this person.
 	FamiliarCount int `json:"familiar_count,omitempty"`
 }
 
 // WikiGraphNode represents a node in the wiki link graph
 type WikiGraphNode struct {
-	Slug     string `json:"slug"`
-	Title    string `json:"title"`
-	PageType string `json:"page_type"`
+	SourceKnowledgeIDs []string `json:"source_knowledge_ids,omitempty"`
+	Shared             bool     `json:"shared,omitempty"`
+	Slug               string   `json:"slug"`
+	Title              string   `json:"title"`
+	PageType           string   `json:"page_type"`
 	// Number of inbound + outbound links
 	LinkCount int `json:"link_count"`
 	// Familiar is true when this page was built from a document this person
@@ -696,8 +704,16 @@ type WikiGraphNode struct {
 
 // WikiGraphEdge represents a directed edge in the wiki link graph
 type WikiGraphEdge struct {
-	Source string `json:"source"` // source slug
-	Target string `json:"target"` // target slug
+	CrossSource bool   `json:"cross_source,omitempty"`
+	Source      string `json:"source"` // source slug
+	Target      string `json:"target"` // target slug
+}
+
+// WikiGraphDocumentCoverage counts scoped candidates and visible nodes per document.
+type WikiGraphDocumentCoverage struct {
+	KnowledgeID string `json:"knowledge_id"`
+	Total       int    `json:"total"`
+	Returned    int    `json:"returned"`
 }
 
 // WikiStats provides aggregate statistics about the wiki

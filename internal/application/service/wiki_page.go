@@ -590,6 +590,14 @@ func (s *wikiPageService) GetGraph(ctx context.Context, req *types.WikiGraphRequ
 // caller asked for. Extracted from GetGraph so tests can exercise the
 // mode/limit/type-filter behavior without plumbing a full repository mock.
 func computeGraphSubset(pages []*types.WikiPage, req *types.WikiGraphRequest) (*types.WikiGraphData, error) {
+	var sources map[string][]string
+	if req.Scope == "documents" {
+		var err error
+		pages, sources, err = scopeWikiGraph(pages, req)
+		if err != nil {
+			return nil, err
+		}
+	}
 	mode := req.Mode
 	if mode == "" {
 		mode = types.WikiGraphModeOverview
@@ -733,11 +741,15 @@ func computeGraphSubset(pages []*types.WikiPage, req *types.WikiGraphRequest) (*
 		}
 	}
 
-	return &types.WikiGraphData{
+	graph := &types.WikiGraphData{
 		Nodes: nodes,
 		Edges: edges,
 		Meta:  meta,
-	}, nil
+	}
+	if req.Scope == "documents" {
+		decorateDocumentGraph(graph, pages, sources, req)
+	}
+	return graph, nil
 }
 
 // bfsEgoSlugs computes the undirected BFS neighborhood of `center` up to
