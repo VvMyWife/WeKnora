@@ -47,7 +47,7 @@ func (s *Store) Save(ctx context.Context, tenant uint64, session, message, answe
 	if tenant == 0 || session == "" || message == "" || m.Version != SchemaVersion || len(records) != len(m.Citations) || len(records) > 256 {
 		return fmt.Errorf("invalid citation scope/count")
 	}
-	if m.State != "verified" && m.State != "needs_review" && m.State != "legacy" {
+	if m.State != "verified" && m.State != "needs_review" && m.State != "legacy" && m.State != "not_applicable" {
 		return fmt.Errorf("invalid citation state")
 	}
 	seen := map[string]bool{}

@@ -17,6 +17,10 @@ import (
 )
 
 type ChunkReference struct {
+	WikiPageID      string
+	WikiVersion     int
+	WikiSources     []string
+	WikiChunks      []string
 	Content         string
 	ChunkID         string
 	KnowledgeID     string
@@ -89,6 +93,12 @@ func (r *sourceRegistry) RegisterChunk(ref ChunkReference) string {
 }
 
 func mergeChunkReference(dst *ChunkReference, src ChunkReference) {
+	if dst.WikiPageID == "" {
+		dst.WikiPageID = src.WikiPageID
+		dst.WikiVersion = src.WikiVersion
+		dst.WikiSources = src.WikiSources
+		dst.WikiChunks = src.WikiChunks
+	}
 	if dst.Content == "" {
 		dst.Content = src.Content
 	}

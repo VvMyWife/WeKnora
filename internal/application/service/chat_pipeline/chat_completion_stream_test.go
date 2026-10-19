@@ -2,6 +2,7 @@ package chatpipeline
 
 import (
 	"context"
+	"github.com/Tencent/WeKnora/internal/archivalcitations"
 	"sync"
 	"testing"
 	"time"
@@ -76,6 +77,47 @@ func (m *openStreamChat) GetModelID() string   { return "mock" }
 type stubModelService struct {
 	interfaces.ModelService
 	model chat.Chat
+}
+
+type controlledCitationStream struct {
+	openStreamChat
+	stream chan types.StreamResponse
+}
+
+func (m *controlledCitationStream) ChatStream(context.Context, []chat.Message, *chat.ChatOptions) (<-chan types.StreamResponse, error) {
+	return m.stream, nil
+}
+
+func TestCitationCompletionWaitsForProviderDrain(t *testing.T) {
+	t.Setenv("ARCHIVAL_CITATIONS_ENABLED", "true")
+	bus := &syncEventBus{}
+	model := &controlledCitationStream{stream: make(chan types.StreamResponse, 2)}
+	model.stream <- types.StreamResponse{ResponseType: types.ResponseTypeAnswer, Content: "answer"}
+	model.stream <- types.StreamResponse{ResponseType: types.ResponseTypeAnswer, Done: true}
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	ctx = archivalcitations.WithScope(ctx, archivalcitations.NewStore(nil), 1, "s", "m")
+	cm := &types.ChatManage{}
+	cm.SessionID = "s"
+	cm.UserContent = "question"
+	cm.EventBus = bus
+	plugin := &PluginChatCompletionStream{modelService: &stubModelService{model: model}}
+	require.Nil(t, plugin.OnEvent(ctx, types.CHAT_COMPLETION_STREAM, cm, func() *PluginError { return nil }))
+	countDone := func() int {
+		bus.mu.Lock()
+		defer bus.mu.Unlock()
+		count := 0
+		for _, evt := range bus.events {
+			if data, ok := evt.Data.(event.AgentFinalAnswerData); ok && data.Done {
+				count++
+			}
+		}
+		return count
+	}
+	require.Eventually(t, func() bool { return len(bus.finalAnswerContents()) >= 2 }, 2*time.Second, 5*time.Millisecond)
+	require.Zero(t, countDone(), "repair must not run while provider still owns stream resources")
+	close(model.stream)
+	require.Eventually(t, func() bool { return countDone() == 1 }, 2*time.Second, 5*time.Millisecond)
 }
 
 func (s *stubModelService) GetChatModel(context.Context, string) (chat.Chat, error) {

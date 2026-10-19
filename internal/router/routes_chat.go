@@ -30,6 +30,7 @@ func RegisterMessageRoutes(r *gin.RouterGroup, handler *handler.MessageHandler, 
 		chatMessages.GET("/:session_id/load", g.Viewer(), handler.LoadMessages)
 		chatMessages.GET("/:session_id/:id/citations", g.Viewer(), handler.GetMessageCitations)
 		chatMessages.GET("/:session_id/:id/citations/:citation_id", g.Viewer(), handler.GetMessageCitation)
+		chatMessages.GET("/:session_id/:id/citations/:citation_id/origins/:origin_id/chunks/:chunk_id", g.Viewer(), handler.GetCitationOriginChunk)
 		chatMessages.DELETE("/:session_id/:id", g.Viewer(), handler.DeleteMessage)
 	}
 }

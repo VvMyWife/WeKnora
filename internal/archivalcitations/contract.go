@@ -30,19 +30,26 @@ type Location struct {
 	Reason string `json:"reason,omitempty"`
 }
 type Summary struct {
-	ID               string   `json:"id"`
-	Number           int      `json:"number"`
-	ChunkID          string   `json:"chunk_id"`
-	KnowledgeID      string   `json:"knowledge_id"`
-	KnowledgeBaseID  string   `json:"knowledge_base_id"`
-	Title            string   `json:"title"`
-	ContentRevision  int      `json:"content_revision"`
-	ContentSHA256    string   `json:"content_sha256"`
-	ArchiveVersionID string   `json:"archive_version_id,omitempty"`
-	ArchiveFileName  string   `json:"archive_file_name,omitempty"`
-	ArchiveSHA256    string   `json:"archive_sha256,omitempty"`
-	SourceKind       string   `json:"source_kind"`
-	Location         Location `json:"location"`
+	WikiPageID       string         `json:"wiki_page_id,omitempty"`
+	Origins          []SourceOrigin `json:"origins,omitempty"`
+	ID               string         `json:"id"`
+	Number           int            `json:"number"`
+	ChunkID          string         `json:"chunk_id"`
+	KnowledgeID      string         `json:"knowledge_id"`
+	KnowledgeBaseID  string         `json:"knowledge_base_id"`
+	Title            string         `json:"title"`
+	ContentRevision  int            `json:"content_revision"`
+	ContentSHA256    string         `json:"content_sha256"`
+	ArchiveVersionID string         `json:"archive_version_id,omitempty"`
+	ArchiveFileName  string         `json:"archive_file_name,omitempty"`
+	ArchiveSHA256    string         `json:"archive_sha256,omitempty"`
+	SourceKind       string         `json:"source_kind"`
+	Location         Location       `json:"location"`
+}
+type SourceOrigin struct {
+	KnowledgeID string   `json:"knowledge_id"`
+	Title       string   `json:"title"`
+	ChunkIDs    []string `json:"chunk_ids"`
 }
 type UnboundBlock struct {
 	Index  int    `json:"index"`

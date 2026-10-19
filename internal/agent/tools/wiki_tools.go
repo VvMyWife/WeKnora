@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/Tencent/WeKnora/internal/archivalcitations"
 	"regexp"
 	"strings"
 	"sync"
@@ -384,8 +385,17 @@ func (p pendingWikiPage) render(body string) string {
 // It returns the joined output plus the slugs whose body was trimmed and the
 // slugs that were not rendered at all.
 func renderWikiPagesWithinBudget(pages []pendingWikiPage, budget int) (string, []string, []string) {
+	output, truncated, omitted, _ := renderWikiPagesWithEvidence(pages, budget)
+	return output, truncated, omitted
+}
+
+func wikiEvidenceRow(p pendingWikiPage, body string) map[string]interface{} {
+	return map[string]interface{}{"wiki_page_id": p.page.ID, "chunk_id": p.page.ID, "knowledge_base_id": p.kbID, "knowledge_title": p.page.Title, "chunk_type": "wiki_page", "content": body, "wiki_version": p.page.Version, "source_refs": []string(p.page.SourceRefs), "chunk_refs": []string(p.page.ChunkRefs)}
+}
+
+func renderWikiPagesWithEvidence(pages []pendingWikiPage, budget int) (string, []string, []string, []map[string]interface{}) {
 	if len(pages) == 0 {
-		return "", nil, nil
+		return "", nil, nil, nil
 	}
 
 	const separator = "\n\n"
@@ -405,7 +415,13 @@ func renderWikiPagesWithinBudget(pages []pendingWikiPage, budget int) (string, [
 
 	usable := budget - wikiBudgetReserve
 	if usable <= 0 || total <= usable {
-		return strings.Join(rendered, separator), nil, nil
+		var evidence []map[string]interface{}
+		if archivalcitations.Enabled() {
+			for _, p := range pages {
+				evidence = append(evidence, wikiEvidenceRow(p, p.body))
+			}
+		}
+		return strings.Join(rendered, separator), nil, nil, evidence
 	}
 
 	fixedCost := func(keep int) int {
@@ -428,9 +444,13 @@ func renderWikiPagesWithinBudget(pages []pendingWikiPage, budget int) (string, [
 	caps := splitBudgetFairly(usable-fixedCost(keep), bodySizes[:keep])
 	outputs := make([]string, keep)
 	var truncated []string
+	var evidence []map[string]interface{}
 	for i := 0; i < keep; i++ {
 		if caps[i] >= bodySizes[i] {
 			outputs[i] = rendered[i]
+			if archivalcitations.Enabled() {
+				evidence = append(evidence, wikiEvidenceRow(pages[i], pages[i].body))
+			}
 			continue
 		}
 		body := "(body omitted: output budget exhausted)"
@@ -438,9 +458,12 @@ func renderWikiPagesWithinBudget(pages []pendingWikiPage, budget int) (string, [
 			body = TruncateToolOutput(pages[i].body, caps[i])
 		}
 		outputs[i] = pages[i].render(body)
+		if archivalcitations.Enabled() {
+			evidence = append(evidence, wikiEvidenceRow(pages[i], body))
+		}
 		truncated = append(truncated, pages[i].page.Slug)
 	}
-	return strings.Join(outputs, separator), truncated, omitted
+	return strings.Join(outputs, separator), truncated, omitted, evidence
 }
 
 type wikiReadPageTool struct {
@@ -713,7 +736,7 @@ func (t *wikiReadPageTool) Execute(ctx context.Context, args json.RawMessage) (*
 		return &types.ToolResult{Success: false, Error: strings.Join(errs, "; ")}, nil
 	}
 
-	finalOutput, truncatedSlugs, omittedSlugs := renderWikiPagesWithinBudget(pending, OutputBudget(ctx))
+	finalOutput, truncatedSlugs, omittedSlugs, archivalPages := renderWikiPagesWithEvidence(pending, OutputBudget(ctx))
 	if len(omittedSlugs) > 0 {
 		finalOutput += fmt.Sprintf(
 			"\n\n<omitted_pages reason=\"output budget exceeded\">\n%s\n</omitted_pages>"+
@@ -739,10 +762,11 @@ func (t *wikiReadPageTool) Execute(ctx context.Context, args json.RawMessage) (*
 		Success: true,
 		Output:  finalOutput,
 		Data: map[string]interface{}{
-			"found_kbs":       foundKBs,
-			"ambiguous_slugs": ambiguous,
-			"truncated_slugs": truncatedSlugs,
-			"omitted_slugs":   omittedSlugs,
+			"found_kbs":           foundKBs,
+			"ambiguous_slugs":     ambiguous,
+			"truncated_slugs":     truncatedSlugs,
+			"omitted_slugs":       omittedSlugs,
+			"archival_wiki_pages": archivalPages,
 		},
 	}, nil
 }

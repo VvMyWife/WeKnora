@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/Tencent/WeKnora/internal/archivalcitations"
 	"github.com/Tencent/WeKnora/internal/modelcontext"
 
 	"github.com/Tencent/WeKnora/internal/event"
@@ -116,6 +117,7 @@ func (p *PluginChatCompletionStream) OnEvent(ctx context.Context,
 		answerID := fmt.Sprintf("%s-answer", uuid.New().String()[:8])
 		thinkingOpen := false
 		answerCompleted := false
+		deferCitationCompletion := archivalcitations.FromContext(ctx) != nil
 
 		closeThinking := func() {
 			if !thinkingOpen {
@@ -172,6 +174,11 @@ func (p *PluginChatCompletionStream) OnEvent(ctx context.Context,
 				if !ok {
 					flushDecoders()
 					closeThinking()
+					// Drain the provider completely before a completion callback can
+					// acquire the same model semaphore for additive citation repair.
+					if deferCitationCompletion && answerCompleted {
+						eventBus.Emit(ctx, types.Event{ID: answerID, Type: types.EventType(event.EventAgentFinalAnswer), SessionID: chatManage.SessionID, Data: event.AgentFinalAnswerData{Done: true}})
+					}
 					pipelineInfo(ctx, "Stream", "channel_close", map[string]interface{}{
 						"session_id": chatManage.SessionID,
 					})
@@ -239,7 +246,7 @@ func (p *PluginChatCompletionStream) OnEvent(ctx context.Context,
 						SessionID: chatManage.SessionID,
 						Data: event.AgentFinalAnswerData{
 							Content: response.Content,
-							Done:    response.Done,
+							Done:    response.Done && !deferCitationCompletion,
 						},
 					})
 				}

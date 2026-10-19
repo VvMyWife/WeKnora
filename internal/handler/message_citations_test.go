@@ -38,6 +38,76 @@ func (s *citationKnowledgeStub) GetKnowledgeByIDOnly(context.Context, string) (*
 	}
 	return &types.Knowledge{ID: "k", TenantID: 1, KnowledgeBaseID: "kb"}, nil
 }
+
+type citationKBStub struct {
+	interfaces.KnowledgeBaseService
+	foreign bool
+}
+
+func (s *citationKBStub) GetKnowledgeBaseByID(context.Context, string) (*types.KnowledgeBase, error) {
+	tenant := uint64(1)
+	if s.foreign {
+		tenant = 2
+	}
+	return &types.KnowledgeBase{ID: "kb", TenantID: tenant}, nil
+}
+
+func TestWikiCitationAndOriginReadsRecheckLivePermissions(t *testing.T) {
+	t.Setenv("ARCHIVAL_CITATIONS_ENABLED", "true")
+	db, e := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
+	require.NoError(t, e)
+	require.NoError(t, db.AutoMigrate(&archivalcitations.Record{}, &archivalcitations.ManifestRecord{}))
+	require.NoError(t, db.Exec("CREATE TABLE wiki_pages(id TEXT,knowledge_base_id TEXT,tenant_id INTEGER,content TEXT,version INTEGER,deleted_at DATETIME)").Error)
+	require.NoError(t, db.Exec("INSERT INTO wiki_pages VALUES('wiki','kb',1,'current wiki',2,NULL)").Error)
+	require.NoError(t, db.Exec("CREATE TABLE chunks(id TEXT PRIMARY KEY,tenant_id INTEGER,knowledge_id TEXT,content TEXT,content_revision INTEGER,deleted_at DATETIME)").Error)
+	require.NoError(t, db.Exec("INSERT INTO chunks VALUES('origin',1,'k','current origin',3,NULL)").Error)
+	store := archivalcitations.NewStore(db)
+	sum := archivalcitations.Summary{ID: archivalcitations.EvidenceID(1, "s", "m", "wiki", "old wiki", "", 1), Number: 1, ChunkID: "wiki", WikiPageID: "wiki", KnowledgeBaseID: "kb", SourceKind: "derived", ContentRevision: 1, ContentSHA256: archivalcitations.Hash("old wiki"), Location: archivalcitations.Location{Status: archivalcitations.PageMissing, Pages: []int{}}, Origins: []archivalcitations.SourceOrigin{{KnowledgeID: "k", Title: "source", ChunkIDs: []string{"origin"}}}}
+	require.NoError(t, store.Save(context.Background(), 1, "s", "m", "answer", archivalcitations.Manifest{Version: 1, State: "verified", Citations: []archivalcitations.Summary{sum}}, []archivalcitations.Record{{ID: sum.ID, TenantID: 1, KnowledgeTenantID: 1, SessionID: "s", MessageID: "m", ChunkID: "wiki", Snapshot: "old wiki"}}))
+	kb := &citationKBStub{}
+	sources := &citationKnowledgeStub{}
+	h := AttachMessageCitationStore(&MessageHandler{MessageService: &citationMessageStub{}}, store, &KnowledgeHandler{kgService: sources, kbService: kb})
+	run := func(origin bool, chunk string) (*httptest.ResponseRecorder, *gin.Context) {
+		w := httptest.NewRecorder()
+		c, _ := gin.CreateTestContext(w)
+		c.Request = httptest.NewRequest("GET", "/", nil).WithContext(context.WithValue(context.Background(), types.TenantIDContextKey, uint64(1)))
+		c.Set(types.TenantIDContextKey.String(), uint64(1))
+		c.Params = gin.Params{{Key: "session_id", Value: "s"}, {Key: "id", Value: "m"}, {Key: "citation_id", Value: sum.ID}, {Key: "origin_id", Value: "k"}, {Key: "chunk_id", Value: chunk}}
+		if origin {
+			h.GetCitationOriginChunk(c)
+		} else {
+			h.GetMessageCitation(c)
+		}
+		return w, c
+	}
+	w, c := run(false, "")
+	require.Empty(t, c.Errors)
+	require.Contains(t, w.Body.String(), "old wiki")
+	require.Contains(t, w.Body.String(), "current wiki")
+	w, c = run(true, "origin")
+	require.Empty(t, c.Errors)
+	require.Contains(t, w.Body.String(), "current_source_not_snapshot")
+	w, c = run(true, "not-recorded")
+	require.NotEmpty(t, c.Errors)
+	require.NotContains(t, w.Body.String(), "current origin")
+	sources.denied = true
+	w, c = run(false, "")
+	require.Empty(t, c.Errors)
+	require.NotContains(t, w.Body.String(), `"origins"`)
+	w, c = run(true, "origin")
+	require.NotEmpty(t, c.Errors)
+	require.NotContains(t, w.Body.String(), "current origin")
+	sources.denied = false
+	kb.foreign = true
+	w, c = run(false, "")
+	require.NotEmpty(t, c.Errors)
+	require.NotContains(t, w.Body.String(), "old wiki")
+	kb.foreign = false
+	require.NoError(t, db.Exec("UPDATE wiki_pages SET deleted_at=CURRENT_TIMESTAMP").Error)
+	w, c = run(false, "")
+	require.NotEmpty(t, c.Errors)
+	require.NotContains(t, w.Body.String(), "old wiki")
+}
 func TestCitationReadsRespectMessageAndCurrentSourceAccess(t *testing.T) {
 	t.Setenv("ARCHIVAL_CITATIONS_ENABLED", "true")
 	db, e := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})

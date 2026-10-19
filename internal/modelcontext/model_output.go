@@ -47,7 +47,17 @@ func (r *sourceRegistry) ModelOutput(result *types.ToolResult) string {
 	default:
 		r.registerLabeledReferences(result.Output)
 		r.registerStructuredReferences(result.Output)
-		return r.CompactKnownText(result.Output)
+		output := r.CompactKnownText(result.Output)
+		for _, row := range mapsValue(result.Data["archival_wiki_pages"]) {
+			pageID := stringValue(row, "wiki_page_id")
+			body := stringValue(row, "content")
+			if pageID == "" || body == "" {
+				continue
+			}
+			handle := r.RegisterChunk(ChunkReference{ChunkID: pageID, WikiPageID: pageID, WikiVersion: intValue(row, "wiki_version"), WikiSources: stringSliceValue(row["source_refs"]), WikiChunks: stringSliceValue(row["chunk_refs"]), Content: body, KnowledgeBaseID: stringValue(row, "knowledge_base_id"), DocumentTitle: stringValue(row, "knowledge_title"), ChunkType: "wiki_page"})
+			output += fmt.Sprintf("\n<source_binding id=\"%s\" type=\"derived_wiki\" title=\"%s\">Cite this handle only for the supplied Wiki page body; it is not direct PDF evidence.</source_binding>", escapeAttr(handle), escapeAttr(stringValue(row, "knowledge_title")))
+		}
+		return output
 	}
 }
 

@@ -553,6 +553,12 @@ func (h *AgentStreamHandler) handleFinalAnswer(ctx context.Context, evt event.Ev
 	if data.IsFallback {
 		metadata["is_fallback"] = true
 	}
+	// Keep the answer provisional until the complete event carries its
+	// canonical text and persisted evidence manifest (normal QA and agent).
+	archivalPending := data.Done && archivalcitations.FromContext(h.ctx) != nil
+	if archivalPending {
+		metadata["archival_citations_pending"] = true
+	}
 	h.mu.Unlock()
 
 	// Append this chunk to stream (frontend will accumulate by event ID)
@@ -560,7 +566,7 @@ func (h *AgentStreamHandler) handleFinalAnswer(ctx context.Context, evt event.Ev
 		ID:        evt.ID,
 		Type:      types.ResponseTypeAnswer,
 		Content:   data.Content, // Just this chunk
-		Done:      data.Done,
+		Done:      data.Done && !archivalPending,
 		Timestamp: time.Now(),
 		Data:      metadata,
 	}); err != nil {
@@ -772,6 +778,7 @@ func (h *AgentStreamHandler) handleComplete(ctx context.Context, evt event.Event
 		answer, manifest, err := scope.Finalize(h.ctx, h.assistantMessage.Content)
 		if err != nil {
 			logger.Warnf(h.ctx, "archival citation completion failed message=%s: %v", h.assistantMessageID, err)
+			citationManifest = &archivalcitations.Manifest{Version: 1, State: "validation_failed", Citations: []archivalcitations.Summary{}, Unbound: []archivalcitations.UnboundBlock{}}
 		} else {
 			h.assistantMessage.Content = answer
 			citationManifest = manifest
