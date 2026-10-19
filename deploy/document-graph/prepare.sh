@@ -18,15 +18,18 @@ backend_revision="$(git rev-parse HEAD)"
 frontend_revision="$(git -C frontend-custom rev-parse HEAD)"
 app_base="$(docker inspect -f '{{.Image}}' WeKnora-app)"
 ui_base="$(docker inspect -f '{{.Image}}' WeKnora-frontend-custom-preview)"
+docker tag "$app_base" "weknora-app:document-graph-base-$release_tag"
+docker tag "$ui_base" "archive-intelligence-ui:document-graph-base-$release_tag"
 docker run --rm -v "$PWD:/src" -v "$PWD/.go-modcache:/go/pkg/mod" -v weknora-go-build-cache:/root/.cache/go-build -w /src weknora-builder:archival-citations \
  sh -c "go test ./internal/application/repository ./internal/application/service ./internal/handler ./internal/router -count=1 && go build -buildvcs=false -o 'runtime/document-graph/$release_tag/WeKnora' ./cmd/server" > "$release_dir/backend-build.log" 2>&1
 docker run --rm -v "$PWD:/src" -w /src/frontend-custom node:22-bookworm \
  sh -c 'npm run type-check && npm test -- src/views/knowledge/wiki/documentGraphScope.test.ts && npm run build' > "$release_dir/frontend-build.log" 2>&1
 cp -a frontend-custom/dist "$release_dir/dist"
+cp deploy/document-graph/dockerignore.release "$release_dir/.dockerignore"
 app_image="weknora-app:document-graph-$release_tag"
 ui_image="archive-intelligence-ui:document-graph-$release_tag"
-docker build --build-arg "RUNTIME_BASE=$app_base" --build-arg "SOURCE_REVISION=$backend_revision" -f deploy/document-graph/Dockerfile.app -t "$app_image" "$release_dir" > "$release_dir/app-image.log" 2>&1
-docker build --build-arg "RUNTIME_BASE=$ui_base" --build-arg "SOURCE_REVISION=$frontend_revision" -f deploy/document-graph/Dockerfile.frontend -t "$ui_image" "$release_dir" > "$release_dir/frontend-image.log" 2>&1
+docker build --build-arg "RUNTIME_BASE=weknora-app:document-graph-base-$release_tag" --build-arg "SOURCE_REVISION=$backend_revision" -f deploy/document-graph/Dockerfile.app -t "$app_image" "$release_dir" > "$release_dir/app-image.log" 2>&1
+docker build --build-arg "RUNTIME_BASE=archive-intelligence-ui:document-graph-base-$release_tag" --build-arg "SOURCE_REVISION=$frontend_revision" -f deploy/document-graph/Dockerfile.frontend -t "$ui_image" "$release_dir" > "$release_dir/frontend-image.log" 2>&1
 python3 - "$release_dir" "$backend_revision" "$frontend_revision" "$app_image" "$ui_image" <<'PY'
 import hashlib,json,pathlib,subprocess,sys
 folder,backend,frontend,app,ui=sys.argv[1:]
