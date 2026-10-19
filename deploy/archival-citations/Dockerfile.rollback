@@ -3,3 +3,5 @@
 ARG RUNTIME_BASE
 FROM ${RUNTIME_BASE}
 COPY migrations/ /app/migrations/
+RUN find /app/migrations -type d -exec chmod 0755 {} + \
+ && find /app/migrations -type f -exec chmod 0644 {} +

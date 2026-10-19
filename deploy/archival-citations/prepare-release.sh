@@ -35,6 +35,9 @@ cp migrations/sqlite/000015_archival_citations.*.sql "$release_dir/migrations/sq
 cp -a frontend-custom/dist "$release_dir/dist"
 docker build --build-arg "RUNTIME_BASE=weknora-app:archival-base-$release_tag" --build-arg "SOURCE_REVISION=$backend_revision" -f deploy/archival-citations/Dockerfile.app -t "$app_image" "$release_dir" > "$release_dir/app-image.log" 2>&1
 docker build --build-arg "RUNTIME_BASE=weknora-app:archival-base-$release_tag" -f deploy/archival-citations/Dockerfile.rollback -t "$rollback_image" "$release_dir" > "$release_dir/rollback-image.log" 2>&1
+for candidate in "$app_image" "$rollback_image"; do
+ docker run --rm --user appuser --entrypoint sh "$candidate" -c 'test -r /app/migrations/versioned/000094_archival_citations.up.sql && test -x /app/migrations/versioned && test -x /app/WeKnora'
+done
 docker build --build-arg "RUNTIME_BASE=archive-intelligence-ui:archival-base-$release_tag" --build-arg "SOURCE_REVISION=$frontend_revision" -f deploy/archival-citations/Dockerfile.frontend -t "$frontend_image" "$release_dir" > "$release_dir/frontend-image.log" 2>&1
 python3 - "$release_dir" "$backend_revision" "$frontend_revision" "$app_image" "$frontend_image" "$rollback_image" <<'PY'
 import hashlib,json,pathlib,subprocess,sys
