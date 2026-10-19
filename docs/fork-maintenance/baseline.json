@@ -1,0 +1,12 @@
+{
+  "authoritative": "/home/ubuntu/RAG_Weknora",
+  "backend_head": "5cb8382b80ac7395feec1654bb92195a9812f44e",
+  "frontend_head": "30095372d73d168f659ed859ba770d4722ca696d",
+  "upstream_base": "1edcd54b43606d9079bb36650efe3f68707a79ea",
+  "original_branch": "frontend-custom",
+  "original_fetch_origin": "https://gitee.com/mirrors/WeKnora.git",
+  "original_push_origin": "no-push://local-only",
+  "public_fork": "https://github.com/VvMyWife/WeKnora",
+  "frontend_frozen": true,
+  "migration_changes_applied_to_production": false
+}
