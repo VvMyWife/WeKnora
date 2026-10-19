@@ -20,6 +20,11 @@ func TestListDocumentGraphExactProjectionAndOwnership(t *testing.T) {
 		require.NoError(t, db.Create(p).Error)
 	}
 	r := &wikiPageRepository{db: db}
+	// Historical index/derived pages may contain JSON null or scalar refs.
+	// None is a source array; queries must skip them rather than fail the KB.
+	for _, raw := range []string{"null", `"a"`, `42`, `{}`, `[]`} {
+		require.NoError(t, db.Exec(`INSERT INTO wiki_pages(id,tenant_id,knowledge_base_id,slug,source_refs) VALUES (?,1,'kb',?,?)`, "legacy-"+raw, "legacy-"+raw, raw).Error)
+	}
 	pages, err := r.ListDocumentGraph(context.Background(), "kb", []string{"a", "a"})
 	require.NoError(t, err)
 	require.Len(t, pages, 1)
