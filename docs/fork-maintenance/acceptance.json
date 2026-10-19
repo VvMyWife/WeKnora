@@ -1,0 +1,25 @@
+{
+  "frontend_typecheck": "passed",
+  "frontend_functional_tests": 10,
+  "git_guard_tests": 5,
+  "backend_packages_passed": [
+    "database",
+    "archivemapping",
+    "archivalcitations",
+    "externalchunks",
+    "processingcontrol",
+    "modelcontext",
+    "application/repository",
+    "application/service",
+    "handler",
+    "router"
+  ],
+  "backend_build": "passed",
+  "postgres_restore_test": "passed on dedicated isolated restored database",
+  "legacy_postgres_version": 94,
+  "isolated_postgres_official_version": 90,
+  "isolated_postgres_ljc_version": 4,
+  "production_database_untouched": true,
+  "upstream_features_imported": [],
+  "production_app_unchanged": true
+}

@@ -1,3 +1,7 @@
+## ljc 定制维护
+
+分阶段Git维护、冻结前端、测试构建和回退说明见 [维护README](docs/fork-maintenance/README.md)。
+
 # WeKnora v0.8.0 部署与测试说明
 
 本目录是 WeKnora 的唯一项目边界：源代码、构建覆盖、OCR/BGE-M3 适配、评测数据、日志与报告都放在 `/home/ubuntu/RAG_Weknora`。现有 `/home/ubuntu/RAG`、OCR、vLLM 和其数据均不写入、不重启。
