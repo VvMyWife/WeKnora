@@ -578,7 +578,19 @@ func (s *wikiPageService) GetGraph(ctx context.Context, req *types.WikiGraphRequ
 		return nil, errors.New("wiki graph request is required")
 	}
 
-	pages, err := s.repo.ListAll(ctx, req.KnowledgeBaseID)
+	var pages []*types.WikiPage
+	var err error
+	if req.Scope == "documents" {
+		scoped, ok := s.repo.(interface {
+			ListDocumentGraph(context.Context, string, []string) ([]*types.WikiPage, error)
+		})
+		if !ok {
+			return nil, errors.New("document graph repository is unavailable")
+		}
+		pages, err = scoped.ListDocumentGraph(ctx, req.KnowledgeBaseID, req.KnowledgeIDs)
+	} else {
+		pages, err = s.repo.ListAll(ctx, req.KnowledgeBaseID)
+	}
 	if err != nil {
 		return nil, err
 	}

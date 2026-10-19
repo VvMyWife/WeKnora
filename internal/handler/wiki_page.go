@@ -867,9 +867,17 @@ func (h *WikiPageHandler) GetGraph(c *gin.Context) {
 	if h.memoryService != nil {
 		req.FamiliarKnowledgeIDs = h.memoryService.FamiliarKnowledgeIDs(c.Request.Context())
 	}
+	if err := parseWikiGraphScope(c, req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
 
 	graph, err := h.wikiService.GetGraph(c.Request.Context(), req)
 	if err != nil {
+		if stderrors.Is(err, repository.ErrInvalidWikiGraphDocuments) {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -1005,6 +1013,42 @@ func (h *WikiPageHandler) SearchPages(c *gin.Context) {
 	}
 
 	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "10"))
+	if c.Query("scope") != "" && c.Query("scope") != "kb" || len(c.QueryArray("knowledge_ids")) > 0 || c.Query("view") != "" {
+		req := &types.WikiGraphRequest{KnowledgeBaseID: kbID, Mode: "overview"}
+		if err := parseWikiGraphScope(c, req); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+		// Search every scoped graph candidate before limiting results. No page
+		// body is loaded and no global search result can leak into the selector.
+		req.Limit = 0
+		graph, err := h.wikiService.GetGraph(c.Request.Context(), req)
+		if err != nil {
+			if stderrors.Is(err, repository.ErrInvalidWikiGraphDocuments) {
+				c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			} else {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "Unable to search document graph"})
+			}
+			return
+		}
+		if limit <= 0 {
+			limit = 10
+		}
+		if limit > 50 {
+			limit = 50
+		}
+		pages := make([]types.WikiGraphNode, 0)
+		for _, node := range graph.Nodes {
+			if strings.Contains(strings.ToLower(node.Title), strings.ToLower(query)) || strings.Contains(strings.ToLower(node.Slug), strings.ToLower(query)) {
+				pages = append(pages, node)
+				if len(pages) == limit {
+					break
+				}
+			}
+		}
+		c.JSON(http.StatusOK, gin.H{"pages": pages})
+		return
+	}
 
 	pages, err := h.wikiService.SearchPages(c.Request.Context(), kbID, query, limit)
 	if err != nil {
