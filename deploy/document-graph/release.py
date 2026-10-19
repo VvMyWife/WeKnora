@@ -12,7 +12,9 @@ import urllib.request
 ROOT = Path(__file__).resolve().parents[2]
 p = argparse.ArgumentParser()
 p.add_argument('directory', type=Path)
-p.add_argument('action', choices=['check', 'deploy', 'rollback'])
+p.add_argument('action', choices=['check', 'deploy', 'candidate', 'frontend', 'rollback'])
+p.add_argument('--image')
+p.add_argument('--frontend-commit')
 args = p.parse_args()
 folder = args.directory.resolve()
 if not folder.is_relative_to(ROOT / 'runtime' / 'document-graph'):
@@ -118,6 +120,17 @@ def restore_frontend():
 
 if args.action == 'check':
     validate()
+elif args.action == 'candidate':
+    if not args.image or not args.frontend_commit:
+        raise RuntimeError('candidate requires --image and --frontend-commit')
+    if run('git', '-C', 'frontend-custom', 'rev-parse', 'HEAD') != args.frontend_commit:
+        raise RuntimeError('frontend source revision does not match HEAD')
+    if inspect('WeKnora-app')['Image'] != release['app_image_id']:
+        raise RuntimeError('expected backend is not running')
+    save('frontend-candidate-before-' + str(int(time.time())) + '.json', release)
+    release.update(frontend_image=args.image, frontend_image_id=inspect(args.image)['Id'], frontend_commit=args.frontend_commit)
+    save('release.json', release)
+    print('Frontend candidate recorded; no service changed')
 elif args.action == 'rollback':
     if inspect('WeKnora-app')['Image'] not in (release['app_image_id'], release['previous_app_id']):
         raise RuntimeError('a different release is active; refusing rollback')
@@ -126,6 +139,22 @@ elif args.action == 'rollback':
     restore_frontend()
     replace_app(release['previous_app_id'])
     save('rollback.json', {'time': time.time(), 'app_image': inspect('WeKnora-app')['Image']})
+elif args.action == 'frontend':
+    if inspect('WeKnora-app')['Image'] != release['app_image_id']:
+        raise RuntimeError('expected backend is not running')
+    if inspect('WeKnora-frontend-custom-preview')['Image'] != release['previous_frontend_id']:
+        raise RuntimeError('custom baseline changed')
+    if inspect('WeKnora-frontend')['Image'] != original['Image']:
+        raise RuntimeError('original frontend changed')
+    try:
+        subprocess.run(['docker', 'stop', 'WeKnora-frontend-custom-preview'], check=True)
+        subprocess.run(['docker', 'rename', 'WeKnora-frontend-custom-preview', old_ui_name], check=True)
+        clone_frontend()
+        save('frontend-deployed.json', {'time': time.time(), 'frontend_image': inspect('WeKnora-frontend-custom-preview')['Image'], 'frontend_commit': release['frontend_commit'], 'backend_unchanged': True})
+        print('Custom frontend deployed; backend not restarted')
+    except Exception:
+        restore_frontend()
+        raise
 else:
     validate()
     try:
