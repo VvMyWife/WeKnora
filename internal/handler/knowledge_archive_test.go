@@ -25,6 +25,41 @@ type archiveFileStub struct {
 	saved, deleted int
 }
 
+func TestPinnedArchiveVersionDoesNotFallBackToCurrent(t *testing.T) {
+	db, e := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
+	require.NoError(t, e)
+	require.NoError(t, db.AutoMigrate(&archivemapping.Version{}))
+	const version = "11111111-1111-4111-8111-111111111111"
+	require.NoError(t, db.Create(&archivemapping.Version{ID: version, TenantID: 1, KnowledgeID: "k", FileName: "old.pdf", StoragePath: "resource://old"}).Error)
+	files := &archiveFileStub{}
+	h := &KnowledgeHandler{kgService: files, archiveStore: archivemapping.NewStore(db)}
+	for _, test := range []struct {
+		query, id string
+		ok        bool
+	}{
+		{"source=archive&archive_version_id=" + version, "k", true},
+		{"source=parsed&archive_version_id=" + version, "k", false},
+		{"source=archive&archive_version_id=bad", "k", false},
+		{"source=archive&archive_version_id=22222222-2222-4222-8222-222222222222", "k", false},
+	} {
+		c, _ := gin.CreateTestContext(httptest.NewRecorder())
+		c.Request = httptest.NewRequest("GET", "/?"+test.query, nil)
+		stream, name, e := h.selectedKnowledgeFile(c, context.Background(), test.id)
+		if !test.ok {
+			require.Error(t, e)
+			continue
+		}
+		require.NoError(t, e)
+		stream.Close()
+		require.Equal(t, "old.pdf", name)
+		require.Equal(t, "resource://old", files.opened)
+	}
+	_, e = archivemapping.NewStore(db).Version(context.Background(), 2, "k", version)
+	require.Error(t, e)
+	_, e = archivemapping.NewStore(db).Version(context.Background(), 1, "other", version)
+	require.Error(t, e)
+}
+
 func (s *archiveFileStub) GetKnowledgeByID(context.Context, string) (*types.Knowledge, error) {
 	return &types.Knowledge{ID: "k", TenantID: 1, KnowledgeBaseID: "kb", FileType: "md"}, nil
 }

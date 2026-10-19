@@ -16,6 +16,13 @@ import (
 
 type Store struct{ DB *gorm.DB }
 
+// Version resolves a pinned original without following the current active link.
+func (s *Store) Version(ctx context.Context, tenant uint64, knowledge, id string) (*Version, error) {
+	var value Version
+	e := s.DB.WithContext(ctx).Where("tenant_id=? AND knowledge_id=? AND id=?", tenant, knowledge, id).First(&value).Error
+	return &value, e
+}
+
 func NewStore(db *gorm.DB) *Store { return &Store{DB: db} }
 func pathBase(p string) string    { return path.Base(p) }
 func extension(p string) string   { return strings.TrimPrefix(strings.ToLower(path.Ext(p)), ".") }

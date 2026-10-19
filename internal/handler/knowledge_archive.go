@@ -382,6 +382,31 @@ func (h *KnowledgeHandler) selectedKnowledgeFile(c *gin.Context, ctx context.Con
 	if source != "auto" && source != "archive" && source != "parsed" {
 		return nil, "", apperrors.NewBadRequestError("source 必须是 auto、archive 或 parsed")
 	}
+	if versionID := c.Query("archive_version_id"); versionID != "" {
+		if source == "parsed" {
+			return nil, "", apperrors.NewBadRequestError("解析文件不能指定原件版本")
+		}
+		if _, e := uuid.Parse(versionID); e != nil {
+			return nil, "", apperrors.NewBadRequestError("原件版本 ID 无效")
+		}
+		if h.archiveStore == nil {
+			return nil, "", apperrors.NewNotFoundError("原件存储不可用")
+		}
+		k, e := h.kgService.GetKnowledgeByID(ctx, id)
+		if e != nil {
+			return nil, "", e
+		}
+		v, e := h.archiveStore.Version(ctx, k.TenantID, id, versionID)
+		if e != nil {
+			return nil, "", apperrors.NewNotFoundError("指定原件版本不存在")
+		}
+		files, ok := h.kgService.(archiveFiles)
+		if !ok {
+			return nil, "", fmt.Errorf("原件存储不可用")
+		}
+		f, e := files.OpenArchiveFile(ctx, k.KnowledgeBaseID, v.StoragePath)
+		return f, v.FileName, e
+	}
 	if source != "parsed" && h.archiveStore != nil {
 		k, e := h.kgService.GetKnowledgeByID(ctx, id)
 		if e != nil {

@@ -10,6 +10,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 
+	"github.com/Tencent/WeKnora/internal/archivalcitations"
 	"github.com/Tencent/WeKnora/internal/errors"
 	"github.com/Tencent/WeKnora/internal/logger"
 	"github.com/Tencent/WeKnora/internal/storageurl"
@@ -21,7 +22,9 @@ import (
 // MessageHandler handles HTTP requests related to messages within chat sessions
 // It provides endpoints for loading and managing message history
 type MessageHandler struct {
-	MessageService interfaces.MessageService // Service that implements message business logic
+	citationStore     *archivalcitations.Store
+	citationKnowledge *KnowledgeHandler
+	MessageService    interfaces.MessageService // Service that implements message business logic
 	// FileService and StorageResolver back the optional `resource_urls=public`
 	// mode, which returns loadable HTTP URLs instead of internal
 	// `resource://` handles. Both may be nil, in which case only the default
