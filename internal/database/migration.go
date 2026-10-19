@@ -99,6 +99,9 @@ type MigrationOptions struct {
 
 // RunMigrationsWithOptions executes all pending database migrations with custom options
 func RunMigrationsWithOptions(dsn string, opts MigrationOptions) error {
+	if err := prepareLJCLegacyBridge(dsn, opts); err != nil {
+		return fmt.Errorf("LJC migration bridge: %w", err)
+	}
 	ctx := context.Background()
 
 	logger.Infof(ctx, "Starting database migration...")
@@ -254,6 +257,9 @@ func RunMigrationsWithOptions(dsn string, opts MigrationOptions) error {
 		logger.Warnf(ctx, "Database is in dirty state! Manual intervention may be required.")
 	}
 
+	if err := runLJCMigrations(dsn, opts); err != nil {
+		return captureMigrationFailure(m, err)
+	}
 	return nil
 }
 
