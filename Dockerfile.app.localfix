@@ -1,3 +1,0 @@
-FROM wechatopenai/weknora-app:0.8.0
-COPY WeKnora.localfix /app/WeKnora
-RUN chmod +x /app/WeKnora

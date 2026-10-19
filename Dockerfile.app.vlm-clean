@@ -1,5 +1,0 @@
-FROM wechatopenai/weknora-app:0.8.0
-
-COPY WeKnora.vlm-clean /app/WeKnora
-COPY .build-yanyiwu/ /go/pkg/mod/github.com/yanyiwu/
-RUN chmod 0755 /app/WeKnora && mkdir -p /data/vlm_audit && chown -R appuser:appuser /data/vlm_audit

@@ -26,3 +26,12 @@ __pycache__/
 /WeKnora
 /packages/grpc_health_probe-linux-amd64
 *.status
+
+# Server-local caches, generated runtime data, and deployment binaries
+/.go-modcache/
+/backups/
+/runtime/
+/.build-yanyiwu/
+/WeKnora.vlm-clean
+/Dockerfile.app.localfix
+/Dockerfile.app.vlm-clean
