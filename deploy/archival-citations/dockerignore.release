@@ -1,0 +1,6 @@
+*
+!WeKnora
+!migrations/
+!migrations/**
+!dist/
+!dist/**

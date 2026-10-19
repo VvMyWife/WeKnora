@@ -35,7 +35,7 @@ docker run --rm -v "$PWD:/src" -v "$PWD/.go-modcache:/go/pkg/mod" -v weknora-go-
 docker run --rm -v "$PWD:/src" -w /src/frontend-custom node:22-bookworm sh -c 'npm run type-check && npm test -- src/utils/archivalCitations.test.ts'
 ```
 
-上线需要重新核对活动任务并确认后端重启窗口；不能沿用其他功能的重启授权。回退保留引用记录，不执行删证据的 down migration。
+上线需要重新核对活动任务并确认后端重启窗口；不能沿用其他功能的重启授权。回退保留引用记录，不执行删证据的 down migration。2026-10-19 用户已为本功能单独授权立即重启，接受当前任务中断重试。
 
 ## 实际阶段提交（2026-10-19）
 
@@ -43,18 +43,19 @@ docker run --rm -v "$PWD:/src" -w /src/frontend-custom node:22-bookworm sh -c 'n
 |---|---|---|---|
 | 0 基线与身份 | 61848a25 | 不涉及 | 已保存长期约定 |
 | 1 契约 | a0bcb622 | 836d000 | 兼容测试通过 |
-| 2 快照、权限、指定原件版本 | 1fed9295 | 不涉及 | 测试通过；生产迁移尚未执行 |
+| 2 快照、权限、指定原件版本 | 1fed9295 | 不涉及 | 测试通过；生产迁移已到干净 94 版本 |
 | 3 引用验证与一次补引 | d5a180de | 2a40455 | 普通问答、智能体均接入 |
 | 4 证据面板 | 不涉及 | b087d05 | 完整原文／纯文本复制 |
 | 5 PDF.js | 不涉及 | dbde23e | 本地打包，无 CDN，连续滚动 |
 | 6 实际引用目录 | ad84c394 | aa8d460 | 版本、页码、分块去重 |
 | 7 联合检查修正 | 3f9d7384 | 8759477 | Wiki 关系、权限、流结束回归通过 |
+| 发布修正 | f0a51dd8 | a990e45 | 迁移目录权限、PDF worker MIME、恢复流视图更新 |
 
 每次运行 `git show --format=fuller <编号>` 可查看 Author／Committer；新提交均为 `ljc <ljc@local>`。发布准备文档和脚本另作独立提交，不把“已构建”表述为“已上线”。
 
 ## 接口、版本与边界
 
-- 默认关闭：`ARCHIVAL_CITATIONS_ENABLED=false`，生产目前仍未启用。
+- 默认关闭：`ARCHIVAL_CITATIONS_ENABLED=false`；本次在独立授权窗口开启，已部署至 18081 后端和 18182 custom 前端。
 - `GET /api/v1/messages/{session}/{message}/citations`：实际引用清单、校验状态及当前不可访问的数量。
 - `GET /api/v1/messages/{session}/{message}/citations/{citation}`：引用时快照、当前内容差异、固定原件版本。
 - `GET .../citations/{citation}/origins/{knowledge}/chunks/{chunk}`：仅允许已记录的来源关系，仍逐次检查当前权限，返回 `current_source_not_snapshot`，不会替换引用时快照。
@@ -87,7 +88,21 @@ GOPROXY／GOSUMDB 为构建镜像的全局默认，npm 使用 custom 内 `.npmrc
 
 已通过：11 个后端包、前端类型检查、47 项针对性前端测试及打包。浏览器隔离验收覆盖：脚注点击、完整 HTML 表格及合并单元格复制、纯文本复制、快照／当前文本差异、403 后旧证据清除、历史无记录、Wiki 来源关系、PDF 第 2／3／16 页真实画面、滚动、缩放、全屏、无页码与越界回退、目录点击到指定页。测试脚本见 `frontend-custom/qa/README.md`。
 
-注意：隔离浏览器使用合成接口响应验证页面，不冒充真实知识库全链路验收。生产样例库的真实模型回答、权限撤销及历史原件读取仍须在上线窗口完成，未通过不得宣布阶段 7 全部完成。
+隔离浏览器使用合成接口响应验证边界情况，不冒充真实知识库全链路验收。上线后另建“档案脚注验收-20261019-150903”样例库，已用真实模型完成普通问答与智能体回答、快照及原件哈希、匿名拒绝、历史重载、实际 PDF 页显示／滚动／来源目录检查。Wiki／图谱派生关系、撤销共享权限、原件换版和删除等边界由回归测试覆盖，未针对正式业务库执行破坏性演练；真实大文件及业务档案抽查仍需人工复核。详见 `acceptance-20261019.md`。
+
+验收脚本使用 `requests`（服务器或本地持久环境），密码交互输入，不写入仓库。脚本会创建独立样例库，只使用指定状态文件中的样例 ID，不修改正式库。先备好至少 16 页测试 PDF：
+
+```bash
+cd /home/ubuntu/RAG_Weknora
+python3 deploy/archival-citations/acceptance.py setup --email 你的邮箱 --state runtime/new-citation-acceptance.json --pdf runtime/pdf-fixtures/sixteen.pdf --schema internal/externalchunks/manifest.schema.json
+python3 deploy/archival-citations/acceptance.py inspect --email 你的邮箱 --state runtime/new-citation-acceptance.json
+# 等 inspect 显示文档 completed 后，顺序运行，避免并行覆盖同一个报告。
+python3 deploy/archival-citations/acceptance.py normal --email 你的邮箱 --state runtime/new-citation-acceptance.json
+python3 deploy/archival-citations/acceptance.py agent --email 你的邮箱 --state runtime/new-citation-acceptance.json
+python3 deploy/archival-citations/acceptance.py verify --email 你的邮箱 --state runtime/new-citation-acceptance.json
+```
+
+`setup` 若状态文件已存在会拒绝重复创建；失败后检查该文件／样例库，不直接反复 setup。`normal`／`agent` 会产生新的测试会话。`verify` 只读核对 SSE 最终答案与历史一致、快照内容 SHA、指定原件 SHA 和匿名访问拒绝，不声称验证模型事实正确。样例只用于功能验证，不混入正式政策知识库。
 
 ## 只准备镜像，不影响线上
 
@@ -100,7 +115,9 @@ bash deploy/archival-citations/prepare-release.sh
 ls -lt runtime/archival-citations/
 ```
 
-输出目录 `runtime/archival-citations/<时间>/` 内有 `release.json`、构建日志、二进制及发布资产。`app-before.json`／`frontend-before.json` 包含完整回退配置，可能含敏感环境变量；目录权限 700、文件 600，不提交 Git、不对外分享。镜像直接在当前运行镜像之上叠加二进制／SQL／custom dist，不丢失既有 VLM-clean、全页 PDF、上传配置或 nginx 定制。
+输出目录 `runtime/archival-citations/<时间>/` 内有 `release.json`、构建日志、二进制及发布资产。`app-before.json`／`frontend-before.json` 包含完整回退配置，可能含敏感环境变量；目录权限 700、文件 600，不提交 Git、不对外分享。镜像直接在当前运行镜像之上叠加二进制／SQL／custom dist，不丢失既有 VLM-clean、全页 PDF、上传配置或 nginx 定制。镜像内迁移目录须为 755、SQL 为 644；私有发布目录的 700 权限不能直接成为应用用户不可读的镜像目录。构建结束额外以 appuser 验证读取，部署不能只看 `/health`，还要确认 `schema_migrations=94,false`。
+
+`runtime-release.py` 提供明确的 `check / backup / app / frontend / rollback` 操作，固定回退环境，比较现有环境和挂载，避免 Compose 源配置与实际运行配置不一致。先运行 `check`，核对后在授权窗口顺序执行 `backup`、`app`、`frontend`。已有完整备份不能重复 `backup` 覆盖；发布目录固定为本次脚本输出。它不代替真实样例验收。
 
 ## 上线窗口（必须重新获准后执行）
 

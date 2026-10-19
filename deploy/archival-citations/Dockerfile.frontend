@@ -4,3 +4,5 @@ ARG SOURCE_REVISION
 LABEL org.opencontainers.image.revision=${SOURCE_REVISION} \
       com.yifang.frontend.edition=custom
 COPY dist/ /usr/share/nginx/html/
+RUN sed -i 's/application\/javascript[[:space:]]*js;/application\/javascript js mjs;/' /etc/nginx/mime.types \
+ && grep -Eq 'application/javascript[[:space:]]+js[[:space:]]+mjs;' /etc/nginx/mime.types

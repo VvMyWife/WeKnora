@@ -33,6 +33,7 @@ cp migrations/versioned/000094_archival_citations.*.sql "$release_dir/migrations
 cp migrations/sqlite/000015_archival_citations.*.sql "$release_dir/migrations/sqlite/"
 # Stage only the custom dist. The original frontend is not read or overwritten.
 cp -a frontend-custom/dist "$release_dir/dist"
+cp deploy/archival-citations/dockerignore.release "$release_dir/.dockerignore"
 docker build --build-arg "RUNTIME_BASE=weknora-app:archival-base-$release_tag" --build-arg "SOURCE_REVISION=$backend_revision" -f deploy/archival-citations/Dockerfile.app -t "$app_image" "$release_dir" > "$release_dir/app-image.log" 2>&1
 docker build --build-arg "RUNTIME_BASE=weknora-app:archival-base-$release_tag" -f deploy/archival-citations/Dockerfile.rollback -t "$rollback_image" "$release_dir" > "$release_dir/rollback-image.log" 2>&1
 for candidate in "$app_image" "$rollback_image"; do
