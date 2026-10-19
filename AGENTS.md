@@ -1,8 +1,11 @@
-# 本项目本地版本记录
-
-- 本目录和 `frontend-custom/` 是两个独立的 Git 仓库。后端/部署改动在本目录提交；定制前端改动在 `frontend-custom/` 提交。
-- 每次完成一组修改并通过相应测试后，先查看 `git status`、`git diff --check` 和暂存区文件清单，再在对应仓库创建有意义的本地提交。
-- 只提交源码、配置模板、脚本及说明。不得提交 `.env`、密码、令牌、用户数据、数据库、模型权重、构建产物、大型二进制文件和备份。
-- 这两个仓库仅用于服务器本地私有历史；未经用户明确要求，不得推送或创建远程仓库。
-- 回退前先查看提交和当前未提交改动；优先用 `git revert` 生成可追溯的反向提交，不使用 `git reset --hard`。运行中的容器只有重建或重新部署后才会反映源码回退。
-- 本地提交、检查及回退的具体命令见 `PRIVATE_GIT_README.md`。
+# Repository maintenance
+- Authoritative server checkout: /home/ubuntu/RAG_Weknora.
+- Public fork: VvMyWife/WeKnora; upstream: Tencent/WeKnora.
+- New branches use ljc/; new commits use author and committer name ljc.
+- Preserve existing history. Commit each tested implementation stage separately.
+- Freeze frontend/ and frontend-custom/. Do not import upstream UI updates.
+- Only import upstream changes explicitly selected by the user; inspect dependencies first.
+- Keep secrets, user data, databases, runtime logs, models, backups and build outputs outside Git.
+- Use persistent China mirror configuration for dependency downloads and builds.
+- After interruption, inspect Git/process/database state before continuing. Never blindly replay migrations or deployments.
+- Document complete manual test, build, integration, deployment and rollback commands in README.
