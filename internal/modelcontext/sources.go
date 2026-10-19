@@ -17,6 +17,7 @@ import (
 )
 
 type ChunkReference struct {
+	Content         string
 	ChunkID         string
 	KnowledgeID     string
 	KnowledgeBaseID string
@@ -88,6 +89,9 @@ func (r *sourceRegistry) RegisterChunk(ref ChunkReference) string {
 }
 
 func mergeChunkReference(dst *ChunkReference, src ChunkReference) {
+	if dst.Content == "" {
+		dst.Content = src.Content
+	}
 	if dst.KnowledgeID == "" {
 		dst.KnowledgeID = src.KnowledgeID
 	}
@@ -161,6 +165,7 @@ func (r *sourceRegistry) RegisterSearchResults(results []*types.SearchResult) {
 		r.RegisterDocument(result.KnowledgeID)
 		r.RegisterKnowledgeBase(result.KnowledgeBaseID)
 		r.RegisterChunk(ChunkReference{
+			Content:         result.Content,
 			ChunkID:         result.ID,
 			KnowledgeID:     result.KnowledgeID,
 			KnowledgeBaseID: result.KnowledgeBaseID,

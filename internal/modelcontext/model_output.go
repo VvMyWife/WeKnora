@@ -189,6 +189,7 @@ func (r *sourceRegistry) modelKnowledgeOutput(mode string, rows []map[string]int
 			chunkIndex = intValue(row, "index")
 		}
 		chunkHandle := r.RegisterChunk(ChunkReference{
+			Content:         stringValue(row, "content"),
 			ChunkID:         chunkID,
 			KnowledgeID:     knowledgeID,
 			KnowledgeBaseID: kbID,

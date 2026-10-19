@@ -24,7 +24,7 @@ func (s *citationMessageStub) GetMessage(context.Context, string, string) (*type
 	if s.denied {
 		return nil, errors.New("denied")
 	}
-	return &types.Message{ID: "m", SessionID: "s", Role: "assistant"}, nil
+	return &types.Message{ID: "m", SessionID: "s", Role: "assistant", Content: "answer"}, nil
 }
 
 type citationKnowledgeStub struct {

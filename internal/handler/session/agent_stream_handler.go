@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/Tencent/WeKnora/internal/archivalcitations"
 	"strings"
 	"sync"
 	"time"
@@ -766,9 +767,23 @@ func (h *AgentStreamHandler) handleComplete(ctx context.Context, evt event.Event
 	}
 
 	// Send completion event to stream manager so SSE can detect completion
+	var citationManifest *archivalcitations.Manifest
+	if scope := archivalcitations.FromContext(h.ctx); scope != nil && h.ctx.Err() == nil {
+		answer, manifest, err := scope.Finalize(h.ctx, h.assistantMessage.Content)
+		if err != nil {
+			logger.Warnf(h.ctx, "archival citation completion failed message=%s: %v", h.assistantMessageID, err)
+		} else {
+			h.assistantMessage.Content = answer
+			citationManifest = manifest
+		}
+	}
 	completeData := map[string]interface{}{
 		"total_steps":       data.TotalSteps,
 		"total_duration_ms": data.TotalDurationMs,
+	}
+	if citationManifest != nil {
+		completeData["archival_citations"] = citationManifest
+		completeData["final_answer"] = h.assistantMessage.Content
 	}
 	// Attach the freshly-collected artifacts so the frontend can render the
 	// download button without waiting for a page refresh. We strip the

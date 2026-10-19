@@ -5,6 +5,7 @@ import (
 	"crypto/sha256"
 	"encoding/json"
 	"fmt"
+	"github.com/Tencent/WeKnora/internal/archivalcitations"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -654,6 +655,7 @@ func (h *Handler) setupSSEStream(reqCtx *qaRequestContext, generateTitle bool) *
 	// Create EventBus and cancellable context
 	eventBus := event.NewEventBus()
 	asyncCtx, cancel := context.WithCancel(logger.CloneContext(baseCtx))
+	asyncCtx = archivalcitations.WithScope(asyncCtx, h.citationStore, reqCtx.session.TenantID, reqCtx.sessionID, reqCtx.assistantMessage.ID)
 
 	streamCtx := &sseStreamContext{
 		eventBus:         eventBus,
@@ -1434,6 +1436,14 @@ func (h *Handler) completeAssistantMessage(
 ) {
 	assistantMessage.UpdatedAt = time.Now()
 	assistantMessage.IsCompleted = true
+	if scope := archivalcitations.FromContext(ctx); scope != nil && ctx.Err() == nil {
+		answer, _, err := scope.Finalize(ctx, assistantMessage.Content)
+		if err != nil {
+			logger.Warnf(ctx, "archival citation finalization failed message=%s: %v", assistantMessage.ID, err)
+		} else {
+			assistantMessage.Content = answer
+		}
+	}
 	_ = h.messageService.UpdateMessage(ctx, assistantMessage)
 
 	// Asynchronously index the Q&A pair into the chat history knowledge base for vector search.

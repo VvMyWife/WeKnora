@@ -33,11 +33,15 @@ func (h *MessageHandler) canReadCitation(c *gin.Context, summary archivalcitatio
 	return e == nil && k != nil && k.KnowledgeBaseID == summary.KnowledgeBaseID
 }
 func (h *MessageHandler) GetMessageCitations(c *gin.Context) {
+	if !archivalcitations.Enabled() {
+		c.JSON(200, gin.H{"enabled": false, "success": true, "data": nil})
+		return
+	}
 	message, ok := h.citationMessage(c)
 	if !ok {
 		return
 	}
-	manifest, e := h.citationStore.Manifest(c.Request.Context(), types.MustTenantIDFromContext(c.Request.Context()), message.SessionID, message.ID)
+	manifest, e := h.citationStore.Manifest(c.Request.Context(), types.MustTenantIDFromContext(c.Request.Context()), message.SessionID, message.ID, message.Content)
 	if errors.Is(e, gorm.ErrRecordNotFound) {
 		c.JSON(200, gin.H{"success": true, "data": archivalcitations.Manifest{Version: 1, State: "legacy", Citations: []archivalcitations.Summary{}, Unbound: []archivalcitations.UnboundBlock{}}})
 		return

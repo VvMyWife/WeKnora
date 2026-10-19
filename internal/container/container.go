@@ -415,6 +415,7 @@ func BuildContainer(container *dig.Container) *dig.Container {
 	must(container.Provide(handler.NewFAQHandler))
 	must(container.Provide(handler.NewTagHandler))
 	must(container.Provide(session.NewHandler))
+	must(container.Decorate(session.AttachArchivalCitations))
 	must(container.Provide(handler.NewMessageHandler))
 	must(container.Decorate(handler.AttachMessageCitationStore))
 	must(container.Provide(handler.NewMessageSuggestionHandler))

@@ -3,6 +3,7 @@ package agent
 import (
 	"context"
 	"fmt"
+	"github.com/Tencent/WeKnora/internal/modelcontext"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -53,6 +54,8 @@ func (e *AgentEngine) streamLLMToEventBus(
 
 	// Model-context encoding owns codec ordering and temporary-handle lifecycle.
 	messages = e.modelContext.EncodeMessages(messages)
+	e.modelContext.CaptureArchival(ctx)
+	modelcontext.BindArchivalRepair(ctx, e.chatModel)
 	prefixFingerprint := chat.PromptPrefixFingerprint(messages, opts)
 	llmCtx = types.WithLLMCallMetadata(llmCtx, "agent_round", prefixFingerprint)
 	stream, err := e.chatModel.ChatStream(llmCtx, messages, opts)

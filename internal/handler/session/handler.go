@@ -2,6 +2,7 @@ package session
 
 import (
 	stderrors "errors"
+	"github.com/Tencent/WeKnora/internal/archivalcitations"
 	"net/http"
 
 	"github.com/Tencent/WeKnora/internal/application/service"
@@ -17,6 +18,7 @@ import (
 
 // Handler handles all HTTP requests related to conversation sessions
 type Handler struct {
+	citationStore        *archivalcitations.Store
 	messageService       interfaces.MessageService // Service for managing messages
 	suggestionService    interfaces.MessageSuggestionService
 	sessionService       interfaces.SessionService       // Service for managing sessions
@@ -37,6 +39,11 @@ type Handler struct {
 	// not support artifact collection; handlers must check before using.
 	artifactCollector *service.ArtifactCollector
 	memoryService     interfaces.MemoryService // Service for cross-session long-term memory
+}
+
+func AttachArchivalCitations(h *Handler, store *archivalcitations.Store) *Handler {
+	h.citationStore = store
+	return h
 }
 
 // NewHandler creates a new instance of Handler with all necessary dependencies

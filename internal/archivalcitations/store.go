@@ -94,12 +94,17 @@ func (s *Store) Save(ctx context.Context, tenant uint64, session, message, answe
 		return nil
 	})
 }
-func (s *Store) Manifest(ctx context.Context, tenant uint64, session, message string) (Manifest, error) {
+func (s *Store) Manifest(ctx context.Context, tenant uint64, session, message string, answer ...string) (Manifest, error) {
 	var row ManifestRecord
 	var m Manifest
 	e := s.DB.WithContext(ctx).Where("tenant_id=? AND session_id=? AND message_id=?", tenant, session, message).First(&row).Error
 	if e == nil {
 		e = json.Unmarshal([]byte(row.Payload), &m)
+	}
+	if e == nil && len(answer) > 0 && Hash(answer[0]) != row.AnswerSHA256 {
+		m.State = "answer_changed"
+		m.Citations = []Summary{}
+		m.Unbound = []UnboundBlock{}
 	}
 	return m, e
 }

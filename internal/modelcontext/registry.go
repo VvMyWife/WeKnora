@@ -10,7 +10,10 @@
 package modelcontext
 
 import (
+	"context"
 	"encoding/json"
+	"github.com/Tencent/WeKnora/internal/archivalcitations"
+	"github.com/Tencent/WeKnora/internal/logger"
 	"reflect"
 	"sort"
 
@@ -48,9 +51,28 @@ type Registry struct {
 // NewRegistry creates a registry for one model request/Agent execution.
 func NewRegistry(citationsEnabled bool) *Registry {
 	return &Registry{
-		sources:   newSourceRegistry(citationsEnabled),
+		sources:   newSourceRegistry(citationsEnabled || archivalcitations.Enabled()),
 		resources: newResourceRegistry(),
 		issues:    NewHandleTable("i", 0, 1),
+	}
+}
+
+// CaptureArchival snapshots content-bearing evidence before the model sees it.
+// IDs registered only while replaying history have no Content and are excluded.
+func (r *Registry) CaptureArchival(ctx context.Context) {
+	scope := archivalcitations.FromContext(ctx)
+	if scope == nil || r == nil || r.sources == nil {
+		return
+	}
+	for _, pair := range r.sources.chunks.pairs() {
+		_, ref, ok := r.sources.chunks.resolve(pair.handle)
+		if !ok || ref.Content == "" {
+			continue
+		}
+		// A capture failure leaves this source unbound; it never authorizes a guess.
+		if err := scope.Offer(ctx, ref.ChunkID, ref.KnowledgeID, ref.KnowledgeBaseID, ref.Content); err != nil {
+			logger.Warnf(ctx, "citation evidence capture failed chunk=%s: %v", ref.ChunkID, err)
+		}
 	}
 }
 

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/Tencent/WeKnora/internal/modelcontext"
 
 	"github.com/Tencent/WeKnora/internal/event"
 	"github.com/Tencent/WeKnora/internal/types"
@@ -56,6 +57,8 @@ func (p *PluginChatCompletionStream) OnEvent(ctx context.Context,
 
 	chatMessages, modelContext := prepareMessagesWithModelContext(ctx, chatManage)
 	chatMessages = modelContext.EncodeMessages(chatMessages)
+	modelContext.CaptureArchival(ctx)
+	modelcontext.BindArchivalRepair(ctx, chatModel)
 	ctx = withPromptCacheMetadata(ctx, chatModel, chatMessages, opt, "knowledge_qa")
 	pipelineInfo(ctx, "Stream", "messages_ready", map[string]interface{}{
 		"message_count": len(chatMessages),
