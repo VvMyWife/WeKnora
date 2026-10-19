@@ -1050,6 +1050,15 @@ func (h *KnowledgeHandler) ListKnowledge(c *gin.Context) {
 		secutils.SanitizeForLog(kbID),
 		result.Total,
 	)
+	// Graph document selection opts in to original-file labels. Ordinary
+	// document lists keep their existing query cost and response behavior.
+	if c.Query("include_archive_source") == "true" {
+		if knowledges, ok := result.Data.([]*types.Knowledge); ok {
+			for _, knowledge := range knowledges {
+				h.enrichArchiveSource(ctx, knowledge)
+			}
+		}
+	}
 	c.JSON(http.StatusOK, gin.H{
 		"success":   true,
 		"data":      result.Data,

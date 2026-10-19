@@ -1022,6 +1022,9 @@ func (h *WikiPageHandler) SearchPages(c *gin.Context) {
 		// Search every scoped graph candidate before limiting results. No page
 		// body is loaded and no global search result can leak into the selector.
 		req.Limit = 0
+		if rawTypes := c.Query("types"); rawTypes != "" {
+			req.Types = strings.Split(rawTypes, ",")
+		}
 		graph, err := h.wikiService.GetGraph(c.Request.Context(), req)
 		if err != nil {
 			if stderrors.Is(err, repository.ErrInvalidWikiGraphDocuments) {
