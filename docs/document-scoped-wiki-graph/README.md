@@ -51,7 +51,7 @@ docker run --rm -v "$PWD:/src" -w /src/frontend-custom node:22-bookworm sh -c \
  'find src -name "*.test.ts" -print0 | xargs -0 npm test --'
 ```
 
-2026-10-19 全量前端结果：415 项，413 通过；2 项为发布前 `fa6f28f` 已有的 `localeKeyAudit` 韩语、俄语进度条翻译键缺失。已用该基线 `git archive` 导出的原始 src 单独重跑，确认相同的 2 项失败。本功能不修改翻译文件；相关类型检查、档案范围逻辑测试和后端四包测试通过。原始日志在 `runtime/document-graph-*.log`。
+2026-10-19 最终全量前端结果：416 项，414 通过；2 项为发布前 `fa6f28f` 已有的 `localeKeyAudit` 韩语、俄语进度条翻译键缺失。已用该基线 `git archive` 导出的原始 src 单独重跑，确认相同的 2 项失败。本功能不修改翻译文件；相关类型检查、3 项档案范围逻辑／显示层级回归测试和后端四包测试通过。原始日志在 `runtime/document-graph-*.log`。
 
 ## 使用与人工验收
 
@@ -99,3 +99,49 @@ python3 deploy/document-graph/release.py "$release_dir" rollback
 代码按对应阶段提交执行 `git revert <提交编号>`，再重新构建部署；不要使用 `git reset --hard`。
 
 已提交：基线 `bdfa11325`，图谱契约与纯逻辑 `abdfcafd4`，查询／参数验证 `076ccb121`。后续提交及实际镜像对应关系以发布目录 `release.json`、`deployed.json` 为准，不能将 prepared_not_deployed 视为上线成功。
+
+## 最终发布与现场验收（2026-10-19）
+
+- 发布目录：`runtime/document-graph/20261019-195330`。
+- 后端代码 `f50fd80d944dba313d0a0cfb37415fdd1026f4ea`；镜像 `weknora-app:document-graph-20261019-195330`。
+- custom 代码 `30095372d73d168f659ed859ba770d4722ca696d`；镜像 `archive-intelligence-ui:document-graph-20261019-195330-r2`。
+- 后端镜像 ID：`sha256:d2e2fd0b7893cf8604c04548818e4ed7756d51d63f4dad9e2620bc251ba0462c`。
+- custom 镜像 ID：`sha256:abaab2b5e37fba000cf2472ef629fb200a75826f7a7d4e0cbf6440500e18b55b`。
+- 正式入口仍为 18182；原版 18180 的镜像和启动时间未改变。数据库迁移版本仍为 `94`、`dirty=false`，未新增迁移。
+
+真实只读验收：编目样本库选择 3 份档案，合并 30 个节点，关联 26 个节点、52 条跨来源链接；政策正式库选择 3 份档案，合并 77 个节点，关联 43 个节点、70 条跨来源链接。正式库选择列表首批 50 份均显示已映射 PDF 名称、原件路径和 MD 解析文件名。搜索、ego 展开、截取计数、空选／无效 ID 拒绝、来源 ID 对照均通过；全部验收请求为 GET，不调用模型，不创建处理任务。
+
+真实页面验证了选择／应用、翻页保留选择、单档案 11 个节点、多档案 30 个节点、关联视图 26 个节点、单档案关联空结果、回到全库，以及切换知识库清空选择。正式 18182 已实际操作并显示政策档案 77 个节点；不是仅检查 health。
+
+验收发现并修复的两个问题均有独立提交：历史 `source_refs=JSON null` 查询兼容（`f50fd80d9`）；空图覆盖选择窗口（`3009537`）。前者发现后回退旧版，再经真实 PostgreSQL 只读校验后重新发布；后者只恢复 custom 前端，在独立 18184 预览页验收后更新前端，未再重启后端。回退记录与前端候选变更记录保留在发布目录。临时预览验收完成后停止，不作为正式入口。
+
+### 复跑浏览器只读接口验收
+
+在已安装 Playwright CLI 的测试电脑上，先打开 18182，手动登录并进入至少有 2 份已生成 Wiki 文档的知识库，再运行仓库中的脚本（脚本不包含密码）：
+
+```bash
+playwright-cli -s=graph-acceptance open http://10.20.0.15:18182 --browser=msedge --headed
+# 手动登录，进入目标知识库后：
+playwright-cli -s=graph-acceptance snapshot
+playwright-cli -s=graph-acceptance run-code --filename deploy/document-graph/live-api.js
+```
+
+`live-api.js` 仅访问当前已授权知识库；无 Wiki 来源的全新库不适合作为此脚本的正向样例。400 负向用例会在浏览器控制台显示对应资源拒绝，这是预期结果。
+
+### 仅修复前端时的预览与发布
+
+当前后端已通过验收而无需重启时，在同一发布目录登记新前端候选。先完成前端测试、构建、Git 提交，并用相同 Dockerfile 创建新镜像；不要覆盖运行镜像标签。独立预览保留现有网络和环境，只改测试容器名称、18184 端口及关闭自动重启：
+
+```bash
+release_dir=/home/ubuntu/RAG_Weknora/runtime/document-graph/20261019-195330
+candidate_image=archive-intelligence-ui:你的新前端版本
+python3 deploy/document-graph/preview.py "$release_dir" "$candidate_image"
+# 在 http://10.20.0.15:18184 完成页面验收之后：
+frontend_revision=$(git -C frontend-custom rev-parse HEAD)
+python3 deploy/document-graph/release.py "$release_dir" candidate \
+ --image "$candidate_image" --frontend-commit "$frontend_revision"
+python3 deploy/document-graph/release.py "$release_dir" frontend
+docker stop WeKnora-frontend-custom-document-graph-qa
+```
+
+预览容器名固定且已存在时脚本会拒绝覆盖；先核对是否仍有人使用，不要删除或覆盖不明容器。`frontend-deployed.json` 记录最终前端提交与 `backend_unchanged=true`；`release.json` 保存最终前后端镜像映射，`deployed.json` 保留最初整体验收部署记录。回退命令仍使用同一发布目录。
