@@ -84,9 +84,9 @@ func (s *Scope) Offer(ctx context.Context, chunk, knowledge, kb, provided string
 	}
 	location := Location{Status: PageMissing, Pages: []int{}, Reason: "未提供可信物理页码"}
 	version := ""
-	var archive struct{ ID, SHA256 string }
+	var archive struct{ ID, SHA256, FileName string }
 	// Absence of an original is valid, but a database error is not a version choice.
-	result := s.store.DB.WithContext(ctx).Table("archive_mapping_links AS l").Select("v.id,v.sha256").Joins("JOIN archive_mapping_versions v ON v.id=l.version_id AND v.tenant_id=l.tenant_id AND v.knowledge_id=l.knowledge_id").Where("l.tenant_id=? AND l.knowledge_id=?", row.TenantID, knowledge).Scan(&archive)
+	result := s.store.DB.WithContext(ctx).Table("archive_mapping_links AS l").Select("v.id,v.sha256,v.file_name").Joins("JOIN archive_mapping_versions v ON v.id=l.version_id AND v.tenant_id=l.tenant_id AND v.knowledge_id=l.knowledge_id").Where("l.tenant_id=? AND l.knowledge_id=?", row.TenantID, knowledge).Scan(&archive)
 	if result.Error != nil {
 		return result.Error
 	}
@@ -116,8 +116,13 @@ func (s *Scope) Offer(ctx context.Context, chunk, knowledge, kb, provided string
 		kind = "derived"
 		location.Reason = "派生内容，尚无可验证的原始页来源"
 		version = ""
+		archive.FileName = ""
+		archive.SHA256 = ""
 	}
-	sum := Summary{ID: EvidenceID(s.tenant, s.session, s.message, chunk, snapshot, version, revision), ChunkID: chunk, KnowledgeID: knowledge, KnowledgeBaseID: kb, Title: original.Title, ContentRevision: revision, ContentSHA256: Hash(snapshot), ArchiveVersionID: version, SourceKind: kind, Location: location}
+	if strings.TrimSpace(original.Title) == "" {
+		original.Title = knowledge
+	}
+	sum := Summary{ID: EvidenceID(s.tenant, s.session, s.message, chunk, snapshot, version, revision), ChunkID: chunk, KnowledgeID: knowledge, KnowledgeBaseID: kb, Title: original.Title, ContentRevision: revision, ContentSHA256: Hash(snapshot), ArchiveVersionID: version, ArchiveFileName: archive.FileName, ArchiveSHA256: archive.SHA256, SourceKind: kind, Location: location}
 	s.evidence[chunk] = offeredEvidence{sum, Record{ID: sum.ID, TenantID: s.tenant, KnowledgeTenantID: row.TenantID, SessionID: s.session, MessageID: s.message, KnowledgeID: knowledge, ChunkID: chunk, Snapshot: snapshot}}
 	return nil
 }

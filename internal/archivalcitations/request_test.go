@@ -69,7 +69,7 @@ func TestOfferPinsFullTextBeforeEditAndNeverGuessesPages(t *testing.T) {
 		"CREATE TABLE chunks(id TEXT,knowledge_id TEXT,knowledge_base_id TEXT,content TEXT,chunk_type TEXT,metadata TEXT,tenant_id INTEGER,content_revision INTEGER,deleted_at DATETIME)",
 		"CREATE TABLE knowledges(id TEXT,tenant_id INTEGER,knowledge_base_id TEXT,title TEXT,deleted_at DATETIME)",
 		"CREATE TABLE archive_mapping_links(tenant_id INTEGER,knowledge_id TEXT,version_id TEXT)",
-		"CREATE TABLE archive_mapping_versions(id TEXT,tenant_id INTEGER,knowledge_id TEXT,sha256 TEXT)",
+		"CREATE TABLE archive_mapping_versions(id TEXT,tenant_id INTEGER,knowledge_id TEXT,sha256 TEXT,file_name TEXT)",
 		"INSERT INTO chunks VALUES('real','k','kb','original table','text','{}',2,1,NULL)",
 		"INSERT INTO knowledges VALUES('k',2,'kb','document',NULL)",
 	} {

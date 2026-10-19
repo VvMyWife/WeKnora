@@ -39,6 +39,8 @@ type Summary struct {
 	ContentRevision  int      `json:"content_revision"`
 	ContentSHA256    string   `json:"content_sha256"`
 	ArchiveVersionID string   `json:"archive_version_id,omitempty"`
+	ArchiveFileName  string   `json:"archive_file_name,omitempty"`
+	ArchiveSHA256    string   `json:"archive_sha256,omitempty"`
 	SourceKind       string   `json:"source_kind"`
 	Location         Location `json:"location"`
 }
