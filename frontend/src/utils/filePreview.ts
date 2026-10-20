@@ -412,3 +412,16 @@ export function sniffPreview(bytes: Uint8Array): FilePreviewSniff {
 }
 
 export { SNIFF_BYTES as FILE_PREVIEW_SNIFF_BYTES }
+
+
+/** Mapped originals can have a different format from their parsed document.
+ * Only binary signatures override an explicit format; Markdown/HTML source
+ * keeps its declared renderer and never gains script execution through sniffing.
+ */
+export function resolveFetchedPreviewFormat(fileName: string, fileType: string, bytes: Uint8Array): FilePreviewSniff {
+  const magic = sniffFromMagic(bytes)
+  if (magic) return magic
+  const ext = resolveFilePreviewExt(fileName, fileType)
+  const kind = resolvePreviewKind(ext)
+  return kind === 'unsupported' ? sniffPreview(bytes) : { kind, ext }
+}

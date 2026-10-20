@@ -17,3 +17,6 @@
 - These are separate frontend entry points to shared backend data, not independent knowledge bases. Neither entry point isolates uploads, deletions, or document-processing changes from the other.
 - A Git commit or successful build is not a deployed feature. Before reporting a change as live, verify the actual image/assets served on port 18182 and exercise the relevant page there. Preserve the existing runtime configuration and rollback baseline, and obtain the required restart authorization.
 - If a user cannot see a new feature, first check the accessed port, the live deployed version, and stale browser assets. Do not assume that refreshing alone will resolve it.
+
+## Approved integration candidate exception (2026-10-20)
+- User explicitly approved mapped-original type/PDF preview support in candidate28180. Exact file hashes are pinned in docs/upstream-integration/policy.json. This does not authorize production deployment or other UI module redesign.

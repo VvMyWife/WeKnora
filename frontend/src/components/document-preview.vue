@@ -24,7 +24,7 @@ import {
   resolveFilePreviewExt,
   resolvePreviewKind,
   shouldPrettyPrintJson,
-  sniffPreview,
+  resolveFetchedPreviewFormat,
   isValidUTF8,
   type FilePreviewKind,
 } from '@/utils/filePreview';
@@ -430,13 +430,10 @@ async function loadPreview() {
 
   try {
     const rawBlob = await fetchPreviewBlob();
-    let kind = resolvePreviewKind(ft);
-    if (kind === 'unsupported') {
-      const sample = new Uint8Array(await rawBlob.slice(0, FILE_PREVIEW_SNIFF_BYTES).arrayBuffer());
-      const sniffed = sniffPreview(sample);
-      kind = sniffed.kind;
-      if (sniffed.ext) ft = sniffed.ext;
-    }
+    const sample = new Uint8Array(await rawBlob.slice(0, FILE_PREVIEW_SNIFF_BYTES).arrayBuffer());
+    const resolved = resolveFetchedPreviewFormat(props.fileName, props.fileType, sample);
+    const kind = resolved.kind;
+    ft = resolved.ext;
     previewType.value = kind;
 
     if (kind === 'unsupported') {

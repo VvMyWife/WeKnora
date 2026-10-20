@@ -176,6 +176,13 @@ async function loadMeta(version: number) {
     sourceHash.value = data.file_hash || ''
     meta.fileName = meta.fileName || data.file_name || ''
     meta.fileType = data.file_type || ''
+    // Preview uses source=auto, which streams the mapped original when present.
+    // Its type/name/hash must describe those bytes, not the parsed Markdown.
+    if (data.archive_source) {
+      meta.fileType = data.archive_source.file_type || meta.fileType
+      meta.fileName = data.archive_source.file_name || meta.fileName
+      sourceHash.value = data.archive_source.sha256 || ''
+    }
     meta.knowledgeSource = meta.knowledgeSource || data.source || ''
     meta.knowledgeType = data.type || ''
     meta.title = meta.title || data.title || ''

@@ -68,6 +68,21 @@ class MaintenanceChecks(unittest.TestCase):
         (self.root / "frontend/original.txt").write_text("unapproved")
         self.assertFalse(module.inspect(self.root)["frontend_frozen"])
 
+    def test_approved_override_is_pinned_by_hash(self):
+        policy = self.root / "docs/upstream-integration"
+        policy.mkdir(parents=True)
+        ref = self.git("rev-parse", "HEAD")
+        (self.root / "frontend/original.txt").write_text("mapped PDF support")
+        (policy / "policy.json").write_text(json.dumps({
+            "official_frontend_candidates": [ref],
+            "official_frontend_overrides": {
+                "frontend/original.txt": hashlib.sha256(b"mapped PDF support").hexdigest()
+            }
+        }))
+        self.assertTrue(module.inspect(self.root)["frontend_frozen"])
+        (self.root / "frontend/original.txt").write_text("unapproved replacement")
+        self.assertFalse(module.inspect(self.root)["frontend_frozen"])
+
     def test_interrupted_cherry_pick_is_reported(self):
         (self.root / ".git/CHERRY_PICK_HEAD").write_text(self.git("rev-parse", "HEAD"))
         result = module.inspect(self.root)

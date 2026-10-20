@@ -10,6 +10,7 @@ import {
   resolvePreviewKind,
   shouldPrettyPrintJson,
   sniffPreview,
+  resolveFetchedPreviewFormat,
 } from './filePreview.ts'
 
 test('resolveFilePreviewExt prefers explicit type and strips a leading dot', () => {
@@ -76,4 +77,11 @@ test('mime and highlight maps cover skill-generated html/csv', () => {
   assert.equal(getPreviewMimeType('csv'), 'text/csv')
   assert.equal(getHighlightLang('html'), 'xml')
   assert.equal(getHighlightLang('ts'), 'typescript')
+})
+
+
+test('mapped PDF bytes override parsed Markdown while text retains its declared renderer', () => {
+  assert.deepEqual(resolveFetchedPreviewFormat('parsed.md', 'md', new TextEncoder().encode('%PDF-1.4\n')), { kind: 'pdf', ext: 'pdf' })
+  assert.deepEqual(resolveFetchedPreviewFormat('notes.md', 'md', new TextEncoder().encode('<script>alert(1)</script>')), { kind: 'markdown', ext: 'md' })
+  assert.deepEqual(resolveFetchedPreviewFormat('source.html', 'html', new TextEncoder().encode('<html>source</html>')), { kind: 'html', ext: 'html' })
 })

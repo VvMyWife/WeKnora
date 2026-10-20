@@ -119,3 +119,14 @@ test('uploaded files keep their original preview format', async t => {
   const f = await fixture({ details: { type: 'file', source: 'upload', file_type: 'pdf', file_name: 'Report.pdf' }, target: { ...target, knowledgeSource: 'upload' } }); t.after(f.dispose)
   assert.equal(f.preview().fileType, 'pdf')
 })
+
+
+test('mapped PDF citation uses original metadata instead of parsed Markdown', async t => {
+  const f = await fixture({
+    details: { type: 'file', source: 'upload', file_type: 'md', file_name: 'parsed.md',
+      archive_source: { file_type: 'pdf', file_name: 'original.pdf', sha256: 'original-hash' } },
+    target: { ...target, knowledgeSource: 'upload' },
+  }); t.after(f.dispose)
+  assert.equal(f.preview().fileType, 'pdf')
+  assert.equal(f.preview().fileName, 'original.pdf')
+})

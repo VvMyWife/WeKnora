@@ -6,5 +6,13 @@
     "eecfe4b3c8c34c94e9b559e5dd02187b4ae447cd"
   ],
   "custom_frontend": "freeze until user confirms module",
-  "production_deployment": false
+  "production_deployment": false,
+  "official_frontend_overrides": {
+    "frontend/src/components/ChatReferenceSourceView.vue": "b98df16a61cd58ec816adc1aad2c3916891b3a3c3908410d1cd9956332e66521",
+    "frontend/src/components/document-preview.vue": "ca23920000f413258639166b1ae77296158405ccc82c8151fff3bb745a88047e",
+    "frontend/src/utils/filePreview.ts": "708ef68eb29fa4ec365e0783879e655a2637cc9d6379d8599bacdcb992cb9a32",
+    "frontend/src/utils/filePreview.test.ts": "ca24185ef4c5720c1f03e9d563007d249b8f200bfc256e50a8265dbc54540779",
+    "frontend/src/components/ChatReferenceSourceView.test.ts": "3078a348813490e71cacb329c3a7801ab42806b61e9204da33edcaef4185538f"
+  },
+  "approved_decision": "2026-10-20 user: candidate28180 uses mapped original type/PDF viewer; 28182 unchanged"
 }

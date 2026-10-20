@@ -30,7 +30,13 @@ def inspect(root):
         policy = json.loads(policy_path.read_text())
         for ref in policy.get("official_frontend_candidates", []):
             candidate = git(root, "diff", "--name-only", ref, "--", "frontend")
-            if not candidate:
+            overrides = policy.get("official_frontend_overrides", {})
+            paths = set(candidate.splitlines())
+            if paths.issubset(overrides) and all(
+                (root / name).is_file()
+                and hashlib.sha256((root / name).read_bytes()).hexdigest() == digest
+                for name, digest in overrides.items()
+            ):
                 original = ""
                 break
     failures.extend(original.splitlines())
