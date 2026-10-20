@@ -1,0 +1,7 @@
+{
+  "registry_default": "docker.m.daocloud.io",
+  "paradedb": "docker.m.daocloud.io/paradedb/paradedb:v0.25.11-pg17",
+  "redis": "redis:7.0-alpine",
+  "neo4j": "neo4j:2025.10.1",
+  "policy": "Use cached supporting images; new public image downloads use persistent China registry defaults."
+}

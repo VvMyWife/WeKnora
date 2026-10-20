@@ -64,7 +64,10 @@ func ljcTableExists(ctx context.Context, tx *sql.Tx, sqlite bool, name string) (
 // prepareLJCLegacyBridge recognizes only the frozen pre-fork layout. It never
 // guesses a version, runs a down migration, or changes application data.
 func prepareLJCLegacyBridge(dsn string, opts MigrationOptions) error {
-	layout := ljcLayout(dsn, opts)
+	return prepareLJCLegacyBridgeWithLayout(dsn, opts, ljcLayout(dsn, opts))
+}
+
+func prepareLJCLegacyBridgeWithLayout(dsn string, opts MigrationOptions, layout ljcMigrationLayout) error {
 	if _, err := os.Stat(layout.path); os.IsNotExist(err) {
 		return nil
 	} else if err != nil {

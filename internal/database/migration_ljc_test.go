@@ -13,7 +13,7 @@ func TestLJCMigrationsFreshAndLegacySQLite(t *testing.T) {
 	root := sqliteRepoRoot(t)
 	legacy := t.TempDir()
 	require.NoError(t, os.MkdirAll(filepath.Join(legacy, "migrations/sqlite"), 0755))
-	files, err := filepath.Glob(filepath.Join(root, "migrations/sqlite/*.sql"))
+	files, err := filepath.Glob(filepath.Join(root, "migrations/ljc/bootstrap/sqlite/*.sql"))
 	require.NoError(t, err)
 	for _, f := range files {
 		b, e := os.ReadFile(f)
@@ -54,7 +54,7 @@ func TestLJCMigrationsFreshAndLegacySQLite(t *testing.T) {
 				}
 			}
 			chdirAndRestore(t, root)
-			err := RunMigrationsWithOptions("sqlite3://unused", opts)
+			err := BootstrapLJCLegacy("sqlite3://unused", opts)
 			db := openSQLiteDB(t, dbPath)
 			if scenario == "missing-table" || scenario == "dirty" {
 				require.Error(t, err)
@@ -106,6 +106,7 @@ func TestLJCMigrationPostgresRestore(t *testing.T) {
 		require.NoError(t, db.QueryRow("SELECT COUNT(*) FROM "+table).Scan(&n))
 		counts[table] = n
 	}
+	require.NoError(t, BootstrapLJCLegacy(dsn, MigrationOptions{}))
 	require.NoError(t, RunMigrationsWithOptions(dsn, MigrationOptions{}))
 	require.NoError(t, RunMigrationsWithOptions(dsn, MigrationOptions{}))
 	var version, custom int

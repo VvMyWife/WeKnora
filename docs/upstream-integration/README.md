@@ -29,3 +29,48 @@ docker inspect -f '{{.Name}} {{.Id}} {{.Config.Image}}' WeKnora-app WeKnora-fron
 ~~~
 每阶段测试通过后独立提交，作者和提交者ljc，记录SHA；后续补充实际测试、构建和恢复命令。
 中断先核对Git、进程和数据库状态，不盲目重放；依赖镜像持久化配置，不提交凭据、缓存和数据。
+
+## Schema-only迁移工具
+
+只读取环境变量LJC_MIGRATION_DSN或LJC_SQLITE_PATH，禁止将密码写在命令参数和Git中。模式：status只读状态；bootstrap-legacy按冻结SQL指纹识别旧个人账本并拆分；up运行官方和个人迁移，不启动应用任务。
+冻结SQL来自a418adc45中的官方PostgreSQL90/SQLite12；manifest校验每个文件SHA256。dirty、缺表、歧义或篡改均失败，不执行force或业务表清理。
+
+构建（使用已有镜像及持久化国内依赖镜像）：
+~~~bash
+cd /home/ubuntu/RAG_Weknora-upstream-20261020
+docker run --rm -v "$PWD:/src" -v /home/ubuntu/RAG_Weknora/.go-modcache:/go/pkg/mod -v weknora-go-build-cache:/root/.cache/go-build -w /src weknora-builder:ljc-fork sh -c 'go test ./internal/database ./cmd/ljc-migrate -count=1 && mkdir -p runtime/upstream && go build -o runtime/upstream/ljc-migrate ./cmd/ljc-migrate'
+~~~
+
+专用备份副本恢复完成且状态为94/clean后，运行真实数据行数及重复执行验收：
+~~~bash
+docker run --rm --network ljc-upstream-validate --env-file /home/ubuntu/weknora-fork-migration/20261020-upstream/migration-legacy.env -v "$PWD:/src" -v /home/ubuntu/RAG_Weknora/.go-modcache:/go/pkg/mod -v weknora-go-build-cache:/root/.cache/go-build -w /src weknora-builder:ljc-fork go test ./internal/database -run '^TestLJCMigrationPostgresRestore$' -count=1 -v
+~~~
+该测试只接受ljc_migration_test数据库名。完成后账本已拆分，不可直接当旧94再跑；先恢复专用副本。
+
+检查及重复引导（只使用已创建的专用环境文件）：
+~~~bash
+docker run --rm --network ljc-upstream-validate --env-file /home/ubuntu/weknora-fork-migration/20261020-upstream/migration-legacy.env -v "$PWD:/src" -w /src weknora-builder:ljc-fork runtime/upstream/ljc-migrate -mode status
+docker run --rm --network ljc-upstream-validate --env-file /home/ubuntu/weknora-fork-migration/20261020-upstream/migration-legacy.env -v "$PWD:/src" -w /src weknora-builder:ljc-fork runtime/upstream/ljc-migrate -mode bootstrap-legacy
+~~~
+
+## 副本恢复与扩展依赖
+
+恢复任务和凭据留在私有备份目录，不入Git。restore-legacy.sh仅操作带upstream-20261020标签的ljc-upstream-legacy-postgres；restore-target.sh仅操作同标签的ljc-upstream-postgres。两者都只重建专用ljc_migration_test库，使用template0，完整pg_restore带--exit-on-error。
+新版ParadeDB先创建vector扩展，再恢复旧备份，满足pg_search新的依赖顺序。两个专用实例maintenance_work_mem为2GB、max_parallel_maintenance_workers为0，串行构建HNSW，避免Docker默认共享内存不足；生产配置不改。状态文件在开始时写running，完整恢复成功才写0，其他退出码均为失败。
+运行及检查退出码：
+~~~bash
+backup=/home/ubuntu/weknora-fork-migration/20261020-upstream
+bash "$backup/restore-legacy.sh" > "$backup/legacy-restore-manual.log" 2>&1
+cat "$backup/legacy-restore.status"
+bash "$backup/restore-target.sh" > "$backup/target-restore-manual.log" 2>&1
+cat "$backup/target-restore.status"
+~~~
+恢复会清空专用测试库，先确认未在其上运行后续验收。长任务不因终端超时自动重放，先查状态文件及进程。
+
+## 已完成的阶段验证
+
+阶段1提交：daeb98f8fdce2a500f36c7dfc4302129f6d81203；冻结检查相关7项测试通过。
+阶段2：数据库及CLI单元测试通过；SQLite新库、旧15账本、缺表、dirty和SQL篡改场景通过。
+2026-10-20在ParadeDB0.22.2及0.25.11的两个真实完整备份副本上，94→90+个人4、连续两次up均通过；knowledges、chunks、wiki_pages、archive_mapping_versions、message_citation_evidence、enrichment_recoveries行数保持一致。
+这只证明账本衔接；官方128升级和应用业务验收仍待阶段3以后验证。
+阶段2恢复：代码可在隔离分支回到daeb98f8f；已拆分的测试数据库通过私有restore脚本恢复94账本。生产库从未执行本工具。
