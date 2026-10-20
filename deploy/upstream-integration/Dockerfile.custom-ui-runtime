@@ -1,0 +1,9 @@
+FROM archive-intelligence-ui:document-graph-20261019-195330-r2
+ARG SOURCE_REVISION
+LABEL org.opencontainers.image.revision=${SOURCE_REVISION} ljc.operation=upstream-20261020
+RUN rm -rf /usr/share/nginx/html/*
+COPY frontend-custom/dist /usr/share/nginx/html
+COPY frontend-custom/nginx.conf /etc/nginx/templates/default.conf.template
+COPY frontend-custom/nginx-api-proxy.conf /etc/nginx/api-proxy.conf
+COPY frontend-custom/docker-entrypoint.sh /docker-entrypoint.sh
+RUN chmod +x /docker-entrypoint.sh

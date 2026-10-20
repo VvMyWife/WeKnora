@@ -1,0 +1,15 @@
+FROM wechatopenai/weknora-docreader:0.8.0
+USER root
+ARG SOURCE_REVISION
+LABEL org.opencontainers.image.revision=${SOURCE_REVISION} ljc.operation=upstream-20261020
+ENV PIP_INDEX_URL=https://pypi.tuna.tsinghua.edu.cn/simple \
+    UV_DEFAULT_INDEX=https://pypi.tuna.tsinghua.edu.cn/simple \
+    PLAYWRIGHT_DOWNLOAD_HOST=https://npmmirror.com/mirrors/playwright
+WORKDIR /app
+COPY docreader/pyproject.toml docreader/uv.lock ./
+# Verify the already installed locked dependencies without downloading anything.
+RUN env -u UV_DEFAULT_INDEX -u UV_INDEX_URL uv sync --locked --offline --no-dev
+COPY docreader /app/docreader
+RUN bash docreader/scripts/generate_proto.sh
+ENTRYPOINT ["/app/.venv/bin/python", "-m", "docreader.container_entrypoint"]
+CMD ["/app/.venv/bin/python", "-m", "docreader.main"]

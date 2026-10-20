@@ -38,19 +38,19 @@ docker inspect -f '{{.Name}} {{.Id}} {{.Config.Image}}' WeKnora-app WeKnora-fron
 构建（使用已有镜像及持久化国内依赖镜像）：
 ~~~bash
 cd /home/ubuntu/RAG_Weknora-upstream-20261020
-docker run --rm -v "$PWD:/src" -v /home/ubuntu/RAG_Weknora/.go-modcache:/go/pkg/mod -v weknora-go-build-cache:/root/.cache/go-build -w /src weknora-builder:ljc-fork sh -c 'go test ./internal/database ./cmd/ljc-migrate -count=1 && mkdir -p runtime/upstream && go build -o runtime/upstream/ljc-migrate ./cmd/ljc-migrate'
+docker run --rm -v "$PWD:/src" -v /home/ubuntu/RAG_Weknora/.go-modcache:/go/pkg/mod -v weknora-go-build-cache:/root/.cache/go-build -w /src weknora-builder:upstream-20261020 sh -c 'go test ./internal/database ./cmd/ljc-migrate -count=1 && mkdir -p runtime/upstream && go build -o runtime/upstream/ljc-migrate ./cmd/ljc-migrate'
 ~~~
 
 专用备份副本恢复完成且状态为94/clean后，运行真实数据行数及重复执行验收：
 ~~~bash
-docker run --rm --network ljc-upstream-validate --env-file /home/ubuntu/weknora-fork-migration/20261020-upstream/migration-legacy.env -v "$PWD:/src" -v /home/ubuntu/RAG_Weknora/.go-modcache:/go/pkg/mod -v weknora-go-build-cache:/root/.cache/go-build -w /src weknora-builder:ljc-fork go test ./internal/database -run '^TestLJCMigrationPostgresRestore$' -count=1 -v
+docker run --rm --network ljc-upstream-validate --env-file /home/ubuntu/weknora-fork-migration/20261020-upstream/migration-legacy.env -v "$PWD:/src" -v /home/ubuntu/RAG_Weknora/.go-modcache:/go/pkg/mod -v weknora-go-build-cache:/root/.cache/go-build -w /src weknora-builder:upstream-20261020 go test ./internal/database -run '^TestLJCMigrationPostgresRestore$' -count=1 -v
 ~~~
 该测试只接受ljc_migration_test数据库名。完成后账本已拆分，不可直接当旧94再跑；先恢复专用副本。
 
 检查及重复引导（只使用已创建的专用环境文件）：
 ~~~bash
-docker run --rm --network ljc-upstream-validate --env-file /home/ubuntu/weknora-fork-migration/20261020-upstream/migration-legacy.env -v "$PWD:/src" -v /home/ubuntu/RAG_Weknora/.go-modcache:/go/pkg/mod:ro -w /src weknora-builder:ljc-fork runtime/upstream/ljc-migrate -mode status
-docker run --rm --network ljc-upstream-validate --env-file /home/ubuntu/weknora-fork-migration/20261020-upstream/migration-legacy.env -v "$PWD:/src" -v /home/ubuntu/RAG_Weknora/.go-modcache:/go/pkg/mod:ro -w /src weknora-builder:ljc-fork runtime/upstream/ljc-migrate -mode bootstrap-legacy
+docker run --rm --network ljc-upstream-validate --env-file /home/ubuntu/weknora-fork-migration/20261020-upstream/migration-legacy.env -v "$PWD:/src" -v /home/ubuntu/RAG_Weknora/.go-modcache:/go/pkg/mod:ro -w /src weknora-builder:upstream-20261020 runtime/upstream/ljc-migrate -mode status
+docker run --rm --network ljc-upstream-validate --env-file /home/ubuntu/weknora-fork-migration/20261020-upstream/migration-legacy.env -v "$PWD:/src" -v /home/ubuntu/RAG_Weknora/.go-modcache:/go/pkg/mod:ro -w /src weknora-builder:upstream-20261020 runtime/upstream/ljc-migrate -mode bootstrap-legacy
 ~~~
 
 ## 副本恢复与扩展依赖
@@ -90,3 +90,10 @@ PaddleOCR同时保留原件总页数/缺页校验与新增SourceBlocks；图谱�
 沿用定制提交0fe3fa592的GitHub元数据停跟踪规则，不重新启用fork上的Actions。官方README恢复为当前主线说明，原部署README完整保存在legacy-deployment.md并标注历史版本。
 
 测试环境说明：供应商协议及沙箱配置测试使用假客户端，但构造期间会解析公网默认URL。服务器DNS不稳定，测试容器对明确的模拟服务域名使用固定公网占位映射，并使用cgo DNS。此映射只用于单元测试，不能作为真实网络、模型或应用验收证据，也不用于候选应用。
+
+阶段3正式merge提交：a00419105467f514c5999a3bb34a53b638734e01；双亲96bfe3d32和eecfe4b3，作者/提交者均ljc。官方目标已成为集成分支祖先，生产工作区仍在a418adc45。
+构建环境已从固定Go镜像摘要及Node/Rust工具链重建，APT/Python/npm/Cargo的默认源均在Dockerfile持久配置。保留源码缓存、Cargo目标卷及npm缓存。官方前端镜像已构建；后端原生镜像通过schema-only空库状态及BrowserSkill0.3.1启动检查，接下来进行隔离应用验收。
+
+## 当前可执行说明
+
+完整测试、构建、隔离启动、中断自检及恢复命令见[runbook.md](runbook.md)，当前真实回归状态见[acceptance.md](acceptance.md)。历史阶段记录按当时状态保留；后续获批原件PDF适配是官方UI树的受控例外，见policy.json。

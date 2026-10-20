@@ -20,3 +20,5 @@
 
 ## Approved integration candidate exception (2026-10-20)
 - User explicitly approved mapped-original type/PDF preview support in candidate28180. Exact file hashes are pinned in docs/upstream-integration/policy.json. This does not authorize production deployment or other UI module redesign.
+
+- Production entry-point notes above describe the preserved running baseline. Current full-sync acceptance uses official28180 and custom28182 with isolated backend28081; never treat a candidate change as a production deployment.

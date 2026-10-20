@@ -1,0 +1,113 @@
+name: ljc-upstream-acceptance
+services:
+  postgres:
+    image: docker.m.daocloud.io/paradedb/paradedb:v0.25.11-pg17
+    container_name: ljc-upstream-acceptance-postgres
+    labels: {ljc.operation: upstream-20261020}
+    environment:
+      POSTGRES_USER: '${POSTGRES_USER:?private environment required}'
+      POSTGRES_PASSWORD: '${POSTGRES_PASSWORD:?private environment required}'
+      POSTGRES_DB: '${POSTGRES_DB:?private environment required}'
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./acceptance-init.sql:/docker-entrypoint-initdb.d/10-weknora-extensions.sql:ro
+    networks: [validation]
+    healthcheck:
+      test: [CMD-SHELL, 'pg_isready -U "$$POSTGRES_USER" -d "$$POSTGRES_DB"']
+      interval: 5s
+      timeout: 3s
+      retries: 30
+  redis:
+    image: redis:7.0-alpine
+    container_name: ljc-upstream-acceptance-redis
+    labels: {ljc.operation: upstream-20261020}
+    environment: {REDIS_PASSWORD: '${REDIS_PASSWORD:?private environment required}'}
+    command: [sh, -ec, 'exec redis-server --appendonly yes --requirepass "$$REDIS_PASSWORD"']
+    volumes: [redis-data:/data]
+    networks: [validation]
+    healthcheck:
+      test: [CMD-SHELL, 'REDISCLI_AUTH="$$REDIS_PASSWORD" redis-cli ping | grep -q PONG']
+      interval: 5s
+      timeout: 3s
+      retries: 30
+  neo4j:
+    image: weknora-neo4j:ljc-upstream-20261020
+    container_name: ljc-upstream-acceptance-neo4j
+    labels: {ljc.operation: upstream-20261020}
+    environment:
+      NEO4J_dbms_security_procedures_unrestricted: 'apoc.*'
+      NEO4J_dbms_security_procedures_allowlist: 'apoc.*'
+      NEO4J_AUTH: '${NEO4J_AUTH:?private environment required}'
+      NEO4J_server_memory_heap_initial__size: 512m
+      NEO4J_server_memory_heap_max__size: 1G
+      NEO4J_server_memory_pagecache_size: 512m
+    volumes: [graph-data:/data, graph-logs:/logs]
+    networks: [validation]
+  docreader:
+    image: weknora-docreader:ljc-upstream-eecfe4b3
+    container_name: ljc-upstream-acceptance-docreader
+    init: true
+    labels: {ljc.operation: upstream-20261020}
+    environment:
+      SSRF_WHITELIST: 10.20.0.15,localhost,127.0.0.1
+      DOCREADER_GRPC_MAX_WORKERS: '2'
+    volumes: [reader-tmp:/tmp/docreader]
+    networks: [validation, egress]
+    healthcheck:
+      test: [CMD, /bin/grpc_health_probe, '-addr=:50051']
+      interval: 10s
+      timeout: 5s
+      retries: 30
+  app:
+    image: weknora-app:ljc-upstream-eecfe4b3
+    container_name: ljc-upstream-acceptance-app
+    init: true
+    labels: {ljc.operation: upstream-20261020}
+    env_file: ['${LJC_ACCEPTANCE_ENV:?set absolute path to private acceptance.env}']
+    environment:
+      AUTO_MIGRATE: 'false'
+      AUTO_RECOVER_DIRTY: 'false'
+    ports: ['28081:8080']
+    volumes:
+      - files:/data/files
+      - reader-tmp:/tmp/docreader
+      - processing-logs:/app/logs/processing
+    networks: [validation, egress]
+    depends_on:
+      postgres: {condition: service_healthy}
+      redis: {condition: service_healthy}
+      docreader: {condition: service_healthy}
+      neo4j: {condition: service_started}
+    healthcheck:
+      test: [CMD-SHELL, 'curl -fsS http://127.0.0.1:8080/health >/dev/null']
+      interval: 10s
+      timeout: 5s
+      retries: 30
+  official-ui:
+    image: weknora-ui:upstream-eecfe4b3
+    container_name: ljc-upstream-acceptance-official-ui
+    labels: {ljc.operation: upstream-20261020}
+    environment: {APP_HOST: app, APP_PORT: '8080', DEFAULT_LOCALE: zh-CN}
+    ports: ['28180:80']
+    networks: [validation, egress]
+    depends_on: {app: {condition: service_healthy}}
+  custom-ui:
+    image: weknora-ui-custom:ljc-upstream-eecfe4b3
+    container_name: ljc-upstream-acceptance-custom-ui
+    profiles: [custom]
+    labels: {ljc.operation: upstream-20261020}
+    environment: {APP_HOST: app, APP_PORT: '8080', DEFAULT_LOCALE: zh-CN}
+    ports: ['28182:80']
+    networks: [validation, egress]
+    depends_on: {app: {condition: service_healthy}}
+networks:
+  validation: {external: true, name: ljc-upstream-validate}
+  egress: {name: ljc-upstream-acceptance-egress}
+volumes:
+  postgres-data: {name: ljc-upstream-acceptance-postgres}
+  redis-data: {name: ljc-upstream-acceptance-redis}
+  graph-data: {name: ljc-upstream-acceptance-graph}
+  graph-logs: {name: ljc-upstream-acceptance-graph-logs}
+  files: {name: ljc-upstream-acceptance-files}
+  reader-tmp: {name: ljc-upstream-acceptance-reader-tmp}
+  processing-logs: {name: ljc-upstream-acceptance-processing-logs}

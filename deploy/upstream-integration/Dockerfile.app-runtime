@@ -1,0 +1,37 @@
+FROM weknora-rust-builder:upstream-20261020 AS node-runtime
+FROM weknora-app:document-graph-20261019-195330
+USER root
+ARG SOURCE_REVISION
+LABEL org.opencontainers.image.revision=${SOURCE_REVISION} ljc.operation=upstream-20261020
+ENV GODEBUG=netdns=cgo GOPROXY=https://goproxy.cn GOSUMDB=sum.golang.google.cn \
+    PIP_INDEX_URL=https://pypi.tuna.tsinghua.edu.cn/simple \
+    UV_DEFAULT_INDEX=https://pypi.tuna.tsinghua.edu.cn/simple \
+    NPM_CONFIG_REGISTRY=https://registry.npmmirror.com \
+    JIEBA_DICT_DIR=/app/jieba-dict \
+    BROWSERSKILL_BINARY=/opt/weknora/browserskill/bsk \
+    BROWSERSKILL_EXTENSION_PATH=/opt/weknora/browserskill/browser-skill-weknora-0.3.1.zip
+RUN find /etc/apt -type f \( -name '*.sources' -o -name '*.list' \) -exec sed -i 's@http://deb.debian.org/debian@http://mirrors.tuna.tsinghua.edu.cn/debian@g;s@http://security.debian.org/debian-security@http://mirrors.tuna.tsinghua.edu.cn/debian-security@g' {} + \
+ && apt-get update && apt-get install -y --no-install-recommends python3-venv python3-pip libsqlite3-0 \
+ && pip3 install --break-system-packages uv \
+ && rm -rf /var/lib/apt/lists/*
+COPY --from=node-runtime /usr/local/bin/node /usr/local/bin/node
+COPY --from=node-runtime /usr/local/lib/node_modules/npm /usr/local/lib/node_modules/npm
+RUN ln -sf ../lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm \
+ && ln -sf ../lib/node_modules/npm/bin/npx-cli.js /usr/local/bin/npx
+WORKDIR /app
+COPY runtime/upstream/WeKnora /app/WeKnora
+COPY runtime/upstream/ljc-migrate /app/ljc-migrate
+COPY runtime/upstream/jieba-dict /app/jieba-dict
+COPY runtime/upstream/browserskill /opt/weknora/browserskill
+COPY runtime/upstream/licenses /app/licenses-upstream
+COPY THIRD_PARTY_NOTICES.md /app/THIRD_PARTY_NOTICES.md
+COPY migrations /app/migrations-next
+RUN mv /app/migrations /app/migrations-before-upstream && mv /app/migrations-next /app/migrations
+COPY config /app/config
+COPY scripts /app/scripts
+COPY runtime/upstream/preloaded-skills /app/skills/preloaded
+RUN chmod +x /app/scripts/*.sh /app/WeKnora /app/ljc-migrate \
+ && chown -R appuser:appuser /app/config /app/skills /app/jieba-dict
+EXPOSE 8080
+ENTRYPOINT ["/app/scripts/docker-entrypoint.sh"]
+CMD ["/app/WeKnora"]

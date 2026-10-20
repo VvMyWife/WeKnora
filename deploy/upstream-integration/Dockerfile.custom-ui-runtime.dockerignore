@@ -1,0 +1,7 @@
+**
+!frontend-custom/
+!frontend-custom/dist/
+!frontend-custom/dist/**
+!frontend-custom/nginx.conf
+!frontend-custom/nginx-api-proxy.conf
+!frontend-custom/docker-entrypoint.sh

@@ -1,0 +1,4 @@
+FROM neo4j:2025.10.1
+USER root
+RUN mkdir -p /var/lib/neo4j/plugins && cp /var/lib/neo4j/labs/apoc-2025.10.1-core.jar /var/lib/neo4j/plugins/ && chown -R neo4j:neo4j /var/lib/neo4j/plugins
+USER neo4j

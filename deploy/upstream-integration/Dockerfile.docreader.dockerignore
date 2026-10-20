@@ -1,0 +1,5 @@
+**
+!docreader/
+!docreader/**
+**/__pycache__/
+**/*.pyc

@@ -1,0 +1,12 @@
+FROM weknora-frontend-builder:upstream-20261020
+ENV RUSTUP_HOME=/usr/local/rustup CARGO_HOME=/usr/local/cargo \
+    RUSTUP_DIST_SERVER=https://rsproxy.cn RUSTUP_UPDATE_ROOT=https://rsproxy.cn/rustup \
+    PIP_INDEX_URL=https://pypi.tuna.tsinghua.edu.cn/simple \
+    UV_DEFAULT_INDEX=https://pypi.tuna.tsinghua.edu.cn/simple
+ENV PATH=/usr/local/cargo/bin:$PATH
+RUN find /etc/apt -type f \( -name '*.sources' -o -name '*.list' \) -exec sed -i 's@http://deb.debian.org/debian@http://mirrors.tuna.tsinghua.edu.cn/debian@g' {} + \
+ && apt-get update && apt-get install -y --no-install-recommends ca-certificates curl git python3 build-essential cmake pkg-config libssl-dev \
+ && rm -rf /var/lib/apt/lists/* \
+ && curl -fsSL https://rsproxy.cn/rustup-init.sh | sh -s -- -y --profile minimal --default-toolchain stable
+RUN printf '[source.crates-io]\nreplace-with = "rsproxy-sparse"\n[source.rsproxy-sparse]\nregistry = "sparse+https://rsproxy.cn/index/"\n[net]\nretry = 3\n' > /usr/local/cargo/config.toml
+WORKDIR /src
