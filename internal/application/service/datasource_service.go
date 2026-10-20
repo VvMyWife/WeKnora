@@ -13,6 +13,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Tencent/WeKnora/internal/application/access"
 	"github.com/Tencent/WeKnora/internal/datasource"
 	"github.com/Tencent/WeKnora/internal/logger"
 	"github.com/Tencent/WeKnora/internal/tracing/langfuse"
@@ -67,6 +68,9 @@ func NewDataSourceService(
 func (s *DataSourceService) CreateDataSource(ctx context.Context, ds *types.DataSource) (*types.DataSource, error) {
 	if ds == nil {
 		return nil, datasource.ErrDataSourceInvalid
+	}
+	if err := datasource.ValidateSyncSchedule(ds.SyncSchedule); err != nil {
+		return nil, err
 	}
 
 	// Validate knowledge base exists
@@ -145,6 +149,22 @@ func (s *DataSourceService) ListDataSources(ctx context.Context, kbID string) ([
 
 // UpdateDataSource updates an existing data source
 func (s *DataSourceService) UpdateDataSource(ctx context.Context, ds *types.DataSource) (*types.DataSource, error) {
+	return s.updateDataSource(ctx, ds, nil, nil)
+}
+
+// PatchDataSourceSyncSettings preserves worker state and settings omitted by the caller.
+func (s *DataSourceService) PatchDataSourceSyncSettings(
+	ctx context.Context, before, after *types.DataSource, fields []string,
+) (*types.DataSource, error) {
+	if before == nil || after == nil || before.ID != after.ID || len(fields) == 0 {
+		return nil, datasource.ErrDataSourceInvalid
+	}
+	return s.updateDataSource(ctx, after, before, fields)
+}
+
+func (s *DataSourceService) updateDataSource(
+	ctx context.Context, ds, before *types.DataSource, fields []string,
+) (*types.DataSource, error) {
 	if ds == nil || ds.ID == "" {
 		return nil, datasource.ErrDataSourceInvalid
 	}
@@ -167,6 +187,9 @@ func (s *DataSourceService) UpdateDataSource(ctx context.Context, ds *types.Data
 	}
 	if ds.TenantID != existing.TenantID {
 		return nil, datasource.ErrDataSourceInvalid
+	}
+	if err := datasource.ValidateSyncSchedule(ds.SyncSchedule); err != nil {
+		return nil, err
 	}
 
 	// Credentials NEVER flow through this endpoint — they live behind the
@@ -214,9 +237,22 @@ func (s *DataSourceService) UpdateDataSource(ctx context.Context, ds *types.Data
 		}
 	}
 
-	if err := s.dsRepo.Update(ctx, ds); err != nil {
+	if before != nil {
+		err = s.dsRepo.PatchSyncSettings(ctx, ds, before.Config, fields)
+	} else {
+		err = s.dsRepo.Update(ctx, ds)
+	}
+	if err != nil {
 		logger.Errorf(ctx, "failed to update data source: %v", err)
 		return nil, err
+	}
+
+	if before != nil {
+		// Schedule from current persisted status, never the handler's stale snapshot.
+		ds, err = s.dsRepo.FindByID(ctx, ds.ID)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	// Update cron schedule
@@ -513,8 +549,10 @@ func (s *DataSourceService) ManualSync(ctx context.Context, dsID string) (*types
 	logger.Infof(ctx, "sync task enqueued: ds=%s syncLog=%s", dsID, syncLog.ID)
 	recordKBActivity(ctx, s.audit, ds.TenantID, ds.KnowledgeBaseID, types.AuditActionDataSourceSyncStarted,
 		"data_source", ds.ID, types.AuditOutcomeAccepted,
-		map[string]any{"name": ds.Name, "type": ds.Type, "sync_log_id": syncLog.ID,
-			"task_id": info.ID, "trigger": "manual", "processing_status": "pending"})
+		map[string]any{
+			"name": ds.Name, "type": ds.Type, "sync_log_id": syncLog.ID,
+			"task_id": info.ID, "trigger": "manual", "processing_status": "pending",
+		})
 	return syncLog, nil
 }
 
@@ -544,6 +582,9 @@ func (s *DataSourceService) PauseDataSource(ctx context.Context, id string) erro
 func (s *DataSourceService) ResumeDataSource(ctx context.Context, id string) error {
 	ds, err := s.GetDataSource(ctx, id)
 	if err != nil {
+		return err
+	}
+	if err := datasource.ValidateSyncSchedule(ds.SyncSchedule); err != nil {
 		return err
 	}
 
@@ -627,6 +668,10 @@ func (s *DataSourceService) ProcessSync(ctx context.Context, task *asynq.Task) e
 		return nil
 	}
 
+	ctx, err = access.WithKBTaskWrite(ctx, kb, ds.TenantID)
+	if err != nil {
+		return fmt.Errorf("%w: data source KB does not belong to its tenant", asynq.SkipRetry)
+	}
 	wasPaused := ds.Status == types.DataSourceStatusPaused
 
 	// Get connector
@@ -660,10 +705,6 @@ func (s *DataSourceService) ProcessSync(ctx context.Context, task *asynq.Task) e
 		_ = s.dsRepo.Update(ctx, ds)
 		return err
 	}
-	// Surface the KB's multimodal/VLM state to the connector so it only extracts
-	// embedded images for OCR when the KB can actually ingest them (never persisted).
-	config.MultimodalEnabled = kb.IsMultimodalEnabled()
-
 	// Streaming path: connectors that support it interleave fetch→ingest→
 	// checkpoint so a large sync bounds memory and resumes after a timeout
 	// instead of restarting (Tencent/WeKnora#2136). Others fall back below.
@@ -677,8 +718,12 @@ func (s *DataSourceService) ProcessSync(ctx context.Context, task *asynq.Task) e
 	var fetchErr error
 
 	if payload.ForceFull || ds.SyncMode == types.SyncModeFull {
-		// Full sync
-		items, fetchErr = connector.FetchAll(ctx, config, config.ResourceIDs)
+		if full, ok := connector.(datasource.FullSyncWithCursor); ok {
+			cursor, _ := ds.ParseSyncCursor()
+			items, nextCursor, fetchErr = full.FetchAllFromCursor(ctx, config, config.ResourceIDs, cursor)
+		} else {
+			items, fetchErr = connector.FetchAll(ctx, config, config.ResourceIDs)
+		}
 		logger.Infof(ctx, "full sync fetched %d items", len(items))
 	} else {
 		// Incremental sync
@@ -719,7 +764,7 @@ func (s *DataSourceService) ProcessSync(ctx context.Context, task *asynq.Task) e
 	}
 
 	// Process fetched items and write to knowledge base
-	var result = &types.SyncResult{
+	result := &types.SyncResult{
 		Total: len(items),
 	}
 
@@ -940,16 +985,6 @@ func (s *DataSourceService) applyFetchedItem(
 			// Duplicate file/URL is not a failure — count as skipped.
 			logger.Infof(ctx, "item %q (external_id=%s) already exists, skipping", item.Title, item.ExternalID)
 			result.Skipped++
-		case item.Metadata["embedded_image"] == "true":
-			// An image extracted from a document for OCR is a best-effort
-			// enrichment, not the document itself. If the KB cannot ingest it
-			// (VLM/object-storage not configured for images, or a transient error),
-			// skip it rather than failing the whole sync: the doc body already
-			// synced, and the image stays in SubtreeKeep for a later retry once the
-			// KB is configured.
-			logger.Infof(ctx, "skipping embedded image %q (external_id=%s), not ingested: %v",
-				item.Title, item.ExternalID, err)
-			result.Skipped++
 		default:
 			logger.Warnf(ctx, "failed to ingest item %q (external_id=%s): %v", item.Title, item.ExternalID, err)
 			result.Failed++
@@ -976,6 +1011,67 @@ func streamStartCursor(ds *types.DataSource, forceFull bool, attempt int) (*type
 		return nil, nil
 	}
 	return ds.ParseSyncCursor()
+}
+
+// feishuSettingResyncRequired is the one-shot upgrade marker key. Legacy
+// feishu/lark data sources are stamped by migration 000122 (sqlite 000040).
+const feishuSettingResyncRequired = "resync_required"
+
+// resyncRequired reads the one-shot upgrade marker out of parsed config
+// Settings. Tolerates both bool and string encodings. The marker is stamped
+// onto legacy feishu/lark data sources by migration 000122 (sqlite 000040)
+// when the per-source parse_mode shipped; it upgrades their next sync — even
+// a scheduled incremental one — to a full pass so existing documents re-ingest
+// with folder paths and block-level parsing.
+func resyncRequired(cfg *types.DataSourceConfig) bool {
+	if cfg == nil {
+		return false
+	}
+	switch v := cfg.Settings[feishuSettingResyncRequired].(type) {
+	case bool:
+		return v
+	case string:
+		return v == "true"
+	default:
+		return false
+	}
+}
+
+// clearResyncMarker removes the one-shot upgrade marker after the upgraded sync
+// succeeded so it never fires again. Streaming path only: the feishu/lark
+// connectors the migration tags all implement StreamingConnector.
+func (s *DataSourceService) clearResyncMarker(ctx context.Context, ds *types.DataSource) {
+	cfg, err := ds.ParseConfig()
+	if err == nil && cfg.Settings[feishuSettingResyncRequired] == nil {
+		return
+	}
+	// Re-read the row before writing: the upgraded sync may have run long, and
+	// a full-row Update from the sync-start snapshot would silently revert
+	// concurrent user edits (settings, resource_ids, schedule…). Only the
+	// marker removal is ours to persist.
+	fresh, err := s.dsRepo.FindByID(ctx, ds.ID)
+	if err != nil {
+		logger.Warnf(ctx, "failed to clear resync_required marker, re-read failed: ds=%s err=%v", ds.ID, err)
+		return
+	}
+	cfg, err = fresh.ParseConfig()
+	if err != nil {
+		logger.Warnf(ctx, "failed to clear resync_required marker, config unreadable: ds=%s err=%v", ds.ID, err)
+		return
+	}
+	if cfg.Settings[feishuSettingResyncRequired] == nil {
+		return
+	}
+	delete(cfg.Settings, feishuSettingResyncRequired)
+	blob, err := cfg.ToJSON()
+	if err != nil {
+		logger.Warnf(ctx, "failed to clear resync_required marker, config re-encode failed: ds=%s err=%v", ds.ID, err)
+		return
+	}
+	fresh.Config = blob
+	if err := s.dsRepo.Update(ctx, fresh); err != nil {
+		logger.Warnf(ctx, "failed to clear resync_required marker: ds=%s err=%v", ds.ID, err)
+	}
 }
 
 // streamSyncHandler adapts a streaming fetch to the knowledge-base ingest path.
@@ -1031,6 +1127,26 @@ func (h *streamSyncHandler) Checkpoint(ctx context.Context, cursor *types.SyncCu
 	return nil
 }
 
+// streamingFetch dispatches to FetchFullStream when a connector can re-fetch
+// every item while keeping the stored cursor as the deletion baseline. Other
+// streaming connectors keep FetchStream, including force-full runs that drop
+// the cursor on the first attempt via streamStartCursor.
+func streamingFetch(
+	ctx context.Context,
+	sc datasource.StreamingConnector,
+	config *types.DataSourceConfig,
+	forceFull bool,
+	startCursor, fullBaseline *types.SyncCursor,
+	h datasource.StreamHandler,
+) (*types.SyncCursor, error) {
+	if forceFull {
+		if full, ok := sc.(datasource.FullStreamingConnector); ok {
+			return full.FetchFullStream(ctx, config, fullBaseline, h)
+		}
+	}
+	return sc.FetchStream(ctx, config, startCursor, h)
+}
+
 // processSyncStreaming runs a sync through a StreamingConnector, ingesting each
 // item as it arrives and checkpointing progress so the run is memory-bounded and
 // resumable after a timeout.
@@ -1054,6 +1170,12 @@ func (s *DataSourceService) processSyncStreaming(
 	autoTagIDs := s.resolveAutoTagIDs(ctx, ds)
 
 	forceFull := payload.ForceFull || ds.SyncMode == types.SyncModeFull
+	if resyncRequired(config) {
+		// One-shot legacy upgrade (design §7). The marker is cleared only
+		// after the run succeeds below; a failure keeps it so the retry
+		// resumes the upgraded pass from its checkpoint.
+		forceFull = true
+	}
 	attempt, _ := asynq.GetRetryCount(ctx)
 	startCursor, err := streamStartCursor(ds, forceFull, attempt)
 	if err != nil {
@@ -1066,7 +1188,21 @@ func (s *DataSourceService) processSyncStreaming(
 	result := &types.SyncResult{}
 	handler := &streamSyncHandler{svc: s, ds: ds, tagIDs: autoTagIDs, result: result, syncLog: syncLog}
 
-	nextCursor, fetchErr := sc.FetchStream(ctx, config, startCursor, handler)
+	fullBaseline := startCursor
+	if forceFull {
+		if _, ok := sc.(datasource.FullStreamingConnector); ok {
+			baseline, cursorErr := ds.ParseSyncCursor()
+			if cursorErr != nil {
+				logger.Errorf(ctx, "failed to parse full-sync cursor: %v", cursorErr)
+				s.updateSyncRunResult(ctx, ds, syncLog, result, nil,
+					types.SyncLogStatusFailed, fmt.Sprintf("Invalid cursor: %v", cursorErr), wasPaused)
+				return cursorErr
+			}
+			fullBaseline = baseline
+		}
+	}
+
+	nextCursor, fetchErr := streamingFetch(ctx, sc, config, forceFull, startCursor, fullBaseline, handler)
 	if fetchErr != nil {
 		// Progress so far is already checkpointed onto ds.LastSyncCursor; leave
 		// it in place so the Asynq retry resumes from there. Persist counts.
@@ -1109,6 +1245,12 @@ func (s *DataSourceService) processSyncStreaming(
 		}
 	}
 	s.updateSyncRunResult(ctx, ds, syncLog, result, resultJSON, status, errMsg, wasPaused)
+	// The upgraded full pass succeeded (success or partial — per-document
+	// failures are a normal retryable condition): retire the marker so it
+	// never fires again. Failed runs returned earlier and keep it.
+	if resyncRequired(config) {
+		s.clearResyncMarker(ctx, ds)
+	}
 	logger.Infof(ctx, "streaming sync completed: ds=%s created=%d updated=%d deleted=%d skipped=%d failed=%d",
 		payload.DataSourceID, result.Created, result.Updated, result.Deleted, result.Skipped, result.Failed)
 	return nil
@@ -1251,6 +1393,15 @@ func (s *DataSourceService) ingestItem(ctx context.Context, ds *types.DataSource
 		"source_resource_id": item.SourceResourceID,
 		"datasource_id":      ds.ID,
 	}
+	// The source system's own last-modified time, when the connector supplied
+	// one. The knowledge row's UpdatedAt moves on every re-parse, so this is
+	// the only record of how old the document itself is.
+	if !item.UpdatedAt.IsZero() {
+		metadata["source_updated_at"] = item.UpdatedAt.UTC().Format(time.RFC3339)
+	}
+	if !item.CreatedAt.IsZero() {
+		metadata["source_created_at"] = item.CreatedAt.UTC().Format(time.RFC3339)
+	}
 	for k, v := range item.Metadata {
 		metadata[k] = v
 	}
@@ -1281,6 +1432,9 @@ func (s *DataSourceService) ingestItem(ctx context.Context, ds *types.DataSource
 
 	// Case 1: content already fetched → build a FileHeader from bytes and call CreateKnowledgeFromFile
 	if len(item.Content) > 0 {
+		// Images ride inline as base64 data URIs; ProcessDocument's image
+		// resolver stores them on the file service and swaps in persistent
+		// provider:// URLs before chunking.
 		fh, err := bytesToFileHeader(item.Content, item.FileName)
 		if err != nil {
 			return isUpdate, fmt.Errorf("build file header: %w", err)
@@ -1342,7 +1496,13 @@ func (s *DataSourceService) ingestItem(ctx context.Context, ds *types.DataSource
 				return isUpdate, fmt.Errorf("marshal datasource metadata: %w", mErr)
 			}
 			created.Metadata = types.JSON(metadataBytes)
-			if uErr := s.knowledgeService.GetRepository().UpdateKnowledge(ctx, created); uErr != nil {
+			// Only the metadata column: the processing task is already
+			// queued, and a full-row save of this snapshot could put
+			// parse_status back to "pending" under a worker that has moved
+			// it on, which then skips post-process and strands the row.
+			if uErr := s.knowledgeService.GetRepository().UpdateKnowledgeColumn(
+				ctx, created.ID, "metadata", created.Metadata,
+			); uErr != nil {
 				return isUpdate, fmt.Errorf("attach datasource metadata: %w", uErr)
 			}
 		}

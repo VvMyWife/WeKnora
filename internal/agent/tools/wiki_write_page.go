@@ -121,17 +121,17 @@ func (t *wikiWritePageTool) Execute(ctx context.Context, args json.RawMessage) (
 	// Resolve and authorize provenance before choosing a creation target. In a
 	// multi-Wiki Agent, source documents provide a server-owned KB hint and
 	// remove the need for a model-visible knowledge_base_id argument.
+	var sourceDocs []wikiSourceDocument
 	var resolvedRefs []string
 	var err error
 	if params.SourceRefs != nil {
-		if t.scopeEnforced {
-			resolvedRefs, err = resolveAuthorizedSourceRefs(ctx, t.searchTargets, *params.SourceRefs, t.knowledgeService)
-			if err != nil {
-				return &types.ToolResult{Success: false, Error: "Invalid source_refs: " + err.Error()}, nil
-			}
-		} else {
-			resolvedRefs = resolveSourceRefs(ctx, t.knowledgeService, *params.SourceRefs)
+		sourceDocs, err = resolveWikiSourceDocuments(
+			ctx, *params.SourceRefs, t.knowledgeService, t.searchTargets, t.scopeEnforced,
+		)
+		if err != nil {
+			return &types.ToolResult{Success: false, Error: "Invalid source_refs: " + err.Error()}, nil
 		}
+		resolvedRefs = wikiSourceRefs(sourceDocs)
 	}
 	// Resolve existing pages across every legal Wiki KB. Cached provenance only
 	// influences lookup order; ambiguous slugs are never silently written to
@@ -139,9 +139,7 @@ func (t *wikiWritePageTool) Execute(ctx context.Context, args json.RawMessage) (
 	existingPage, kbID, err := resolveUniqueWikiPage(ctx, t.wikiPageService, params.Slug, t.kbIDs, t.routes)
 	if errors.Is(err, errWikiPageNotFoundInScope) {
 		existingPage = nil
-		sourceKBHints, sourceErr := wikiKnowledgeBasesForSourceRefs(
-			ctx, resolvedRefs, t.knowledgeService, t.kbIDs,
-		)
+		sourceKBHints, sourceErr := wikiKnowledgeBasesForSourceDocuments(sourceDocs, t.kbIDs)
 		if sourceErr != nil {
 			return &types.ToolResult{Success: false, Error: "Failed to resolve source_refs routing: " + sourceErr.Error()}, nil
 		}
@@ -235,6 +233,7 @@ func (t *wikiWritePageTool) Execute(ctx context.Context, args json.RawMessage) (
 		Output:  output,
 		Data: map[string]interface{}{
 			"display_type": "wiki_write_page",
+			"data_change":  wikiDataChange("write_page", kbID),
 			"action":       action,
 			"slug":         params.Slug,
 			"title":        params.Title,
@@ -276,4 +275,9 @@ func normalizeAndValidateWikiSlug(raw string) (string, error) {
 // namespace (summary/…).
 func isSummaryNamespace(slug string) bool {
 	return strings.HasPrefix(slug, types.WikiPageTypeSummary+"/")
+}
+
+// ApprovalGrant scopes a session-wide approval to the run's knowledge bases.
+func (t *wikiWritePageTool) ApprovalGrant(ctx context.Context, _ json.RawMessage) (string, string) {
+	return wikiApprovalGrant(ctx, t.Name(), t.kbIDs)
 }

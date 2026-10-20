@@ -6,12 +6,28 @@ import (
 	"fmt"
 	"github.com/Tencent/WeKnora/internal/archivalcitations"
 	"github.com/Tencent/WeKnora/internal/modelcontext"
+	"strings"
 
 	"github.com/Tencent/WeKnora/internal/event"
 	"github.com/Tencent/WeKnora/internal/types"
 	"github.com/Tencent/WeKnora/internal/types/interfaces"
 	"github.com/google/uuid"
 )
+
+// EmptyTruncatedAnswerFallback explains an output-budget exhaustion with no answer text.
+const EmptyTruncatedAnswerFallback = "Sorry, this answer hit the model's per-response output limit " +
+	"before any text was produced. Try narrowing the question, or raise max_completion_tokens."
+
+// IsLengthFinishReason reports whether a provider ended a response because its
+// completion-token budget was exhausted.
+func IsLengthFinishReason(reason string) bool {
+	switch strings.ToLower(strings.TrimSpace(reason)) {
+	case "length", "max_tokens", "max_output_tokens":
+		return true
+	default:
+		return false
+	}
+}
 
 // PluginChatCompletionStream implements streaming chat completion functionality
 // as a plugin that can be registered to EventManager
@@ -60,6 +76,7 @@ func (p *PluginChatCompletionStream) OnEvent(ctx context.Context,
 	chatMessages = modelContext.EncodeMessages(chatMessages)
 	modelContext.CaptureArchival(ctx)
 	modelcontext.BindArchivalRepair(ctx, chatModel)
+	reportModelContextLeaks(ctx, "Stream", modelContext, chatMessages)
 	ctx = withPromptCacheMetadata(ctx, chatModel, chatMessages, opt, "knowledge_qa")
 	pipelineInfo(ctx, "Stream", "messages_ready", map[string]interface{}{
 		"message_count": len(chatMessages),
@@ -118,6 +135,7 @@ func (p *PluginChatCompletionStream) OnEvent(ctx context.Context,
 		thinkingOpen := false
 		answerCompleted := false
 		deferCitationCompletion := archivalcitations.FromContext(ctx) != nil
+		answerProduced := false
 
 		closeThinking := func() {
 			if !thinkingOpen {
@@ -185,6 +203,14 @@ func (p *PluginChatCompletionStream) OnEvent(ctx context.Context,
 					return
 				}
 
+				// A stream that stopped without a finish reason is a broken
+				// one, not a short answer: report it the way a read error is
+				// reported instead of closing the answer as complete.
+				if response.ResponseType == types.ResponseTypeAnswer && response.Done &&
+					response.FinishReason == types.FinishReasonIncomplete {
+					response.ResponseType = types.ResponseTypeError
+					response.Content = types.StreamEndedEarlyError
+				}
 				if response.ResponseType == types.ResponseTypeError {
 					pipelineError(ctx, "Stream", "stream_error", map[string]interface{}{
 						"session_id": chatManage.SessionID,
@@ -239,14 +265,23 @@ func (p *PluginChatCompletionStream) OnEvent(ctx context.Context,
 						response.Content += answerDecoder.Flush()
 						answerCompleted = true
 					}
+					if strings.TrimSpace(response.Content) != "" {
+						answerProduced = true
+					}
+					truncated := response.Done && IsLengthFinishReason(response.FinishReason)
+					if truncated && !answerProduced {
+						response.Content = EmptyTruncatedAnswerFallback
+						answerProduced = true
+					}
 					closeThinking()
 					eventBus.Emit(ctx, types.Event{
 						ID:        answerID,
 						Type:      types.EventType(event.EventAgentFinalAnswer),
 						SessionID: chatManage.SessionID,
 						Data: event.AgentFinalAnswerData{
-							Content: response.Content,
-							Done:    response.Done && !deferCitationCompletion,
+							Content:   response.Content,
+							Done:      response.Done && !deferCitationCompletion,
+							Truncated: truncated,
 						},
 					})
 				}

@@ -115,7 +115,7 @@ func (s *knowledgeService) cloneArchiveFiles(ctx context.Context, src, dst *type
 		v.ID = uuid.NewString()
 		v.TenantID = dst.TenantID
 		v.KnowledgeID = dst.ID
-		v.StoragePath, e = copyOwnedObject(ctx, s.resolveFileServiceForPath(ctx, sourceKB, v.StoragePath), s.resolveFileService(ctx, targetKB), v.StoragePath, dst.TenantID, dst.ID)
+		v.StoragePath, e = copyOwnedObject(ctx, s.resolveFileServiceForPath(ctx, sourceKB, v.StoragePath), s.resolveFileService(ctx, targetKB), v.StoragePath, dst.TenantID, dst.ID, s.resourceCatalog, "archive_original")
 		if e != nil {
 			for _, c := range copied {
 				_ = s.DeleteArchiveFile(ctx, dst.KnowledgeBaseID, c.StoragePath)

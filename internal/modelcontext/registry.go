@@ -16,7 +16,9 @@ import (
 	"github.com/Tencent/WeKnora/internal/logger"
 	"reflect"
 	"sort"
+	"strings"
 
+	"github.com/Tencent/WeKnora/internal/models/api"
 	"github.com/Tencent/WeKnora/internal/models/chat"
 	"github.com/Tencent/WeKnora/internal/types"
 )
@@ -32,8 +34,10 @@ const resourceHandleProtocolPrompt = `
 
 ## Resource handle protocol (system-owned)
 Some durable resources and high-entropy Wiki slugs are represented by request-local res://NNNN handles. Wiki issues may use iN handles.
-- Copy only handles that appeared in supplied context or tool results, preserving them exactly in links, images, and tool arguments.
-- Never invent, edit, or expand any handle. The system restores it after generation.`
+- Copy supplied handles exactly in links, images, and tool arguments; they refer only to the supplied resource versions.
+- For downloadable deliverables generated in the session workspace, use sandbox:<file name>; ` +
+	`never reuse or invent a resource handle. This download convention does not apply to ` +
+	`editing installed skill files.`
 
 // Registry is the single request-scoped boundary between durable application
 // identities and temporary model handles.
@@ -43,17 +47,21 @@ Some durable resources and high-entropy Wiki slugs are represented by request-lo
 // protected as one resource-like handle before the embedded document ID can be
 // compacted to dN. Callers therefore cannot accidentally reverse the codecs.
 type Registry struct {
-	sources   *sourceRegistry
-	resources *resourceRegistry
-	issues    *HandleTable
+	sources    *sourceRegistry
+	resources  *resourceRegistry
+	issues     *HandleTable
+	mcpServers *HandleTable
+	mcpTools   *HandleTable
 }
 
 // NewRegistry creates a registry for one model request/Agent execution.
 func NewRegistry(citationsEnabled bool) *Registry {
 	return &Registry{
-		sources:   newSourceRegistry(citationsEnabled || archivalcitations.Enabled()),
-		resources: newResourceRegistry(),
-		issues:    NewHandleTable("i", 0, 1),
+		sources:    newSourceRegistry(citationsEnabled || archivalcitations.Enabled()),
+		resources:  newResourceRegistry(),
+		issues:     NewHandleTable("i", 0, 1),
+		mcpServers: NewHandleTable("ms", 0, 1),
+		mcpTools:   NewHandleTable("mt", 0, 1),
 	}
 }
 
@@ -87,7 +95,9 @@ func (r *Registry) ProtocolPrompt() string {
 	if r == nil || r.sources == nil {
 		return ""
 	}
-	return r.sources.ProtocolPrompt() + resourceHandleProtocolPrompt
+	return r.sources.ProtocolPrompt() + resourceHandleProtocolPrompt +
+		"\nMCP routing uses request-local msN server IDs and mtN tool references. " +
+		"Copy them exactly from the directory or describe result; never invent them.\n"
 }
 
 // EncodeMessages returns a model-facing copy with every temporary handle
@@ -101,6 +111,9 @@ func (r *Registry) EncodeMessages(messages []chat.Message) []chat.Message {
 	// assistant call. The scan is intentionally order-independent, matching the
 	// source codec's two-pass replay behavior.
 	for i := range messages {
+		if messages[i].Role == "system" || messages[i].Role == "user" {
+			messages[i].Content = r.encodeMCPRoutingText(messages[i].Content)
+		}
 		if messages[i].Role == "tool" {
 			messages[i].Content = r.encodeToolPrivateResult(messages[i].Name, messages[i].Content)
 		}
@@ -128,10 +141,14 @@ func (r *Registry) DecodeToolCalls(toolCalls []types.LLMToolCall) {
 			toolCalls[i].ModelArguments = toolCalls[i].Function.Arguments
 		}
 	}
+	normalizeWebFetchItems(toolCalls)
+	normalizeMCPCallArguments(toolCalls)
 	r.resources.DecodeToolCalls(toolCalls)
 	r.sources.DecodeToolCallsWithPolicy(toolCalls, sourceArgumentAllowed)
 	for i := range toolCalls {
 		r.decodeToolPolicies(&toolCalls[i])
+		decodedMCP, unresolvedMCP := r.decodeMCPArguments(toolCalls[i].Function.Name, toolCalls[i].Function.Arguments)
+		toolCalls[i].Function.Arguments = decodedMCP
 		resolved := toolCalls[i].Function.Arguments
 		unresolved := append(
 			r.resources.OrphanHandles(resolved),
@@ -140,6 +157,7 @@ func (r *Registry) DecodeToolCalls(toolCalls []types.LLMToolCall) {
 			)...,
 		)
 		unresolved = append(unresolved, r.unresolvedPrivateToolHandles(toolCalls[i].Function.Name, resolved)...)
+		unresolved = append(unresolved, unresolvedMCP...)
 		toolCalls[i].UnresolvedHandles = uniqueSorted(unresolved)
 		changed := !jsonEquivalent(toolCalls[i].ModelArguments, resolved)
 		switch {
@@ -186,7 +204,17 @@ func (r *Registry) DecodeResponse(response *types.ChatResponse) {
 		return
 	}
 	response.Content = r.DecodeOutputText(response.Content)
+	reasoningBefore := response.ReasoningContent
 	response.ReasoningContent = r.DecodeOutputText(response.ReasoningContent)
+	if response.ReasoningContent != reasoningBefore &&
+		api.SignatureFor(api.APIAnthropicMessages, response.ReasoningSignature) != "" {
+		// Same reason and same protocol limit as dropStaleReasoningSignature:
+		// the decoded text is no longer what Claude signed, and this response
+		// is what lands on the agent step. Anthropic turns replay from
+		// ReasoningMetadata, which decoding never touches, so this only
+		// affects turns stored before that metadata existed.
+		response.ReasoningSignature = ""
+	}
 	r.DecodeToolCalls(response.ToolCalls)
 }
 
@@ -196,10 +224,12 @@ func (r *Registry) StreamDecoder() *StreamDecoder {
 		return &StreamDecoder{}
 	}
 	return &StreamDecoder{
-		resources: newResourceStreamDecoder(r.resources),
-		sources:   newCitationStreamExpander(r.sources),
-		issues:    NewHandleStreamDecoder(r.issues),
-		orphans:   newOrphanResourceStreamFilter(),
+		resources:  newResourceStreamDecoder(r.resources),
+		sources:    newCitationStreamExpander(r.sources),
+		issues:     NewHandleStreamDecoder(r.issues),
+		mcpServers: NewHandleStreamDecoder(r.mcpServers),
+		mcpTools:   NewHandleStreamDecoder(r.mcpTools),
+		orphans:    newOrphanResourceStreamFilter(),
 	}
 }
 
@@ -219,6 +249,15 @@ func (r *Registry) RegisterChunk(ref ChunkReference) string {
 	return r.sources.RegisterChunk(ref)
 }
 
+// RegisterContextChunk makes a directory entry addressable by tools without
+// allowing it to substantiate an answer before retrieval.
+func (r *Registry) RegisterContextChunk(ref ChunkReference) string {
+	if r == nil || r.sources == nil {
+		return ""
+	}
+	return r.sources.registerChunk(ref, false)
+}
+
 func (r *Registry) RegisterDocument(id string) string {
 	if r == nil || r.sources == nil {
 		return ""
@@ -231,6 +270,24 @@ func (r *Registry) RegisterKnowledgeBase(id string) string {
 		return ""
 	}
 	return r.sources.RegisterKnowledgeBase(id)
+}
+
+// RegisterIssue allocates the iN handle the Wiki issue tools accept for id.
+func (r *Registry) RegisterIssue(id string) string {
+	if r == nil || r.issues == nil || strings.TrimSpace(id) == "" {
+		return ""
+	}
+	return r.issues.Register(id)
+}
+
+// EncodeKnownIssues replaces registered Wiki issue IDs with their handles.
+// CompactKnownText leaves them alone because tools opt into issue encoding
+// per policy; runtime context the engine renders opts in explicitly.
+func (r *Registry) EncodeKnownIssues(text string) string {
+	if r == nil || r.issues == nil {
+		return text
+	}
+	return r.issues.EncodeKnownText(text)
 }
 
 func (r *Registry) RegisterWeb(rawURL, title string) string {
@@ -276,9 +333,9 @@ func (r *Registry) ModelToolResultForTool(toolName string, result *types.ToolRes
 	}
 	if r == nil || r.sources == nil {
 		if result.Success {
-			return result.Output
+			return result.Output + outputFilesPrompt(result)
 		}
-		return failedToolModelText(result.Output, result.Error)
+		return failedToolModelText(result.Output, result.Error) + outputFilesPrompt(result)
 	}
 	// Protect durable resources and UUID-bearing summary slugs before the
 	// source codec sees any embedded document IDs. Encode once more afterwards
@@ -303,7 +360,20 @@ func (r *Registry) ModelToolResultForTool(toolName string, result *types.ToolRes
 	if sourceCompactionAllowed(toolName) {
 		modelOutput = r.sources.CompactKnownText(modelOutput)
 	}
-	return r.resources.EncodeText(modelOutput)
+	if result.Success && (toolName == "call_mcp_tool" || strings.HasPrefix(toolName, "mcp_")) {
+		modelOutput += r.mcpSourceCandidates(result.Output)
+	}
+	return r.resources.EncodeText(modelOutput) + outputFilesPrompt(result)
+}
+
+func outputFilesPrompt(result *types.ToolResult) string {
+	if result == nil || result.OutputFiles == nil {
+		return ""
+	}
+	if len(result.OutputFiles) == 0 {
+		return "\nOutput files: none identified by this call."
+	}
+	return "\nOutput files: `" + strings.Join(result.OutputFiles, "`, `") + "`"
 }
 
 // DecodeOutputText applies the public citation policy to complete text. It is
@@ -315,5 +385,5 @@ func (r *Registry) DecodeOutputText(text string) string {
 	text = r.resources.DecodeText(text)
 	text = r.resources.StripOrphanHandles(text)
 	text = r.sources.ExpandText(text)
-	return r.issues.DecodeKnownText(text)
+	return r.mcpTools.DecodeKnownText(r.mcpServers.DecodeKnownText(r.issues.DecodeKnownText(text)))
 }

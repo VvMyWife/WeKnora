@@ -49,8 +49,8 @@ docker run --rm --network ljc-upstream-validate --env-file /home/ubuntu/weknora-
 
 检查及重复引导（只使用已创建的专用环境文件）：
 ~~~bash
-docker run --rm --network ljc-upstream-validate --env-file /home/ubuntu/weknora-fork-migration/20261020-upstream/migration-legacy.env -v "$PWD:/src" -w /src weknora-builder:ljc-fork runtime/upstream/ljc-migrate -mode status
-docker run --rm --network ljc-upstream-validate --env-file /home/ubuntu/weknora-fork-migration/20261020-upstream/migration-legacy.env -v "$PWD:/src" -w /src weknora-builder:ljc-fork runtime/upstream/ljc-migrate -mode bootstrap-legacy
+docker run --rm --network ljc-upstream-validate --env-file /home/ubuntu/weknora-fork-migration/20261020-upstream/migration-legacy.env -v "$PWD:/src" -v /home/ubuntu/RAG_Weknora/.go-modcache:/go/pkg/mod:ro -w /src weknora-builder:ljc-fork runtime/upstream/ljc-migrate -mode status
+docker run --rm --network ljc-upstream-validate --env-file /home/ubuntu/weknora-fork-migration/20261020-upstream/migration-legacy.env -v "$PWD:/src" -v /home/ubuntu/RAG_Weknora/.go-modcache:/go/pkg/mod:ro -w /src weknora-builder:ljc-fork runtime/upstream/ljc-migrate -mode bootstrap-legacy
 ~~~
 
 ## 副本恢复与扩展依赖
@@ -74,3 +74,19 @@ cat "$backup/target-restore.status"
 2026-10-20在ParadeDB0.22.2及0.25.11的两个真实完整备份副本上，94→90+个人4、连续两次up均通过；knowledges、chunks、wiki_pages、archive_mapping_versions、message_citation_evidence、enrichment_recoveries行数保持一致。
 这只证明账本衔接；官方128升级和应用业务验收仍待阶段3以后验证。
 阶段2恢复：代码可在隔离分支回到daeb98f8f；已拆分的测试数据库通过私有restore脚本恢复94账本。生产库从未执行本工具。
+
+阶段3进展：真实副本已在ParadeDB0.25.11升级到官方128+个人4（均clean），重复up通过；与同一备份的旧版90+4副本对比，knowledges7313、chunks232877、wiki_pages19327、archive_mapping_versions639、message_citation_evidence5、enrichment_recoveries100，行数一致。
+SQLite新库和旧15桥接升级到45+个人3自动测试通过。原始94账本的生产库保持不变。
+部分官方测试需兼容定制行为：失败任务冷却期、有效PDF页数校验；测试使用过期冷却时间及真实单页PDF，原有排序、超时和取消断言保留。官方查询实体预算已升为8192，后台图谱保持定制12288。
+
+## 全量主线合并的验证与兼容决策
+
+后端内部包、cmd/server、迁移CLI、独立client模块及CLI模块测试共160个含测试的包通过；标准后端和schema-only工具均编译成功。启用anydoc后的解析测试和原生后端编译通过，Asynq无限超时及取消两项本地补丁测试通过。
+官方前端类型检查、1446项测试、生产构建全部通过；frontend目录与eecfe4b3逐文件一致，frontend-custom冻结清单未变。
+迁移桥接区分真正的上游独立账本与丢失个人账本的歧义状态；存在个人表但缺个人账本时拒绝猜测。
+保留任务冷却期并结合官方失败次数排序、批量领取与后续调度；中断任务使用独立清理上下文释放领取并保留后续恢复，SQLite聚合时间显式解析。
+PaddleOCR同时保留原件总页数/缺页校验与新增SourceBlocks；图谱后台预算12288、Wiki预算12288和文档任务无限超时保留。
+旧list_knowledge_chunks的image_ocr证据读取迁入read_document；旧execute_skill_script缺参数提示迁入shell_exec。原件复制适配新的资源目录登记，下载和预览继续private,no-store；引用证据与截断提示同时保留。
+沿用定制提交0fe3fa592的GitHub元数据停跟踪规则，不重新启用fork上的Actions。官方README恢复为当前主线说明，原部署README完整保存在legacy-deployment.md并标注历史版本。
+
+测试环境说明：供应商协议及沙箱配置测试使用假客户端，但构造期间会解析公网默认URL。服务器DNS不稳定，测试容器对明确的模拟服务域名使用固定公网占位映射，并使用cgo DNS。此映射只用于单元测试，不能作为真实网络、模型或应用验收证据，也不用于候选应用。

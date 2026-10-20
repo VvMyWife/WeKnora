@@ -28,13 +28,13 @@ const (
 	// maxSkillBundleFiles. It is counted after directory entries and the
 	// zipball's extra trees are dropped, exactly as the install counts them:
 	// applying it to the raw entry count instead would reject archives the
-	// install accepted, taking read_skill down for a working install.
+	// install accepted, taking read_file down for a working install.
 	maxBundleEntries    = 20_000
 	maxBundleEntryBytes = 32 << 20  // 32 MiB per entry
 	maxBundleBytes      = 512 << 20 // 512 MiB across one archive (install cap)
 )
 
-// A source lives for a single agent run. read_skill is typically called
+// A source lives for a single agent run. read_file is typically called
 // several times against the same skill, so a handful of compressed zips
 // removes the repeated download. 64 MiB is the keep-around budget; a zip
 // larger than that can stay as the sole occupant so a large skill does not
@@ -53,6 +53,10 @@ const (
 // individual resource files come from the uploaded archive. Execution uses
 // neither - the files are already in the image.
 type TenantSkillSource struct {
+	// root is the absolute directory that holds installed skill dirs
+	// (image root on remote sandboxes, ~/.weknora/skills on Lite).
+	root string
+
 	byName map[string]*types.TenantSkillEntity
 	// order preserves the repository's ordering so the system prompt is stable
 	// between turns.
@@ -67,7 +71,7 @@ type TenantSkillSource struct {
 	mu sync.Mutex
 	// cache holds downloaded archives, most recently used first, keyed by
 	// bundle_sha256 (or the storage ref). The zip stays compressed: list and
-	// read_skill inflate one entry at a time so a 13k-file skill cannot pin
+	// read_file inflate one entry at a time so a 13k-file skill cannot pin
 	// hundreds of megabytes unpacked for the rest of the turn.
 	cache []cachedBundle
 }
@@ -82,7 +86,16 @@ type cachedBundle struct {
 func NewTenantSkillSource(
 	rows []*types.TenantSkillEntity, loadBundle func(row *types.TenantSkillEntity) ([]byte, error),
 ) *TenantSkillSource {
+	return NewTenantSkillSourceAt(sandbox.SkillsImageRoot, rows, loadBundle)
+}
+
+// NewTenantSkillSourceAt serves skills installed under root: the image root
+// on remote sandboxes, ~/.weknora/skills on Lite.
+func NewTenantSkillSourceAt(
+	root string, rows []*types.TenantSkillEntity, loadBundle func(row *types.TenantSkillEntity) ([]byte, error),
+) *TenantSkillSource {
 	src := &TenantSkillSource{
+		root:       root,
 		byName:     make(map[string]*types.TenantSkillEntity, len(rows)),
 		loadBundle: loadBundle,
 	}
@@ -99,18 +112,22 @@ func NewTenantSkillSource(
 	return src
 }
 
+func (s *TenantSkillSource) skillDir(name string) (string, error) {
+	return sandbox.SkillDirUnder(s.root, name)
+}
+
 // usableSkillRow is the one place "the agent can actually run this" is decided
 // for a single row. A row that is still installing, failed, or was disabled by
 // an administrator is invisible: telling the model about a skill it cannot
 // invoke costs it turns and gains nothing.
 //
 // The name guard is not defensive: every path this source hands out is
-// SkillDirFor(row.Name), which joins the name under the skills root. A name
+// skillDir(row.Name), which joins the name under the skills root. A name
 // that is not a single path segment yields a path outside the skill, or outside
 // the root entirely, and those paths reach the model in discovery metadata and
 // in SkillFile.Path even though execution would refuse them. Filtering the row
 // out here is what keeps them from ever being spoken. sandbox.IsValidSkillName
-// is the same rule SkillDirFor enforces, so this cannot disagree with it.
+// is the same rule SkillDirUnder enforces, so this cannot disagree with it.
 func usableSkillRow(row *types.TenantSkillEntity) bool {
 	return row != nil &&
 		row.Enabled &&
@@ -123,7 +140,7 @@ func (s *TenantSkillSource) DiscoverSkills() ([]*SkillMetadata, error) {
 	metadata := make([]*SkillMetadata, 0, len(s.order))
 	for _, name := range s.order {
 		row := s.byName[name]
-		basePath, err := sandbox.SkillDirFor(row.Name)
+		basePath, err := s.skillDir(row.Name)
 		if err != nil {
 			return nil, err
 		}
@@ -142,7 +159,7 @@ func (s *TenantSkillSource) LoadSkillInstructions(name string) (*Skill, error) {
 	if err != nil {
 		return nil, err
 	}
-	basePath, err := sandbox.SkillDirFor(row.Name)
+	basePath, err := s.skillDir(row.Name)
 	if err != nil {
 		return nil, err
 	}
@@ -159,7 +176,7 @@ func (s *TenantSkillSource) LoadSkillInstructions(name string) (*Skill, error) {
 // LoadSkillFile returns one Level 3 resource out of the uploaded archive.
 //
 // The archive is read rather than the image: reading a file out of the image
-// would need a sandbox, and read_skill must work whether or not this turn has
+// would need a sandbox, and read_file must work whether or not this turn has
 // already booted one.
 func (s *TenantSkillSource) LoadSkillFile(name, relativePath string) (*SkillFile, error) {
 	row, err := s.row(name)
@@ -186,7 +203,7 @@ func (s *TenantSkillSource) LoadSkillFile(name, relativePath string) (*SkillFile
 	if err != nil {
 		return nil, err
 	}
-	basePath, err := sandbox.SkillDirFor(row.Name)
+	basePath, err := s.skillDir(row.Name)
 	if err != nil {
 		return nil, err
 	}
@@ -229,7 +246,7 @@ func (s *TenantSkillSource) GetSkillBasePath(name string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return sandbox.SkillDirFor(row.Name)
+	return s.skillDir(row.Name)
 }
 
 // RemoteScriptPath returns the absolute in-image path of one script. It is
@@ -247,7 +264,7 @@ func (s *TenantSkillSource) RemoteScriptPath(name, relativePath string) (string,
 	if err != nil {
 		return "", err
 	}
-	basePath, err := sandbox.SkillDirFor(row.Name)
+	basePath, err := s.skillDir(row.Name)
 	if err != nil {
 		return "", err
 	}

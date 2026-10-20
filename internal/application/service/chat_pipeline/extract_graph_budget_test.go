@@ -32,7 +32,7 @@ func TestExtractionCompletionBudgets(t *testing.T) {
 		want  int
 	}{
 		{"background_graph", NewGraphExtractor, 12288},
-		{"query_entities", NewExtractor, 4096},
+		{"query_entities", NewExtractor, 8192},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			model := &graphBudgetChat{content: `[{"entity":"档案管理办法"}]`}

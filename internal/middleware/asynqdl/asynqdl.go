@@ -18,6 +18,7 @@ import (
 	"encoding/json"
 	"errors"
 	"time"
+	"unicode/utf8"
 
 	"github.com/Tencent/WeKnora/internal/logger"
 	"github.com/Tencent/WeKnora/internal/types"
@@ -241,9 +242,23 @@ func truncateError(s string, max int) string {
 	}
 	const suffix = "...(truncated)"
 	if max <= len(suffix) {
-		return s[:max]
+		return cutAtRuneBoundary(s, max)
 	}
-	return s[:max-len(suffix)] + suffix
+	return cutAtRuneBoundary(s, max-len(suffix)) + suffix
+}
+
+// cutAtRuneBoundary returns the longest prefix of s that is at most n bytes
+// and does not end in the middle of a multi-byte rune. A partial rune would
+// make last_error invalid UTF-8, which PostgreSQL and MySQL reject on insert,
+// so the dead-letter row would be lost.
+func cutAtRuneBoundary(s string, n int) string {
+	if n >= len(s) {
+		return s
+	}
+	for n > 0 && !utf8.RuneStart(s[n]) {
+		n--
+	}
+	return s[:n]
 }
 
 // formatUint inlines strconv.FormatUint without importing strconv just

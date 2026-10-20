@@ -61,24 +61,24 @@ func TestPaddleOCRVLPageIntegrity(t *testing.T) {
 		if err := json.Unmarshal(data, &response); err != nil {
 			t.Fatal(err)
 		}
-		_, _, pages, err := mergeLayoutParsingResult(&response, n)
+		_, _, pages, _, err := mergeLayoutParsingResult(&response, n)
 		if err != nil || pages != n {
 			t.Fatalf("blank pages: %d %v", pages, err)
 		}
-		_, _, _, err = mergeLayoutParsingResult(&response, n+1)
+		_, _, _, _, err = mergeLayoutParsingResult(&response, n+1)
 		var pe *PDFPageIntegrityError
 		if !errors.As(err, &pe) {
 			t.Fatal("missing page accepted")
 		}
 		if n > 1 {
-			response.Result.LayoutParsingResults[1].PrunedResult.PageIndex = response.Result.LayoutParsingResults[0].PrunedResult.PageIndex
-			_, _, _, err = mergeLayoutParsingResult(&response, n)
+			response.Result.LayoutParsingResults[1].PrunedResult = response.Result.LayoutParsingResults[0].PrunedResult
+			_, _, _, _, err = mergeLayoutParsingResult(&response, n)
 			if !errors.As(err, &pe) {
 				t.Fatal("duplicate page accepted")
 			}
 		}
 		response.Result.LayoutParsingResults = nil
-		if _, _, _, err = mergeLayoutParsingResult(&response, n); err == nil {
+		if _, _, _, _, err = mergeLayoutParsingResult(&response, n); err == nil {
 			t.Fatal("empty response accepted")
 		}
 	}

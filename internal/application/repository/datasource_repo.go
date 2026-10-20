@@ -90,10 +90,13 @@ func (r *DataSourceRepository) Update(ctx context.Context, ds *types.DataSource)
 			return err
 		}
 		// GORM Updates(struct) deliberately skips zero values, which would make
-		// a user-selected sync_deletions=false impossible to persist.
+		// a user-selected sync_deletions=false or manual-only schedule impossible to persist.
 		return tx.Model(&types.DataSource{}).
 			Where("id = ?", ds.ID).
-			UpdateColumn("sync_deletions", ds.SyncDeletions).Error
+			UpdateColumns(map[string]interface{}{
+				"sync_deletions": ds.SyncDeletions,
+				"sync_schedule":  ds.SyncSchedule,
+			}).Error
 	})
 }
 
@@ -319,6 +322,45 @@ func (r *SyncLogRepository) CleanupOldLogs(ctx context.Context, retentionDays in
 		Where("started_at < NOW() - INTERVAL ? DAY", retentionDays).
 		Delete(&types.SyncLog{}).Error; err != nil {
 		return err
+	}
+	return nil
+}
+
+// PatchSyncSettings never writes runtime state or fields omitted by the request.
+func (r *DataSourceRepository) PatchSyncSettings(
+	ctx context.Context, ds *types.DataSource, expectedConfig types.JSON, fields []string,
+) error {
+	if ds == nil || ds.ID == "" || ds.TenantID == 0 || len(fields) == 0 {
+		return errors.New("data source identity and settings are required")
+	}
+	values := map[string]any{}
+	query := r.db.WithContext(ctx).Model(&types.DataSource{}).
+		Where("id = ? AND tenant_id = ?", ds.ID, ds.TenantID)
+	for _, field := range fields {
+		switch field {
+		case "sync_schedule":
+			values[field] = ds.SyncSchedule
+		case "sync_mode":
+			values[field] = ds.SyncMode
+		case "conflict_strategy":
+			values[field] = ds.ConflictStrategy
+		case "sync_deletions":
+			values[field] = ds.SyncDeletions
+		case "config":
+			values[field] = ds.Config
+			// Config includes credentials and connector settings. Refuse to replace
+			// them if another request changed them while selection was being edited.
+			query = query.Where("config = ?", expectedConfig)
+		default:
+			return errors.New("unsupported sync setting")
+		}
+	}
+	result := query.Updates(values)
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return types.ErrDataSourceSettingsConflict
 	}
 	return nil
 }

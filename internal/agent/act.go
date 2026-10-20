@@ -5,7 +5,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"runtime/debug"
 	"sort"
+	"strings"
 	"sync"
 	"time"
 
@@ -162,27 +164,34 @@ func dataKeys(data map[string]interface{}) []string {
 
 // toolDisplayNames maps internal tool names to user-friendly display labels.
 var toolDisplayNames = map[string]string{
-	agenttools.ToolThinking:            "深度思考",
-	agenttools.ToolTodoWrite:           "制定计划",
-	agenttools.ToolGrepChunks:          "关键词搜索",
-	agenttools.ToolKnowledgeSearch:     "知识搜索",
-	agenttools.ToolListKnowledgeChunks: "查看文档分块",
-	agenttools.ToolQueryKnowledgeGraph: "查询知识图谱",
-	agenttools.ToolGetDocumentInfo:     "获取文档信息",
-	agenttools.ToolSearchConversations: "回顾历史对话",
-	agenttools.ToolSearchMemory:        "查询长期记忆",
-	agenttools.ToolDatabaseQuery:       "查询数据",
-	agenttools.ToolDataAnalysis:        "数据分析",
-	agenttools.ToolDataSchema:          "查看数据结构",
-	agenttools.ToolWebSearch:           "搜索网页",
-	agenttools.ToolWebFetch:            "获取网页",
-	agenttools.ToolExecuteSkillScript:  "执行技能脚本",
-	agenttools.ToolReadSkill:           "读取技能",
-	agenttools.ToolListSandboxFiles:    "列出沙箱文件",
-	agenttools.ToolReadSandboxFile:     "读取沙箱文件",
-	agenttools.ToolWriteSandboxFile:    "写入沙箱文件",
-	agenttools.ToolEditSandboxFile:     "编辑沙箱文件",
-	agenttools.ToolShellExec:           "执行沙箱命令",
+	agenttools.ToolDiscoverMCPTools:          "查看外部工具",
+	agenttools.ToolCallMCPTool:               "调用外部工具",
+	agenttools.ToolThinking:                  "深度思考",
+	agenttools.ToolTodoWrite:                 "制定计划",
+	agenttools.ToolSearchKnowledge:           "检索知识库",
+	agenttools.ToolReadDocument:              "阅读文档",
+	agenttools.ToolListDocuments:             "浏览文档列表",
+	agenttools.ToolQueryKnowledgeGraph:       "查询知识图谱",
+	agenttools.LegacyToolGrepChunks:          "关键词搜索",
+	agenttools.LegacyToolKnowledgeSearch:     "知识搜索",
+	agenttools.LegacyToolListKnowledgeChunks: "查看文档分块",
+	agenttools.LegacyToolGetDocumentInfo:     "获取文档信息",
+	agenttools.ToolSearchConversations:       "回顾历史对话",
+	agenttools.ToolAskUser:                   "向用户提问",
+	agenttools.ToolSearchMemory:              "查询长期记忆",
+	agenttools.ToolDatabaseQuery:             "查询数据",
+	agenttools.ToolDataAnalysis:              "数据分析",
+	agenttools.ToolDataSchema:                "查看数据结构",
+	agenttools.ToolWebSearch:                 "搜索网页",
+	agenttools.ToolWebFetch:                  "获取网页",
+	agenttools.LegacyToolExecuteSkillScript:  "执行技能脚本",
+	agenttools.LegacyToolReadSkill:           "读取技能",
+	agenttools.ToolReadFile:                  "读取文件",
+	agenttools.ToolListSandboxFiles:          "列出沙箱文件",
+	agenttools.LegacyToolReadSandboxFile:     "读取沙箱文件",
+	agenttools.ToolWriteSandboxFile:          "写入沙箱文件",
+	agenttools.ToolEditSandboxFile:           "编辑沙箱文件",
+	agenttools.ToolShellExec:                 "执行沙箱命令",
 }
 
 // toolHintSensitiveArgs lists tools whose arguments should NOT be shown in hints
@@ -216,12 +225,15 @@ func formatToolHint(name string, args map[string]any) string {
 // executeToolCalls runs every tool call in the LLM response, appending results to step.ToolCalls.
 // It also emits tool-call and tool-result events, and optionally runs reflection after each call.
 // When ParallelToolCalls is enabled and there are 2+ tool calls, they execute concurrently.
+//
+// A call that suspends on a user prompt stops the round: it and the calls
+// after it do not run and are not appended, and the suspension is returned.
 func (e *AgentEngine) executeToolCalls(
 	ctx context.Context, response *types.ChatResponse,
 	step *types.AgentStep, iteration int, sessionID, assistantMessageID string,
-) {
+) *types.PromptSuspension {
 	if len(response.ToolCalls) == 0 {
-		return
+		return nil
 	}
 
 	round := iteration + 1
@@ -236,20 +248,22 @@ func (e *AgentEngine) executeToolCalls(
 			"refusing %d tool call(s) with possibly truncated arguments",
 			round, response.FinishReason, n)
 		e.failTruncatedToolCalls(ctx, response, step, iteration, sessionID)
-		return
+		return nil
 	}
 
 	logger.Infof(ctx, "[Agent][Round-%d] Executing %d tool call(s)", round, n)
 
 	// Use parallel execution when enabled and there are multiple tool calls
 	if e.config.ParallelToolCalls && n >= 2 {
-		e.executeToolCallsParallel(ctx, response, step, iteration, sessionID, assistantMessageID)
-		return
+		return e.executeToolCallsParallel(ctx, response, step, iteration, sessionID, assistantMessageID)
 	}
 
 	for i, tc := range response.ToolCalls {
-		e.executeSingleToolCall(ctx, tc, i, step, iteration, round, sessionID, assistantMessageID)
+		if s := e.executeSingleToolCall(ctx, tc, i, step, iteration, round, sessionID, assistantMessageID); s != nil {
+			return s
+		}
 	}
+	return nil
 }
 
 // truncatedArgumentsError is handed to the model instead of a tool result when
@@ -286,7 +300,7 @@ func (e *AgentEngine) failTruncatedToolCalls(
 func (e *AgentEngine) executeToolCallsParallel(
 	ctx context.Context, response *types.ChatResponse,
 	step *types.AgentStep, iteration int, sessionID, assistantMessageID string,
-) {
+) *types.PromptSuspension {
 	round := iteration + 1
 	n := len(response.ToolCalls)
 	logger.Infof(ctx, "[Agent][Round-%d] Parallel execution of %d tool calls", round, n)
@@ -294,24 +308,78 @@ func (e *AgentEngine) executeToolCallsParallel(
 	results := make([]types.ToolCall, n)
 	var mu sync.Mutex
 	g, gCtx := errgroup.WithContext(ctx)
+	g.SetLimit(8)
 
 	for i, tc := range response.ToolCalls {
 		i, tc := i, tc // capture loop vars
+		if !agenttools.CanRunConcurrently(tc.Function.Name) {
+			// Drain preceding reads before a mutation, and finish the mutation
+			// before starting later reads. Preserve model order across barriers.
+			_ = g.Wait()
+			results[i] = e.runToolCall(ctx, tc, i, iteration, round, sessionID, assistantMessageID)
+			if s := suspensionOf(results[i]); s != nil {
+				// Everything before the barrier has finished; keep it.
+				e.appendToolOutcomes(ctx, step, results[:i], iteration, sessionID)
+				return s
+			}
+			e.recordCall(i, results[i])
+			g, gCtx = errgroup.WithContext(ctx)
+			g.SetLimit(8)
+			continue
+		}
+		readCtx := gCtx
 		g.Go(func() error {
-			toolCall := e.runToolCall(gCtx, tc, i, iteration, round, sessionID, assistantMessageID)
+			// The registry recovers panics inside tool execution; this guards
+			// the bookkeeping around it, which would otherwise crash the
+			// process from a goroutine nothing above can recover.
+			defer func() {
+				if r := recover(); r != nil {
+					logger.Errorf(ctx, "[Agent][Round-%d] Tool call %s panicked: %v\n%s",
+						round, tc.Function.Name, r, debug.Stack())
+					mu.Lock()
+					results[i] = panickedToolCall(tc, i)
+					mu.Unlock()
+					e.recordCall(i, results[i])
+				}
+			}()
+			toolCall := e.runToolCall(readCtx, tc, i, iteration, round, sessionID, assistantMessageID)
 			mu.Lock()
 			results[i] = toolCall
 			mu.Unlock()
+			e.recordCall(i, toolCall)
 			return nil // best-effort: don't cancel siblings on failure
 		})
 	}
 
 	_ = g.Wait()
 
-	// Append results and emit events in original order
-	for _, toolCall := range results {
+	e.appendToolOutcomes(ctx, step, results, iteration, sessionID)
+	return nil
+}
+
+// appendToolOutcomes appends finished calls to step and emits their events
+// in original order.
+func (e *AgentEngine) appendToolOutcomes(
+	ctx context.Context, step *types.AgentStep, calls []types.ToolCall, iteration int, sessionID string,
+) {
+	for _, toolCall := range calls {
 		step.ToolCalls = append(step.ToolCalls, toolCall)
 		e.emitToolOutcome(ctx, toolCall, iteration, sessionID)
+	}
+}
+
+// panickedToolCall is the failed record for a call whose handling panicked, so
+// the round still returns one result per tool call the model issued.
+func panickedToolCall(tc types.LLMToolCall, i int) types.ToolCall {
+	return types.ToolCall{
+		ID:               agenttools.NormalizeToolCallID(tc.ID, tc.Function.Name, i),
+		Name:             tc.Function.Name,
+		Args:             map[string]any{"_raw": tc.Function.Arguments},
+		ProviderMetadata: tc.ProviderMetadata,
+		Result: &types.ToolResult{
+			Success: false,
+			Error:   fmt.Sprintf("tool %s failed with an internal error", tc.Function.Name),
+		},
 	}
 }
 
@@ -332,13 +400,13 @@ func (e *AgentEngine) emitToolOutcome(
 		SessionID: sessionID,
 		Data: event.AgentToolResultData{
 			ToolCallID: toolCall.ID,
-			ToolName:   toolCall.Name,
+			ToolName:   toolCall.ExecutionName(),
 			Output:     result.Output,
 			Error:      result.Error,
 			Success:    result.Success,
 			Duration:   toolCall.Duration,
 			Iteration:  iteration,
-			Data:       agenttools.SanitizeToolDataForPersist(toolCall.Name, result.Data),
+			Data:       agenttools.SanitizeToolDataForClient(toolCall.Name, result.Data),
 		},
 	})
 
@@ -348,8 +416,8 @@ func (e *AgentEngine) emitToolOutcome(
 		SessionID: sessionID,
 		Data: event.AgentActionData{
 			Iteration:  iteration,
-			ToolName:   toolCall.Name,
-			ToolInput:  toolCall.Args,
+			ToolName:   toolCall.ExecutionName(),
+			ToolInput:  toolCall.ExecutionArgs(),
 			ToolOutput: result.Output,
 			Success:    result.Success,
 			Error:      result.Error,
@@ -359,13 +427,20 @@ func (e *AgentEngine) emitToolOutcome(
 }
 
 // executeSingleToolCall runs one tool call sequentially (original behavior).
+// A call suspended on a user prompt is not appended; its suspension is
+// returned instead.
 func (e *AgentEngine) executeSingleToolCall(
 	ctx context.Context, tc types.LLMToolCall, i int,
 	step *types.AgentStep, iteration, round int, sessionID, assistantMessageID string,
-) {
+) *types.PromptSuspension {
 	toolCall := e.runToolCall(ctx, tc, i, iteration, round, sessionID, assistantMessageID)
+	if s := suspensionOf(toolCall); s != nil {
+		return s
+	}
+	e.recordCall(i, toolCall)
 	step.ToolCalls = append(step.ToolCalls, toolCall)
 	e.emitToolOutcome(ctx, toolCall, iteration, sessionID)
+	return nil
 }
 
 // runToolCall handles argument parsing, execution, logging, and pipeline events for a single tool call.
@@ -373,6 +448,15 @@ func (e *AgentEngine) executeSingleToolCall(
 func (e *AgentEngine) runToolCall(
 	ctx context.Context, tc types.LLMToolCall, i int,
 	iteration, round int, sessionID, assistantMessageID string,
+) types.ToolCall {
+	return e.runToolCallAnswered(ctx, tc, i, iteration, round, sessionID, assistantMessageID, nil)
+}
+
+// runToolCallAnswered is runToolCall for a call whose prompt may already be
+// answered (see ToolExecContext.Answered).
+func (e *AgentEngine) runToolCallAnswered(
+	ctx context.Context, tc types.LLMToolCall, i int,
+	iteration, round int, sessionID, assistantMessageID string, answered *types.AgentPrompt,
 ) types.ToolCall {
 	tc.ID = agenttools.NormalizeToolCallID(tc.ID, tc.Function.Name, i)
 	total := "?" // unknown in isolation; callers log the batch size
@@ -443,20 +527,31 @@ func (e *AgentEngine) runToolCall(
 		}
 	}
 
+	// Keep the provider-visible proxy call intact; resolve a separate target
+	// identity for live events, persisted presentation and tracing.
+	var target *types.ToolCallTarget
+	if len(tc.UnresolvedHandles) == 0 {
+		target = e.toolRegistry.MCPCallTarget(ctx, tc.Function.Name, json.RawMessage(tc.Function.Arguments))
+	}
+	executionName, executionArgs := tc.Function.Name, args
+	if target != nil {
+		executionName, executionArgs = target.Name, target.Args
+	}
+
 	logger.Debugf(ctx, "%s Args: %s", toolTag, tc.Function.Arguments)
 
 	toolCallStartTime := time.Now()
 
 	// Emit tool hint for UI progress display
-	toolHint := formatToolHint(tc.Function.Name, args)
+	toolHint := formatToolHint(executionName, executionArgs)
 	e.eventBus.Emit(ctx, event.Event{
 		ID:        tc.ID + "-tool-hint",
 		Type:      event.EventAgentToolCall,
 		SessionID: sessionID,
 		Data: event.AgentToolCallData{
 			ToolCallID: tc.ID,
-			ToolName:   tc.Function.Name,
-			Arguments:  agenttools.SanitizeSandboxFileCallArgs(tc.Function.Name, args),
+			ToolName:   executionName,
+			Arguments:  agenttools.SanitizeSandboxFileCallArgs(executionName, executionArgs),
 			Iteration:  iteration,
 			Hint:       toolHint,
 		},
@@ -465,7 +560,7 @@ func (e *AgentEngine) runToolCall(
 	common.PipelineInfo(ctx, "Agent", "tool_call_start", map[string]interface{}{
 		"iteration":    iteration,
 		"round":        round,
-		"tool":         tc.Function.Name,
+		"tool":         executionName,
 		"tool_call_id": tc.ID,
 		"tool_index":   fmt.Sprintf("%d/%s", i+1, total),
 	})
@@ -479,10 +574,14 @@ func (e *AgentEngine) runToolCall(
 	// (toolHintSensitiveArgs) because it exposes implementation details.
 	// Mirror that policy for Langfuse: redact raw arguments to avoid
 	// leaking raw SQL into the observability backend.
-	toolSpanInput := buildToolSpanInput(tc, args, toolHintSensitiveArgs[tc.Function.Name])
+	toolSpanInput := buildToolSpanInput(tc, executionArgs, toolHintSensitiveArgs[executionName])
+	if target != nil {
+		toolSpanInput["mcp_service"] = target.ServiceName
+		toolSpanInput["mcp_tool"] = target.ToolName
+	}
 	argumentResolution, _ := toolSpanInput["argument_resolution"].(string)
 	toolCtx, toolSpan := mgr.StartSpan(ctx, langfuse.SpanOptions{
-		Name:  "agent.tool." + tc.Function.Name,
+		Name:  "agent.tool." + executionName,
 		Input: toolSpanInput,
 		Metadata: map[string]interface{}{
 			"iteration":               iteration,
@@ -496,7 +595,12 @@ func (e *AgentEngine) runToolCall(
 	})
 
 	principal, _ := types.PrincipalFromContext(ctx)
-	execTimeout := toolExecutionTimeout(tc.Function.Name)
+	execTimeout := toolExecutionTimeout(tc.Function.Name, tc.Function.Arguments)
+	if tool, lookupErr := e.toolRegistry.GetTool(tc.Function.Name); lookupErr == nil {
+		if timed, ok := tool.(interface{ ExecutionTimeout() time.Duration }); ok {
+			execTimeout = max(execTimeout, timed.ExecutionTimeout())
+		}
+	}
 	toolExecCtx := agenttools.WithToolExecContext(toolCtx, &agenttools.ToolExecContext{
 		SessionID:          sessionID,
 		AssistantMessageID: assistantMessageID,
@@ -507,11 +611,14 @@ func (e *AgentEngine) runToolCall(
 		// so MCP tool human-approval (issue #1173) can legitimately block longer.
 		ApprovalCtx: toolCtx,
 		ExecTimeout: execTimeout,
+		Snapshot:    e.snapshotFunc(i, tc.Function.Name),
+		Answered:    answered,
+		Mode:        e.mode,
 	})
 
 	var result *types.ToolResult
 	var err error
-	if len(tc.UnresolvedHandles) > 0 {
+	if len(tc.UnresolvedHandles) > 0 && !webFetchValidatesReferences(tc) {
 		// A temporary handle is not an application identity. Fail before tool
 		// execution so a hallucinated/stale cN/dN/bN/wN/iN/res:// token can
 		// never reach persistence, an external service, or a routing decision.
@@ -523,10 +630,14 @@ func (e *AgentEngine) runToolCall(
 			json.RawMessage(tc.Function.Arguments),
 		)
 		toolCancel()
+		if err == nil {
+			e.describeToolImages(toolCtx, result)
+		}
 	}
 	duration := time.Since(toolCallStartTime).Milliseconds()
 
 	toolCall := types.ToolCall{
+		Target:           target,
 		ID:               tc.ID,
 		Name:             tc.Function.Name,
 		Args:             args,
@@ -558,7 +669,7 @@ func (e *AgentEngine) runToolCall(
 	pipelineFields := map[string]interface{}{
 		"iteration":    iteration,
 		"round":        round,
-		"tool":         tc.Function.Name,
+		"tool":         executionName,
 		"tool_call_id": tc.ID,
 		"duration_ms":  duration,
 		"success":      toolSuccess,
@@ -586,4 +697,19 @@ func (e *AgentEngine) runToolCall(
 	}
 
 	return toolCall
+}
+
+// web_fetch validates each URL before any I/O. Unknown web references are item
+// errors, so one invented handle cannot discard valid pages in the same batch.
+// Other tools and other handle namespaces retain the fail-closed boundary.
+func webFetchValidatesReferences(tc types.LLMToolCall) bool {
+	if tc.Function.Name != agenttools.ToolWebFetch {
+		return false
+	}
+	for _, handle := range tc.UnresolvedHandles {
+		if len(handle) < 2 || handle[0] != 'w' || strings.Trim(handle[1:], "0123456789") != "" {
+			return false
+		}
+	}
+	return true
 }

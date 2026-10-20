@@ -12,7 +12,7 @@ import (
 // failure is ASCII quotation marks inside a same-kind string literal
 // (`"这不是一个"大干快上"..."`), which Python treats as the end of the
 // string. Caught at write/edit time so the model does not burn a round on
-// execute_skill_script + py_compile.
+// shell_exec + py_compile.
 const pythonQuoteGuidance = "Python strings: never put ASCII `\"` inside `\"...\"` " +
 	"(or `'` inside `'...'`). Use the other quote for the literal, and 「」 " +
 	"for Chinese quotation."
@@ -93,7 +93,11 @@ func firstBrokenPythonQuote(src string) (int, bool) {
 			for j < len(src) && (src[j] == ' ' || src[j] == '\t' || src[j] == '\r') {
 				j++
 			}
-			if ident, isKw := peekPythonIdent(src, j); ident != "" && !isKw {
+			// Prefixes on an adjacent literal are legal implicit concatenation,
+			// not a bare identifier after an accidentally closed quote. The next
+			// loop iteration still scans that literal for unterminated quotes.
+			_, _, _, _, adjacentLiteral := pythonStringStart(src, j)
+			if ident, isKw := peekPythonIdent(src, j); ident != "" && !isKw && !adjacentLiteral {
 				return endLine, true
 			}
 		}

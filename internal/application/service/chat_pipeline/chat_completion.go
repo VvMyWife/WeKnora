@@ -55,6 +55,7 @@ func (p *PluginChatCompletion) OnEvent(
 	chatMessages = modelContext.EncodeMessages(chatMessages)
 	modelContext.CaptureArchival(ctx)
 	modelcontext.BindArchivalRepair(ctx, chatModel)
+	reportModelContextLeaks(ctx, "Completion", modelContext, chatMessages)
 	ctx = withPromptCacheMetadata(ctx, chatModel, chatMessages, opt, "knowledge_qa")
 
 	// Call the chat model to generate response

@@ -127,6 +127,31 @@ func prepareLJCLegacyBridgeWithLayout(dsn string, opts MigrationOptions, layout 
 	if version <= layout.base {
 		return nil
 	}
+	// A genuine upstream-only database can acquire the personal ledger on its
+	// first custom start. Require the official MCP marker and absence of every
+	// custom table; a partially missing custom ledger must never be guessed.
+	var officialMarker int
+	markerQuery := "SELECT COUNT(*) FROM information_schema.columns WHERE table_schema=current_schema() AND table_name='mcp_tool_approvals' AND column_name='enabled'"
+	if layout.sqlite {
+		markerQuery = "SELECT COUNT(*) FROM pragma_table_info('mcp_tool_approvals') WHERE name='enabled'"
+	}
+	if err := tx.QueryRowContext(ctx, markerQuery).Scan(&officialMarker); err != nil {
+		return err
+	}
+	if officialMarker == 1 {
+		for _, group := range layout.groups {
+			for _, table := range group {
+				present, err := ljcTableExists(ctx, tx, layout.sqlite, table)
+				if err != nil {
+					return err
+				}
+				if present {
+					return fmt.Errorf("official marker and personal tables without LJC ledger: refusing ambiguous state")
+				}
+			}
+		}
+		return nil
+	}
 	if version > layout.legacyLast {
 		return fmt.Errorf("missing LJC ledger at official version %d: bootstrap from the fork baseline first", version)
 	}
