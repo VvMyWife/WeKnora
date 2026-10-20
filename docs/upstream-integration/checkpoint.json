@@ -9,14 +9,15 @@
     "external_sequence": "87689da9c",
     "official_original_preview": "3f67e24f8",
     "pdf_metadata": "5db558801",
-    "acceptance_workflow": "50b901328bc127229f04cb118318239a329054e8"
+    "acceptance_workflow": "50b901328bc127229f04cb118318239a329054e8",
+    "runtime_evidence": "adae95e56914e58ba38e0a2dfd178172a7f3cc89"
   },
   "production_modified": false,
   "maintenance_branch_advanced": false,
   "pending": [
     "frontend module scope user decision",
     "custom UI two existing locale audit failures",
-    "joint browser precise citation highlighting and approval/management acceptance",
+    "remaining frontend module browser flows and approval/management acceptance",
     "maintenance branch advancement and fork push after required acceptance"
   ],
   "resume": [
@@ -30,6 +31,7 @@
     "two-page scan reparse complete with verified 2/2 pages and table markers",
     "viewer read allowed; download/create/write forbidden; removed member live JWT rejected",
     "Neo4j entity extraction and provenance isolation for two documents",
-    "nine exact PDF locators match source hash and bounded page coordinates"
+    "nine exact PDF locators match source hash and bounded page coordinates",
+    "official28180 scan citation jumps to page2 and shows OCR region boxes; custom28182 excerpt behavior retained"
   ]
 }

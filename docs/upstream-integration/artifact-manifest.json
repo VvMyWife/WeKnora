@@ -1,6 +1,6 @@
 {
-  "captured_at": "2026-10-20T12:06:06.795911+00:00",
-  "integration_head": "50b901328bc127229f04cb118318239a329054e8",
+  "captured_at": "2026-10-20T12:11:32.793095+00:00",
+  "integration_head": "adae95e56914e58ba38e0a2dfd178172a7f3cc89",
   "upstream_target": "eecfe4b3c8c34c94e9b559e5dd02187b4ae447cd",
   "production_deployed": false,
   "maintenance_branch_advanced": false,
@@ -90,6 +90,11 @@
       "file": "archive-version-results.json",
       "sha256": "b902ec8479b1c89f337a31fad83ba8d0d27f429fa48026ff121f4b6d27f87aa8",
       "bytes": 94
+    },
+    {
+      "file": "browser-scan-citation-results.json",
+      "sha256": "d7fab2529c076a2561f5f6fdcfc354a77c04b985d2acb9f170ef944f68b5c341",
+      "bytes": 653
     },
     {
       "file": "cpu-rerank-results.json",
