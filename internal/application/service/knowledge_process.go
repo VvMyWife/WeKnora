@@ -4473,21 +4473,32 @@ func (s *knowledgeService) setPDFPageIntegrity(
 	if status == "" {
 		status = "failed"
 	}
-	metadata := knowledge.GetMetadata()
+	// The official pipeline stores structured process_overrides here. The
+	// string-only GetMetadata accessor is for display and would flatten objects,
+	// silently dropping parser/summary settings on the next retry.
+	metadata := make(map[string]json.RawMessage)
+	if len(knowledge.Metadata) > 0 {
+		if err := json.Unmarshal(knowledge.Metadata, &metadata); err != nil {
+			logger.Warnf(ctx, "[convert] invalid metadata for PDF integrity %s: %v", knowledge.ID, err)
+			return
+		}
+	}
 	if metadata == nil {
-		metadata = make(map[string]string)
+		metadata = make(map[string]json.RawMessage)
 	}
-	metadata["pdf_page_integrity"] = status
-	if status == "pending" && details == nil {
-		metadata["pdf_started_at"] = time.Now().UTC().Format(time.RFC3339)
+	putString := func(key, value string) {
+		encoded, _ := json.Marshal(value)
+		metadata[key] = encoded
 	}
+	putString("pdf_page_integrity", status)
 	if status == "pending" && details == nil {
+		putString("pdf_started_at", time.Now().UTC().Format(time.RFC3339))
 		delete(metadata, "pdf_expected_pages")
 		delete(metadata, "pdf_processed_pages")
 	}
 	for _, key := range []string{"pdf_expected_pages", "pdf_processed_pages"} {
 		if details[key] != "" {
-			metadata[key] = details[key]
+			putString(key, details[key])
 		}
 	}
 	encoded, err := json.Marshal(metadata)
