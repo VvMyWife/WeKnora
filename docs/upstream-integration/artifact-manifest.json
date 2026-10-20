@@ -1,0 +1,180 @@
+{
+  "captured_at": "2026-10-20T12:06:06.795911+00:00",
+  "integration_head": "50b901328bc127229f04cb118318239a329054e8",
+  "upstream_target": "eecfe4b3c8c34c94e9b559e5dd02187b4ae447cd",
+  "production_deployed": false,
+  "maintenance_branch_advanced": false,
+  "artifacts": [
+    {
+      "component": "app",
+      "container": "ljc-upstream-acceptance-app",
+      "image_tag": "weknora-app:ljc-upstream-eecfe4b3",
+      "image_id": "sha256:76399c0e703a7118ec3d7b5f7cd5140388f0c147bad32c2df6b154b1f92c51e1",
+      "created": "2026-10-20T19:55:14.234695346+08:00",
+      "labels": {
+        "ljc.operation": "upstream-20261020",
+        "org.opencontainers.image.revision": "50b901328bc127229f04cb118318239a329054e8"
+      },
+      "state": "running",
+      "acceptance": "candidate; not production"
+    },
+    {
+      "component": "official-ui",
+      "container": "ljc-upstream-acceptance-official-ui",
+      "image_tag": "weknora-ui:upstream-eecfe4b3",
+      "image_id": "sha256:18666b5b8221543df5fbc82c1d031dcd56a4b6a6896a3bec4d45f6e07da45232",
+      "created": "2026-10-20T19:52:38.496521132+08:00",
+      "labels": {
+        "org.opencontainers.image.revision": "3f67e24f889d9fee0b11a6a63457e87b74bcac11"
+      },
+      "state": "running",
+      "acceptance": "candidate; not production"
+    },
+    {
+      "component": "custom-ui",
+      "container": "ljc-upstream-acceptance-custom-ui",
+      "image_tag": "weknora-ui-custom:ljc-upstream-eecfe4b3",
+      "image_id": "sha256:49dff6168905277d264cd5bd53f2e462e69082123044fffc438478b9a71cfda2",
+      "created": "2026-10-20T15:33:36.15627932+08:00",
+      "labels": {
+        "ljc.acceptance": "review-only",
+        "ljc.operation": "upstream-20261020",
+        "org.opencontainers.image.revision": "a418adc45f383b9accb0d51bdcf226c468e656fb"
+      },
+      "state": "running",
+      "acceptance": "review-only; frozen custom UI; pending module decision and locale fixes"
+    },
+    {
+      "component": "docreader",
+      "container": "ljc-upstream-acceptance-docreader",
+      "image_tag": "weknora-docreader:ljc-upstream-eecfe4b3",
+      "image_id": "sha256:fd18e28658738021e322fae832a11b8964341d1c19c52fcf6fb4cf35e10d9f2e",
+      "created": "2026-10-20T15:16:14.79133678+08:00",
+      "labels": {
+        "ljc.operation": "upstream-20261020",
+        "org.opencontainers.image.revision": "a00419105467f514c5999a3bb34a53b638734e01"
+      },
+      "state": "running",
+      "acceptance": "candidate; not production"
+    },
+    {
+      "component": "neo4j",
+      "container": "ljc-upstream-acceptance-neo4j",
+      "image_tag": "weknora-neo4j:ljc-upstream-20261020",
+      "image_id": "sha256:c2d8482424f61b5d9f8d7c1f0aa6be37bf93e6f3427686fcacd148243e120df9",
+      "created": "2026-10-20T15:48:22.110412862+08:00",
+      "labels": {},
+      "state": "running",
+      "acceptance": "candidate; not production"
+    }
+  ],
+  "static_assets": {
+    "frontend": {
+      "file_count": 227,
+      "tree_sha256": "56dbef9821cb28bc7696aa894be29a95db860aa5b59108d4119a338c1bd8db32",
+      "scope": "workspace dist; container identity is recorded separately"
+    },
+    "frontend-custom": {
+      "file_count": 392,
+      "tree_sha256": "44ce8d6f3f64ea0ec93a3856628424d4af935bea23d7397e3093d1b7a3bc92f4",
+      "scope": "workspace dist; container identity is recorded separately"
+    }
+  },
+  "evidence": [
+    {
+      "file": "archive-external-results.json",
+      "sha256": "8e2535f5a6b4bab6c834fb3262a5c274a97148e631bb2011e16439be431f2bdd",
+      "bytes": 389
+    },
+    {
+      "file": "archive-version-results.json",
+      "sha256": "b902ec8479b1c89f337a31fad83ba8d0d27f429fa48026ff121f4b6d27f87aa8",
+      "bytes": 94
+    },
+    {
+      "file": "cpu-rerank-results.json",
+      "sha256": "a44727303f51fff11951f4047472707a26e52f303fec8c869b2d8a0ed865aede",
+      "bytes": 12080
+    },
+    {
+      "file": "entity-graph-results.json",
+      "sha256": "14dee1580aef77ac8d759d85fbd20c60ad215acd6b159151ca493f74a017007b",
+      "bytes": 5792
+    },
+    {
+      "file": "failed-retry-results.json",
+      "sha256": "6adf4deb49765f6cc8171bd74abd41c978628d1e59b58cc57afe75fb6bb68958",
+      "bytes": 641
+    },
+    {
+      "file": "ocr-locator-results.json",
+      "sha256": "b6c57cd98cfa40331e6dc5f92199623c1ea57ba43fdd4d69762181b5836c52fa",
+      "bytes": 207
+    },
+    {
+      "file": "permissions-results.json",
+      "sha256": "62a3a31af6056631623398abb743c3a2a5c2f77177a1ae1d0e2dcefdbdd95c98",
+      "bytes": 84
+    },
+    {
+      "file": "realfile-results.json",
+      "sha256": "1e72b5fe0cfeba028d2e3ee14554163281381362bfc1d9a848cfe3bff17e8c94",
+      "bytes": 500
+    },
+    {
+      "file": "role-management-results.json",
+      "sha256": "a3bf053e40a0c2d0801cea61f5e1dbc9763e3024ed5fe41c3a854e93a72da6c6",
+      "bytes": 124
+    },
+    {
+      "file": "scan-control-results.json",
+      "sha256": "ed463715d66ca5c08da5857fd2fb4516fcab5ab5111ab39a7d457e87f5aa974e",
+      "bytes": 278
+    },
+    {
+      "file": "scan-metadata-results.json",
+      "sha256": "3721002ce3f11c906c3695464b493674623a48c2ca5c11513342c8063f919e68",
+      "bytes": 595
+    },
+    {
+      "file": "wiki-document-graph-results.json",
+      "sha256": "f5ec1a22d16db890e1fc4c70ccdc878c3f53e1c64de23434a363066eec05539b",
+      "bytes": 4848
+    }
+  ],
+  "production_boundary": {
+    "checks": [
+      "/WeKnora-app unchanged",
+      "/WeKnora-frontend unchanged",
+      "/WeKnora-frontend-custom-preview unchanged",
+      "/WeKnora-postgres unchanged",
+      "/WeKnora-redis unchanged",
+      "/WeKnora-neo4j unchanged",
+      "app: running",
+      "postgres: running",
+      "redis: running",
+      "neo4j: running",
+      "docreader: running",
+      "official-ui: running",
+      "custom-ui: running"
+    ],
+    "production_ledger": "94|f",
+    "jobs": [
+      {
+        "job": "official-frontend",
+        "state": "0",
+        "live": false
+      },
+      {
+        "job": "backend-tests",
+        "state": "0",
+        "live": false
+      },
+      {
+        "job": "backend-image",
+        "state": "0",
+        "live": false
+      }
+    ]
+  }
+}

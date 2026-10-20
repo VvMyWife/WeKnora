@@ -97,3 +97,9 @@ PaddleOCR同时保留原件总页数/缺页校验与新增SourceBlocks；图谱�
 ## 当前可执行说明
 
 完整测试、构建、隔离启动、中断自检及恢复命令见[runbook.md](runbook.md)，当前真实回归状态见[acceptance.md](acceptance.md)。历史阶段记录按当时状态保留；后续获批原件PDF适配是官方UI树的受控例外，见policy.json。
+
+### 2026-10-20 运行回归补充
+
+PDF结构化配置修复已完成失败自动重试→真实OCR成功重解析和两页扫描件复验。
+实体图谱、来源隔离、viewer权限与成员撤权检查通过；产物对应关系见artifact-manifest.json。
+定制前端模块范围、旧locale失败及联合浏览器验收仍未完成，维护分支和fork尚未推进。

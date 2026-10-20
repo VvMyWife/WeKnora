@@ -174,3 +174,34 @@ gzip -dc rollback-images.tar.gz | docker image load
 ~~~
 
 生产数据库恢复依然必须使用匹配的数据库备份，不能仅导入或切回旧镜像。
+
+## 复核本轮运行证据和候选产物
+
+以下命令只检查隔离环境及私有验收结果，不执行生产迁移或切换。
+在服务器先进入集成工作区：
+
+```bash
+cd /home/ubuntu/RAG_Weknora-upstream-20261020
+python3 scripts/ljc_status.py
+python3 scripts/ljc_integration_selfcheck.py
+python3 scripts/ljc_capture_acceptance_manifest.py
+python3 -m json.tool docs/upstream-integration/artifact-manifest.json
+```
+
+完整重跑后端、官方前端和构建的命令见上文。artifact-manifest中的镜像标签、不可变image_id和image revision
+用于核对实际运行的候选；工作区dist哈希单独列出，不能把工作区文件自动当成服务已部署内容。
+本轮只交付候选：28180为官方界面，28182为冻结定制界面；生产18180/18182仍使用原镜像。
+
+本轮实例的运行验收脚本保存在私有目录，所需密码从acceptance.env读取，禁止输出或提交此文件。
+以下第一条为只读复核，第二条在已有本轮样本时只读，第三条会在已存在的隔离扫描件上重新解析，运行前等当前任务完成：
+
+```bash
+python3 /home/ubuntu/weknora-fork-migration/20261020-upstream/verify-wiki-doc-graph.py
+python3 /home/ubuntu/weknora-fork-migration/20261020-upstream/acceptance-entity-graph.py
+python3 /home/ubuntu/weknora-fork-migration/20261020-upstream/acceptance-scan-metadata.py
+```
+
+实体图谱脚本在已有本轮样本时仅查询；样本不存在时会创建专用测试知识库及上传合成文件。
+不要重跑旧acceptance-scan-control.py：其首次引擎名称错误的历史记录保留用于排查。
+完整故障重试证明见failed-retry-results.json；故障服务已停止，不能直接重跑依赖18084的脚本。
+需要重做故障注入时先按上文启动专用故障服务，再运行acceptance-metadata-retry.py，完成后停止该专用进程。
