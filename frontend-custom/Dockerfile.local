@@ -1,0 +1,14 @@
+# Offline production image for the branded frontend.
+# The base is a local alias of the pinned upstream WeKnora UI image, so builds
+# do not depend on Docker Hub being reachable.
+FROM archive-intelligence-ui-base:0.8.0
+
+COPY dist /usr/share/nginx/html
+COPY nginx.conf /etc/nginx/templates/default.conf.template
+COPY nginx-api-proxy.conf /etc/nginx/api-proxy.conf
+COPY docker-entrypoint.sh /docker-entrypoint.sh
+RUN chmod +x /docker-entrypoint.sh
+
+ENV MAX_FILE_SIZE_MB=50
+EXPOSE 80
+ENTRYPOINT ["/docker-entrypoint.sh"]

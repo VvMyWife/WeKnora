@@ -53,6 +53,21 @@ class MaintenanceChecks(unittest.TestCase):
         self.git("add", "frontend-custom/new.txt")
         self.assertIn("frontend-custom/new.txt", module.inspect(self.root)["changed_frontend_paths"])
 
+    def test_missing_tracking_is_reported(self):
+        self.git("rm", "--cached", "frontend-custom/custom.txt")
+        self.assertIn("frontend-custom/custom.txt", module.inspect(self.root)["changed_frontend_paths"])
+
+    def test_approved_official_tree_only(self):
+        (self.root / "frontend/original.txt").write_text("approved")
+        self.git("add", "frontend/original.txt")
+        self.git("commit", "-qm", "approved upstream tree")
+        policy = self.root / "docs/upstream-integration"
+        policy.mkdir(parents=True)
+        (policy / "policy.json").write_text(json.dumps({"official_frontend_candidates": [self.git("rev-parse", "HEAD")]}))
+        self.assertTrue(module.inspect(self.root)["frontend_frozen"])
+        (self.root / "frontend/original.txt").write_text("unapproved")
+        self.assertFalse(module.inspect(self.root)["frontend_frozen"])
+
     def test_interrupted_cherry_pick_is_reported(self):
         (self.root / ".git/CHERRY_PICK_HEAD").write_text(self.git("rev-parse", "HEAD"))
         result = module.inspect(self.root)

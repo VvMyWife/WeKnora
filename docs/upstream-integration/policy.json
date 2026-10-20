@@ -1,0 +1,10 @@
+{
+  "custom_baseline": "a418adc45f383b9accb0d51bdcf226c468e656fb",
+  "upstream_target": "eecfe4b3c8c34c94e9b559e5dd02187b4ae447cd",
+  "official_frontend_candidates": [
+    "a418adc45f383b9accb0d51bdcf226c468e656fb",
+    "eecfe4b3c8c34c94e9b559e5dd02187b4ae447cd"
+  ],
+  "custom_frontend": "freeze until user confirms module",
+  "production_deployment": false
+}

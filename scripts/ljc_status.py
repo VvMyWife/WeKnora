@@ -23,7 +23,16 @@ def inspect(root):
             failures.append(name)
     tracked = set(git(root, "ls-files", "frontend-custom").splitlines())
     failures.extend(sorted(tracked - set(expected)))
+    failures.extend(sorted(set(expected) - tracked))
     original = git(root, "diff", "--name-only", baseline["backend_head"], "--", "frontend")
+    policy_path = root / "docs/upstream-integration/policy.json"
+    if policy_path.is_file():
+        policy = json.loads(policy_path.read_text())
+        for ref in policy.get("official_frontend_candidates", []):
+            candidate = git(root, "diff", "--name-only", ref, "--", "frontend")
+            if not candidate:
+                original = ""
+                break
     failures.extend(original.splitlines())
     pending = []
     for name in ("CHERRY_PICK_HEAD", "MERGE_HEAD", "REVERT_HEAD", "rebase-merge", "rebase-apply", "sequencer"):
@@ -42,7 +51,7 @@ def inspect(root):
         "working_tree": git(root, "status", "--porcelain"),
         "next_action": "Inspect conflicts and current HEAD; continue or abort the existing Git operation. Never replay automatically."
         if pending else "Resolve frontend changes before integrating." if failures else
-        "Ready for explicitly selected backend updates; inspect status before beginning.",
+        "Ready for approved integration; inspect status before beginning.",
     }
 
 

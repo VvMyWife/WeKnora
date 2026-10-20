@@ -3,8 +3,8 @@
 - Public fork: VvMyWife/WeKnora; upstream: Tencent/WeKnora.
 - New branches use ljc/; new commits use author and committer name ljc.
 - Preserve existing history. Commit each tested implementation stage separately.
-- Freeze frontend/ and frontend-custom/. Do not import upstream UI updates.
-- Only import upstream changes explicitly selected by the user; inspect dependencies first.
+- Integrate the user-approved fixed upstream/main target in full. frontend/ follows the official target; frontend-custom/ stays frozen until the user confirms a module adaptation.
+- Prior checkbox selection is superseded by full-sync approval. Resolve technical conflicts and retain custom behavior; ask only for incompatible business choices and custom frontend module design.
 - Keep secrets, user data, databases, runtime logs, models, backups and build outputs outside Git.
 - Use persistent China mirror configuration for dependency downloads and builds.
 - After interruption, inspect Git/process/database state before continuing. Never blindly replay migrations or deployments.
