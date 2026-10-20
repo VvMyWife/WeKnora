@@ -346,8 +346,13 @@ func (s *knowledgeService) persistExternalChunks(ctx context.Context, chunks []*
 			c.SourceContent = c.Content
 			c.IndexStatus = "processing"
 		}
-		if e := types.AssignChunkSeqIDs(tx, chunks); e != nil {
-			return e
+		// Match ordinary ingestion: PostgreSQL/MySQL allocate SeqID atomically
+		// through the database. MAX+1 would collide with the next summary insert.
+		// Existing imported rows retain their SeqID above when resurrected.
+		if tx.Dialector.Name() == "sqlite" {
+			if e := types.AssignChunkSeqIDs(tx, chunks); e != nil {
+				return e
+			}
 		}
 		return tx.Clauses(clause.OnConflict{Columns: []clause.Column{{Name: "id"}}, DoUpdates: clause.AssignmentColumns([]string{"content", "source_content", "context_header", "chunk_index", "is_enabled", "start_at", "end_at", "chunk_type", "metadata", "pre_chunk_id", "next_chunk_id", "updated_at", "deleted_at", "index_status"})}).CreateInBatches(chunks, 100).Error
 	})
