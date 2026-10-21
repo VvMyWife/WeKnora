@@ -1,0 +1,6 @@
+ARG BASE_IMAGE=weknora-ui-custom:ljc-inline-baseline-20261021
+FROM ${BASE_IMAGE}
+ARG SOURCE_REVISION
+LABEL org.opencontainers.image.revision=${SOURCE_REVISION} ljc.operation=inline-citations-20261021
+# Keep the production nginx proxy, original-file handling and entrypoint.
+COPY frontend-custom/dist/ /usr/share/nginx/html/
