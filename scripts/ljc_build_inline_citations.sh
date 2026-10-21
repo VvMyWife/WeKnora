@@ -7,6 +7,9 @@ flock -n 9 || { echo 'Another inline-citation build is active'; exit 1; }
 test -z "$(git status --porcelain --untracked-files=no)" || { echo 'Commit source before build'; exit 1; }
 revision=$(git rev-parse HEAD)
 release="runtime/inline-citations/$revision"
+# Existing runtime/ was created by the persistent root build container. Create
+# and grant ownership only of this feature's new directory, not the workspace.
+docker run --rm -u 0 -e HOST_UID="$(id -u)" -e HOST_GID="$(id -g)" -v "$PWD/runtime:/runtime" weknora-builder:upstream-20261020 sh -ec 'mkdir -p /runtime/inline-citations; chown "$HOST_UID:$HOST_GID" /runtime/inline-citations'
 mkdir -p "$release"
 expected_app=sha256:76399c0e703a7118ec3d7b5f7cd5140388f0c147bad32c2df6b154b1f92c51e1
 expected_ui=sha256:66b71bd73accc993f5c641dbeab4bc2bb8c999eae1f6050428c1fc147892043f

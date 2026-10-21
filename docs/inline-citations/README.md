@@ -95,3 +95,5 @@ docker logs --since 10m WeKnora-app 2>&1 | grep '\[Citations\]'
 Keep18180 unchanged. If acceptance fails, restore only the saved app/frontend image pair (or the two baseline IDs above) and recreate those services with the same upgraded database/configuration. Reload nginx and recheck health. Do not reverse migrations, delete evidence, reset the branch or remove database/queue volumes. To disable only grouping, rebuild with `VITE_CITATION_GROUPING_ENABLED=false`; do not reintroduce automatic model repair.
 
 Release state: **source implementation and build preparation only; no restart authorized for this change yet**. Final image IDs and browser/runtime acceptance must be recorded before claiming live delivery.
+
+Build preparation exposed root-owned existing `runtime/`; the build helper now creates/grants ownership only to its new `runtime/inline-citations` directory using the existing builder. It does not recursively change ownership of the source tree or any production data. The failed first attempt did not start a build or touch running containers.
