@@ -11,14 +11,13 @@
     "pdf_metadata": "5db558801",
     "acceptance_workflow": "50b901328bc127229f04cb118318239a329054e8",
     "runtime_evidence": "adae95e56914e58ba38e0a2dfd178172a7f3cc89",
-    "gpu_rerank_and_frontend_approval": "ca3514298"
+    "gpu_rerank_and_frontend_approval": "ca3514298",
+    "custom_frontend": "bed35dcd79c3f0266388b01aad7d02edd37aa370"
   },
   "production_modified": false,
   "maintenance_branch_advanced": false,
   "pending": [
-    "complete all-feature custom frontend three-way integration tests/build and browser flows",
-    "sandbox-dependent skills, browser and approval flows: record isolated environment coverage honestly",
-    "maintenance branch advancement and fork push after required acceptance"
+    "safe maintenance branch promotion and fork push; production release excluded"
   ],
   "resume": [
     "python3 scripts/ljc_status.py",
@@ -37,6 +36,7 @@
   "current_work": {
     "date": "2026-10-21",
     "gpu_rerank": "physical GPU1; bridge18085; actual rerank applied/outcome ok; CPU fixture stopped",
-    "frontend": "complete source integration: 1479 tests + typecheck + Vite/image build passed; exact candidate manifest pinned; pending committed-version rebuild and browser acceptance"
+    "frontend": "all six modules integrated; 1479 tests/typecheck/build and core browser flows passed; external integrations explicitly limited in frontend-modules.md",
+    "archival_citations": "candidate flag restored; verified positive and needs_review negative cases retained"
   }
 }

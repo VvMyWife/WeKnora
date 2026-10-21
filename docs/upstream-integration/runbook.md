@@ -141,7 +141,7 @@ private=/home/ubuntu/weknora-fork-migration/20261020-upstream
 python3 "$private/verify-wiki-doc-graph.py"
 python3 "$private/acceptance-permissions.py"
 python3 "$private/acceptance-archive-versions.py"
-python3 "$private/acceptance-cpu-rerank.py"
+python3 "$private/acceptance-gpu-rerank.py"
 cat "$private/scan-control-results.json"
 cat "$private/archive-version-results.json"
 cat "$private/permissions-results.json"
@@ -231,3 +231,27 @@ python3 scripts/ljc_integration_selfcheck.py
 获批源码校验使用custom-frontend-candidate.json；原frontend-freeze.json保留作历史基线。
 SSR单元测试关闭无用watch，并限制并发2；不改主机inotify设置。完整依赖从持久化国内镜像配置安装。
 PDF.js保留定制版本6.4.299，canvas固定1.0.11以保证多平台锁文件完整；所有npm包下载地址使用npmmirror。
+
+
+## 最终维护分支与生产源码保护
+
+生产运行目录仍为/home/ubuntu/RAG_Weknora，config/config.yaml等被运行容器挂载。它必须停留在a418adc45的同一文件内容，不能直接切到新版ljc/custom。
+完成验收后，原运行目录只把分支名改为ljc/runtime-baseline-20261021（提交不变）；ljc/custom在隔离工作区/home/ubuntu/RAG_Weknora-upstream-20261020维护。两者属于同一权威Git仓库。
+
+日常修改新版源码请进入隔离工作区，测试通过后独立commit，再显式push；Git本身不会自动同步未提交或未push的修改。上游后续更新仍先fetch，另建ljc/integrate-日期-主题集成，不自动覆盖定制分支。
+
+~~~bash
+cd /home/ubuntu/RAG_Weknora-upstream-20261020
+git status --short --branch
+git log -8 --format='%h %an <%ae> %s'
+git merge-base --is-ancestor eecfe4b3c8c34c94e9b559e5dd02187b4ae447cd ljc/custom
+git ls-remote origin refs/heads/ljc/custom refs/heads/ljc/integrate-20261020-upstream-main
+python3 scripts/ljc_status.py
+python3 scripts/ljc_integration_selfcheck.py
+curl --fail http://10.20.0.15:28081/health
+curl --fail -I http://10.20.0.15:28180/
+curl --fail -I http://10.20.0.15:28182/
+~~~
+
+候选登录使用本轮私有测试账号；不要在候选页面输入生产凭据。记录中的第三方集成限制见frontend-modules.md。
+运行目录代码、生产数据库和运行镜像均未升级；上线前另行确认维护窗口、运行任务、备份与数据库/扩展切换及恢复顺序。

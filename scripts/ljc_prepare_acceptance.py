@@ -31,6 +31,7 @@ def main():
             'POSTGRES_USER':ROLE, 'POSTGRES_PASSWORD':password, 'POSTGRES_DB':ROLE,
             'LJC_MIGRATION_DSN':f'postgres://{ROLE}:{password}@{TARGET}:5432/{ROLE}?sslmode=disable',
             'AUTO_MIGRATE':'false', 'AUTO_RECOVER_DIRTY':'false', 'RETRIEVE_DRIVER':'postgres',
+            'ARCHIVAL_CITATIONS_ENABLED':'true',
             'REDIS_ADDR':'ljc-upstream-acceptance-redis:6379', 'REDIS_PASSWORD':redis_password,
             'REDIS_DB':'0', 'REDIS_PREFIX':'ljc-acceptance:', 'WEKNORA_REDIS_NAMESPACE':'ljc-upstream-20261020',
             'NEO4J_ENABLE':'true', 'NEO4J_URI':'bolt://ljc-upstream-acceptance-neo4j:7687',
@@ -51,6 +52,10 @@ def main():
         with env_path.open('a') as out:
             out.write('RETRIEVE_DRIVER=postgres\n')
         values['RETRIEVE_DRIVER'] = 'postgres'
+    if 'ARCHIVAL_CITATIONS_ENABLED' not in values:
+        with env_path.open('a') as out:
+            out.write('ARCHIVAL_CITATIONS_ENABLED=true\n')
+        values['ARCHIVAL_CITATIONS_ENABLED'] = 'true'
     if values.get('RETRIEVE_DRIVER') != 'postgres':
         raise SystemExit('Acceptance requires its dedicated PostgreSQL retrieval engine')
     # PostgreSQL starts separately with its own volume and database owner.
