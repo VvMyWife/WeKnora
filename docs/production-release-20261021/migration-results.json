@@ -1,0 +1,19 @@
+{
+  "ledger": "128|f\n4|f",
+  "protected_counts": {
+    "users": 3,
+    "tenants": 3,
+    "knowledge_bases": 29,
+    "knowledges": 7313,
+    "chunks": 232877,
+    "sessions": 61,
+    "messages": 188,
+    "wiki_pages": 19327,
+    "archive_mapping_versions": 735,
+    "message_citation_evidence": 5,
+    "enrichment_recoveries": 100,
+    "tenant_api_keys": 0
+  },
+  "repeat_up_clean": true,
+  "new_volume": "weknora-production-postgres-20261021"
+}

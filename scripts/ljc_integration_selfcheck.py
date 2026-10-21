@@ -5,6 +5,12 @@ from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1]
 def run(*args):return subprocess.check_output(args,text=True).strip()
 def main():
+ production_state=Path('/home/ubuntu/weknora-fork-migration/20261021-production/state.json')
+ if production_state.exists() and json.loads(production_state.read_text()).get('stage') in ('cutover','complete'):
+  import importlib.util
+  spec=importlib.util.spec_from_file_location('production_selfcheck',ROOT/'scripts/ljc_production_selfcheck.py')
+  module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module)
+  print(json.dumps(module.check(),indent=2));return
  p=argparse.ArgumentParser();p.add_argument('--private-dir',type=Path,default=Path('/home/ubuntu/weknora-fork-migration/20261020-upstream'));p.add_argument('--resume-safe-jobs',action='store_true');a=p.parse_args()
  baseline=json.loads((a.private_dir/'baseline-private.json').read_text())
  checks=[]

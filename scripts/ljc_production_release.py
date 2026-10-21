@@ -223,7 +223,7 @@ def restore():
     save_state('restoring')
     compose('up', '-d', 'postgres')
     wait_health(PG)
-    sql(PG, 'CREATE EXTENSION vector WITH SCHEMA public;')
+    sql(PG, 'CREATE EXTENSION IF NOT EXISTS vector WITH SCHEMA public;')
     run('docker', 'exec', PG, 'sh', '-ec', 'pg_restore -U "$POSTGRES_USER" -d "$POSTGRES_DB" --no-owner --no-privileges --exit-on-error /backup/database.dump')
     assert sql(PG, 'select version,dirty from schema_migrations') == '94|f'
     assert counts(PG) == json.loads((PRIVATE / 'protected-counts-before.json').read_text())
@@ -235,6 +235,9 @@ def wait_health(name):
         d = inspect(name)
         h = d['State'].get('Health', {}).get('Status', '')
         if h == 'healthy':
+            if name == PG and call('docker', 'exec', PG, 'cat', '/proc/1/comm') != 'postgres':
+                time.sleep(2)
+                continue
             return
         if not d['State']['Running'] or h == 'unhealthy':
             raise SystemExit(name + ' not healthy; inspect private logs')

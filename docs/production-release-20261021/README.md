@@ -98,3 +98,7 @@ journalctl -u weknora-bge-rerank.service -n 30 --no-pager
 ~~~
 
 首次安装使用sudo安装deploy/production-20261021/weknora-bge-rerank.service到/etc/systemd/system，daemon-reload并enable；确认同GPU候选旧进程退出后才start。不得同时启动旧候选GPU脚本与正式服务。
+
+## 本轮迁移结果
+
+最新正式备份已在新卷恢复并完成旧94→官方90+个人4→官方128+个人4，重复up和保护表数量核对通过。首次初始化临时PostgreSQL误报就绪导致恢复连接中断；修复为确认PID1是最终postgres后再恢复，保留原失败日志，只重建未导入业务数据的新目标库。旧94库和原数据卷未迁移。详情见migration-results.json。
