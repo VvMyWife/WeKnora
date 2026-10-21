@@ -52,9 +52,23 @@ type SourceOrigin struct {
 	ChunkIDs    []string `json:"chunk_ids"`
 }
 type UnboundBlock struct {
-	Index  int    `json:"index"`
-	SHA256 string `json:"sha256"`
-	Reason string `json:"reason"`
+	Index      int    `json:"index"`
+	EndIndex   int    `json:"end_index,omitempty"`
+	SHA256     string `json:"sha256"`
+	Reason     string `json:"reason"`
+	ReasonCode string `json:"reason_code,omitempty"`
+}
+
+// BlockBinding describes canonical content, never the grouped UI projection.
+// Offsets are zero-based Markdown lines before review markers are appended.
+type BlockBinding struct {
+	Index       int      `json:"index"`
+	EndIndex    int      `json:"end_index"`
+	SHA256      string   `json:"sha256"`
+	Kind        string   `json:"kind"`
+	CitationIDs []string `json:"citation_ids"`
+	State       string   `json:"state"`
+	ReasonCode  string   `json:"reason_code,omitempty"`
 }
 type Manifest struct {
 	Version         int            `json:"version"`
@@ -62,6 +76,7 @@ type Manifest struct {
 	Citations       []Summary      `json:"citations"`
 	Unbound         []UnboundBlock `json:"unbound_blocks"`
 	RepairAttempted bool           `json:"repair_attempted"`
+	Bindings        []BlockBinding `json:"bindings,omitempty"`
 }
 type Detail struct {
 	Summary

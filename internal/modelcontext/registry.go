@@ -81,11 +81,13 @@ func (r *Registry) CaptureArchival(ctx context.Context) {
 		if ref.WikiPageID != "" {
 			if err := scope.OfferWiki(ctx, ref.WikiPageID, ref.KnowledgeBaseID, ref.Content, ref.WikiVersion, ref.WikiSources, ref.WikiChunks); err != nil {
 				logger.Warnf(ctx, "wiki citation capture failed page=%s: %v", ref.WikiPageID, err)
+				scope.NoteCaptureFailure(ref.WikiPageID)
 			}
 			continue
 		}
 		if err := scope.Offer(ctx, ref.ChunkID, ref.KnowledgeID, ref.KnowledgeBaseID, ref.Content); err != nil {
 			logger.Warnf(ctx, "citation evidence capture failed chunk=%s: %v", ref.ChunkID, err)
+			scope.NoteCaptureFailure(ref.ChunkID)
 		}
 	}
 }

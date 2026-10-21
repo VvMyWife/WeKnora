@@ -41,7 +41,7 @@ func TestWikiPinsDerivedBodyAndOnlyExistingSameKBOrigins(t *testing.T) {
 		t.Fatal("lost wiki snapshot", e)
 	}
 }
-func TestNoKnowledgeAnswerAndOversizedRepairDoNotGenerateExtraModelCalls(t *testing.T) {
+func TestNoKnowledgeAnswerAndLongUncitedAnswerStayLocal(t *testing.T) {
 	s := requestFixture(t)
 	s.evidence = map[string]offeredEvidence{}
 	out, m, e := s.Finalize(context.Background(), "你好")
@@ -49,12 +49,10 @@ func TestNoKnowledgeAnswerAndOversizedRepairDoNotGenerateExtraModelCalls(t *test
 		t.Fatal(out, m, e)
 	}
 	s = requestFixture(t)
-	calls := 0
-	s.SetRepair(func(context.Context, string) (string, error) { calls++; return "", nil })
 	answer := strings.Repeat("long answer ", 3000)
 	out, m, e = s.Finalize(context.Background(), answer)
-	if e != nil || calls != 0 || m.RepairAttempted || !strings.Contains(out, answer) || m.State != "needs_review" {
-		t.Fatal("unbounded repair request", e, calls)
+	if e != nil || m.RepairAttempted || !strings.Contains(out, answer) || m.State != "needs_review" {
+		t.Fatal("unexpected synthesized binding", e)
 	}
 }
 func TestLiteralCodeIsNotRewrittenAsAnAnswerCitation(t *testing.T) {

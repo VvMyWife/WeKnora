@@ -2,7 +2,6 @@ package chatpipeline
 
 import (
 	"context"
-	"github.com/Tencent/WeKnora/internal/modelcontext"
 
 	"github.com/Tencent/WeKnora/internal/types"
 	"github.com/Tencent/WeKnora/internal/types/interfaces"
@@ -54,7 +53,6 @@ func (p *PluginChatCompletion) OnEvent(
 	chatMessages, modelContext := prepareMessagesWithModelContext(ctx, chatManage)
 	chatMessages = modelContext.EncodeMessages(chatMessages)
 	modelContext.CaptureArchival(ctx)
-	modelcontext.BindArchivalRepair(ctx, chatModel)
 	reportModelContextLeaks(ctx, "Completion", modelContext, chatMessages)
 	ctx = withPromptCacheMetadata(ctx, chatModel, chatMessages, opt, "knowledge_qa")
 

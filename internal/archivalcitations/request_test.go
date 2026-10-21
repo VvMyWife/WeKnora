@@ -42,23 +42,18 @@ func TestOnlyActuallyCitedEvidenceIsStored(t *testing.T) {
 		t.Fatal(e)
 	}
 }
-func TestRepairAddsBindingsWithoutRewritingFactsAndRunsOnlyOnce(t *testing.T) {
+func TestFinalizationNeverSynthesizesReferences(t *testing.T) {
 	s := requestFixture(t)
-	calls := 0
-	s.SetRepair(func(context.Context, string) (string, error) {
-		calls++
-		return `{"rewritten_answer":"fake","additions":[{"line_index":2,"chunk_id":"c1"},{"line_index":3,"chunk_id":"unoffered"},{"line_index":99,"chunk_id":"c2"}]}`, nil
-	})
-	answer := "| 名称 | 数量 |\n| --- | --- |\n| 表格事实 | 12 |\n未支持的内容"
-	out, m, e := s.Finalize(context.Background(), answer)
-	if e != nil {
-		t.Fatal(e)
+	answer := "| 名称 | 数量 |\n| --- | --- |\n| 表格事实 | 12 |\nevidence c1"
+	out, m, err := s.Finalize(context.Background(), answer)
+	if err != nil || m.RepairAttempted || len(m.Citations) != 0 || len(m.Unbound) != 2 || strings.Contains(out, "footnote=") {
+		t.Fatalf("%s %+v %v", out, m, err)
 	}
-	if !strings.Contains(out, "表格事实 | 12") || strings.Contains(out, "fake") || !strings.HasSuffix(strings.Split(out, "\n")[2], " |") || len(m.Citations) != 1 || len(m.Unbound) != 1 || !m.RepairAttempted || calls != 1 {
-		t.Fatalf("%s %+v", out, m)
+	if !strings.Contains(out, "引用待核验") {
+		t.Fatal("missing honest review status")
 	}
-	if _, _, e = s.Finalize(context.Background(), out); e != nil || calls != 1 {
-		t.Fatal("repair repeated")
+	if _, _, err = s.Finalize(context.Background(), out); err != nil {
+		t.Fatal(err)
 	}
 }
 
