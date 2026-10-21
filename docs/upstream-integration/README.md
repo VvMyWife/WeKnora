@@ -1,7 +1,10 @@
 # 当前交付状态（2026-10-21）
 
 官方固定目标eecfe4b3全量合并，18182对应定制前端已接入六组官方功能，同时保留原有新增能力、品牌、布局与原件预览。用户已批准全部模块，不再等待设计范围选择。
+维护分支ljc/custom已在隔离工作区推进，原运行目录仍为a418adc45（分支ljc/runtime-baseline-20261021）。
 当前运行的是隔离候选：后端28081、官方界面28180、定制界面28182。生产18180/18182和生产数据库均未切换。
+
+本轮644个官方提交完整清单见[upstream-commits.md](upstream-commits.md)。
 
 开始使用请按[runbook.md](runbook.md)中的自检、测试、构建、启动和回退步骤操作；验收结果见[acceptance.md](acceptance.md)，前端模块及外部集成限制见[frontend-modules.md](frontend-modules.md)，源码—镜像映射见[artifact-manifest.json](artifact-manifest.json)。
 1479项定制前端测试、1448项官方前端测试、160个后端测试包和331项Docreader测试通过；Docreader有12项原有跳过。候选重排已改为物理GPU1。

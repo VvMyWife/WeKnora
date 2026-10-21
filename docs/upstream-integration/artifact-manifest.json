@@ -1,9 +1,23 @@
 {
-  "captured_at": "2026-10-20T12:11:32.793095+00:00",
-  "integration_head": "adae95e56914e58ba38e0a2dfd178172a7f3cc89",
+  "custom_frontend_scope": {
+    "date": "2026-10-21",
+    "scope": [
+      "chat and agents",
+      "knowledge bases and parsing",
+      "graphs and galleries",
+      "models MCP and skills",
+      "automation and notifications",
+      "workspace permissions and administration"
+    ],
+    "source": "User: continue according to proposed six-module adaptation",
+    "production_deployment": false,
+    "clarification": "User: all official frontend features to18182; retain existing custom additions"
+  },
+  "captured_at": "2026-10-21T02:21:07.930853+00:00",
+  "integration_head": "c14c58b23e2cf6ead0f6b5d5305f8ac6033c711a",
   "upstream_target": "eecfe4b3c8c34c94e9b559e5dd02187b4ae447cd",
   "production_deployed": false,
-  "maintenance_branch_advanced": false,
+  "maintenance_branch_advanced": true,
   "artifacts": [
     {
       "component": "app",
@@ -34,15 +48,15 @@
       "component": "custom-ui",
       "container": "ljc-upstream-acceptance-custom-ui",
       "image_tag": "weknora-ui-custom:ljc-upstream-eecfe4b3",
-      "image_id": "sha256:49dff6168905277d264cd5bd53f2e462e69082123044fffc438478b9a71cfda2",
-      "created": "2026-10-20T15:33:36.15627932+08:00",
+      "image_id": "sha256:66b71bd73accc993f5c641dbeab4bc2bb8c999eae1f6050428c1fc147892043f",
+      "created": "2026-10-21T09:50:26.171147759+08:00",
       "labels": {
-        "ljc.acceptance": "review-only",
+        "ljc.acceptance": "candidate",
         "ljc.operation": "upstream-20261020",
-        "org.opencontainers.image.revision": "a418adc45f383b9accb0d51bdcf226c468e656fb"
+        "org.opencontainers.image.revision": "bed35dcd79c3f0266388b01aad7d02edd37aa370"
       },
       "state": "running",
-      "acceptance": "review-only; frozen custom UI; pending module decision and locale fixes"
+      "acceptance": "candidate; not production"
     },
     {
       "component": "docreader",
@@ -75,8 +89,8 @@
       "scope": "workspace dist; container identity is recorded separately"
     },
     "frontend-custom": {
-      "file_count": 392,
-      "tree_sha256": "44ce8d6f3f64ea0ec93a3856628424d4af935bea23d7397e3093d1b7a3bc92f4",
+      "file_count": 433,
+      "tree_sha256": "9ac833ce5dfce89c333c7ac7625e505a8ca111d0d680f99dd552c7f22cc5d5f5",
       "scope": "workspace dist; container identity is recorded separately"
     }
   },
@@ -90,6 +104,21 @@
       "file": "archive-version-results.json",
       "sha256": "b902ec8479b1c89f337a31fad83ba8d0d27f429fa48026ff121f4b6d27f87aa8",
       "bytes": 94
+    },
+    {
+      "file": "automation-crud-results.json",
+      "sha256": "ced990422eb16436fb956fa1933ccc87dee3baf0ae99defa06a2da2b1855f20f",
+      "bytes": 322
+    },
+    {
+      "file": "branch-promotion-results.json",
+      "sha256": "ccfc62808916203a237751c3bb4a2c7fc74632cb1d43a4f450f80ca0cf976f67",
+      "bytes": 469
+    },
+    {
+      "file": "browser-integrated-modules-results.json",
+      "sha256": "28d662f199b2aa65b9ac8a9dcf2e82e1d8d41d1ae1b397c4141c2a913055fbd9",
+      "bytes": 2355
     },
     {
       "file": "browser-scan-citation-results.json",
@@ -112,6 +141,16 @@
       "bytes": 641
     },
     {
+      "file": "gpu-rerank-results.json",
+      "sha256": "ed246721a7c2a71559bb481d9c0fc845113c2a6dcf1a943b48132134368d89cf",
+      "bytes": 9876
+    },
+    {
+      "file": "integrated-archival-citation-results.json",
+      "sha256": "7ffd54a074ff2b6639ca7f98a3c2ad8bb08f5612444923590c09327ccf7bce13",
+      "bytes": 2227
+    },
+    {
       "file": "ocr-locator-results.json",
       "sha256": "b6c57cd98cfa40331e6dc5f92199623c1ea57ba43fdd4d69762181b5836c52fa",
       "bytes": 207
@@ -127,6 +166,11 @@
       "bytes": 500
     },
     {
+      "file": "rerank-device-benchmark-results.json",
+      "sha256": "8ab606338eeea5fb781c3877600c7d555a7a9f713ac38508102e1bdd146d708c",
+      "bytes": 367
+    },
+    {
       "file": "role-management-results.json",
       "sha256": "a3bf053e40a0c2d0801cea61f5e1dbc9763e3024ed5fe41c3a854e93a72da6c6",
       "bytes": 124
@@ -140,6 +184,11 @@
       "file": "scan-metadata-results.json",
       "sha256": "3721002ce3f11c906c3695464b493674623a48c2ca5c11513342c8063f919e68",
       "bytes": 595
+    },
+    {
+      "file": "skill-catalog-results.json",
+      "sha256": "f171332274f25ab4243b0ec3ef9d74fbe1e7ae43446cac21971863ed70d17a73",
+      "bytes": 1321
     },
     {
       "file": "wiki-document-graph-results.json",
@@ -167,6 +216,11 @@
     "jobs": [
       {
         "job": "official-frontend",
+        "state": "0",
+        "live": false
+      },
+      {
+        "job": "custom-frontend",
         "state": "0",
         "live": false
       },
