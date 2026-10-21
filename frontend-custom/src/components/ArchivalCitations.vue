@@ -21,7 +21,7 @@ let originRevision=0,manifestRevision=0
 let originAbort:AbortController|undefined
 let manifestAbort:AbortController|undefined,detailAbort:AbortController|undefined,revision=0
 const rendered=computed(()=>detail.value?safeMarkdownToHTML(detail.value.snapshot):'')
-const status=computed(()=>!props.complete?'来源绑定校验中':manifest.value?.state==='validation_failed'?'来源校验或证据保存失败，请勿将本回答视为已验证引用':manifest.value?.state==='legacy'?'历史回答：没有版本化引用记录':manifest.value?.state==='answer_changed'?'回答已修改，旧引用不能代表当前回答':manifest.value?.state==='needs_review'?'部分内容未绑定来源':'来源绑定已校验（不代表事实已自动核实）')
+const status=computed(()=>!props.complete?'来源绑定校验中':manifest.value?.state==='validation_failed'?'来源校验或证据保存失败，请勿将本回答视为已验证引用':manifest.value?.state==='legacy'?'历史回答：没有版本化引用记录':manifest.value?.state==='answer_changed'?'回答已修改，旧引用不能代表当前回答':manifest.value?.state==='needs_review'?'部分引用待核验':'来源绑定已校验（不代表事实已自动核实）')
 async function refresh(){
  manifestAbort?.abort();manifestAbort=new AbortController()
  const ticket=++manifestRevision
@@ -66,7 +66,10 @@ defineExpose({openCitation})
 <template>
  <section v-if="enabled && manifest?.state!=='not_applicable'" class="archival-citations" aria-label="回答来源校验">
   <div class="archival-status" role="status">{{status}} <span v-if="unavailable"> · {{unavailable}} 个来源当前不可访问</span></div>
-  <div v-if="manifest?.unbound_blocks?.length" class="archival-warning">{{manifest.unbound_blocks.length}} 处内容未绑定来源，请结合原文复核。</div>
+  <details v-if="manifest?.unbound_blocks?.length" class="archival-warning">
+   <summary>{{manifest.unbound_blocks.length}} 处引用待核验；不代表知识库没有来源。查看原因</summary>
+   <ul><li v-for="(block,index) in manifest.unbound_blocks" :key="index">正文位置 {{block.index+1}}{{block.end_index!==undefined && block.end_index>block.index?`—${block.end_index+1}`:''}}：{{block.reason_code?block.reason:'历史回答未建立有效引用绑定；未自动重新校验或改写'}} <code v-if="block.reason_code">{{block.reason_code}}</code></li></ul>
+  </details>
   <div v-if="manifest?.citations?.length" class="archival-footnotes" aria-label="引用脚注">
    <button v-for="c in manifest.citations" :key="c.id" type="button" @click="openCitation(c.id)">[{{c.number}}] {{c.title}}</button>
   </div>
@@ -120,5 +123,6 @@ defineExpose({openCitation})
 .archival-evidence{font-size:13px;line-height:1.8}.archival-evidence-text{overflow-wrap:anywhere;overflow-x:auto;margin-top:16px;border-top:1px solid #eee;padding-top:12px}
 .archival-evidence-text table{border-collapse:collapse;max-width:100%;display:block;overflow:auto}.archival-evidence-text th,.archival-evidence-text td{border:1px solid #ddd;padding:6px 10px;min-width:70px}
 .citation-archival{font-size:11px!important;vertical-align:super;cursor:pointer;color:#247445!important;padding:0 3px!important;min-width:0!important}
+.citation-archival:focus-visible{outline:2px solid #247445;outline-offset:2px}
 .archival-directory{margin-top:10px;overflow-x:auto}.archival-directory summary{cursor:pointer;color:#34573b}.archival-directory table{width:100%;border-collapse:collapse;margin-top:10px}.archival-directory th,.archival-directory td{padding:8px;border:1px solid #e5e2db;text-align:left;vertical-align:top;overflow-wrap:anywhere}.archival-directory button{display:inline-block;margin:2px;cursor:pointer;background:#fff;border:1px solid #ddd;border-radius:3px;padding:3px 6px;color:#346548}.archival-source-version{font-size:11px;color:#888;margin-top:4px}
 </style>

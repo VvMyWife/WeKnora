@@ -6,6 +6,7 @@ import type { CachedMermaidSvgHtml } from './mermaidStreaming.ts'
 import { ensureLiteralSingleTildeOnGlobalMarked } from './markedLiteralTilde.ts'
 import { normalizeSandboxArtifactRefs, type ArtifactRefMeta } from './sandboxArtifactRefs.ts'
 import { relativeImageSourceHtml } from './relativeImageSource.ts'
+import { groupCitationHtml } from './citationGrouping.ts'
 import {
   collapseStandaloneCitationParagraphs,
   extractCitationHtmlPlaceholders,
@@ -43,6 +44,7 @@ export type RenderChatMarkdownOptions = {
   /** The source is still growing and may end in ambiguous partial Markdown. */
   streaming?: boolean
   collapseStandaloneCitations?: boolean
+  consolidateCitations?: boolean
   knowledgeReferences?: CitationKnowledgeRef[] | null
   cachedMermaidSvgHtml?: CachedMermaidSvgHtml
   injectCachedMermaidSvg?: (html: string, cachedSvgHtml?: CachedMermaidSvgHtml) => string
@@ -510,7 +512,9 @@ export function renderChatMarkdown(rawMarkdown: unknown, options: RenderChatMark
   const citationHtml = options.collapseStandaloneCitations === false
     ? restoredHtml
     : collapseStandaloneCitationParagraphs(restoredHtml)
-  const tableWrappedHtml = wrapChatMarkdownTables(citationHtml)
+  const groupedHtml = options.consolidateCitations === false || import.meta.env?.VITE_CITATION_GROUPING_ENABLED === 'false'
+    ? citationHtml : groupCitationHtml(citationHtml, Boolean(options.streaming))
+  const tableWrappedHtml = wrapChatMarkdownTables(groupedHtml)
   const strongTitleHtml = markStandaloneStrongParagraphs(tableWrappedHtml)
   const sanitized = options.sanitizeHtml(strongTitleHtml)
   const withMermaid = options.injectCachedMermaidSvg

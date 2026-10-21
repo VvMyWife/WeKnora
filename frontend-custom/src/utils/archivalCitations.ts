@@ -1,6 +1,7 @@
 export type CitationLocation = {pages:number[];status:'known'|'missing'|'version_mismatch'|'invalid';reason?:string}
 export type ArchivalCitation = {id:string;number:number;chunk_id:string;knowledge_id:string;knowledge_base_id:string;title:string;content_revision:number;content_sha256:string;archive_version_id?:string;archive_file_name?:string;archive_sha256?:string;source_kind:string;wiki_page_id?:string;origins?:{knowledge_id:string;title:string;chunk_ids:string[]}[];location:CitationLocation}
-export type CitationManifest = {version:1;state:string;citations:ArchivalCitation[];unbound_blocks:{index:number;sha256:string;reason:string}[];repair_attempted:boolean}
+export type CitationBinding = {index:number;end_index:number;sha256:string;kind:string;citation_ids:string[];state:string;reason_code?:string}
+export type CitationManifest = {version:1;state:string;citations:ArchivalCitation[];unbound_blocks:{index:number;end_index?:number;sha256:string;reason:string;reason_code?:string}[];repair_attempted:boolean;bindings?:CitationBinding[]}
 export function citationInitialPage(location:CitationLocation):number {
   return location.status==='known'&&Number.isSafeInteger(location.pages[0])&&location.pages[0]>0 ? location.pages[0] : 1
 }
