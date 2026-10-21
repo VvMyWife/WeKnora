@@ -205,3 +205,21 @@ python3 /home/ubuntu/weknora-fork-migration/20261020-upstream/acceptance-scan-me
 不要重跑旧acceptance-scan-control.py：其首次引擎名称错误的历史记录保留用于排查。
 完整故障重试证明见failed-retry-results.json；故障服务已停止，不能直接重跑依赖18084的脚本。
 需要重做故障注入时先按上文启动专用故障服务，再运行acceptance-metadata-retry.py，完成后停止该专用进程。
+
+## 2026-10-21 GPU重排（候选环境）
+
+生产向量模型原本使用GPU。此前仅为隔离验收临时启动CPU重排；现已停止该临时CPU进程，候选模型URL改为Docker桥接内网18085。
+使用现有缓存权重和持久化Python环境，不下载模型、不停止其他GPU服务。启动前检查选定GPU至少4GiB空闲：
+
+```bash
+cd /home/ubuntu/RAG_Weknora-upstream-20261020
+nvidia-smi
+export LJC_ACCEPTANCE_GPU_UUID=GPU-918824a7-2144-fe49-5183-7646ab974946
+nohup bash scripts/ljc_acceptance_gpu_rerank.sh > /home/ubuntu/weknora-fork-migration/20261020-upstream/gpu-rerank.log 2>&1 < /dev/null &
+curl --fail http://192.168.16.1:18085/health
+python3 /home/ubuntu/weknora-fork-migration/20261020-upstream/acceptance-gpu-rerank.py
+```
+
+期望health.device为cuda:0（CUDA可见设备被限定到上面UUID，即物理GPU1），后端meta.rerank.applied=true且outcome=ok。
+12段相同输入、预热2次后5次测量：CPU中位2923.83ms，GPU中位45.33ms，仅代表本机该重排样本，不代表端到端聊天耗时。
+不再启动旧CPU辅助脚本；CPU结果文件仅保留为历史对照。

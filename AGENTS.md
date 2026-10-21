@@ -3,7 +3,7 @@
 - Public fork: VvMyWife/WeKnora; upstream: Tencent/WeKnora.
 - New branches use ljc/; new commits use author and committer name ljc.
 - Preserve existing history. Commit each tested implementation stage separately.
-- Integrate the user-approved fixed upstream/main target in full. frontend/ follows the official target; frontend-custom/ stays frozen until the user confirms a module adaptation.
+- Integrate the user-approved fixed upstream/main target in full. frontend/ follows the official target; frontend-custom/ may now adapt all six modules as approved on 2026-10-21, retaining custom brand, layout, features and original preview. Preserve the historical freeze manifest as a baseline; pin reviewed candidate changes separately.
 - Prior checkbox selection is superseded by full-sync approval. Resolve technical conflicts and retain custom behavior; ask only for incompatible business choices and custom frontend module design.
 - Keep secrets, user data, databases, runtime logs, models, backups and build outputs outside Git.
 - Use persistent China mirror configuration for dependency downloads and builds.
@@ -22,3 +22,7 @@
 - User explicitly approved mapped-original type/PDF preview support in candidate28180. Exact file hashes are pinned in docs/upstream-integration/policy.json. This does not authorize production deployment or other UI module redesign.
 
 - Production entry-point notes above describe the preserved running baseline. Current full-sync acceptance uses official28180 and custom28182 with isolated backend28081; never treat a candidate change as a production deployment.
+
+## Approved custom candidate integration (2026-10-21)
+- User approved all six frontend module adaptations following the presented recommendation. Technical compatibility fixes and locale corrections are authorized. Keep custom brand/layout and existing original preview. Validate in28182 only; production18182 remains unchanged.
+- User requires GPU reranking; candidate GPU service uses cached BGE weights and an explicitly selected GPU with sufficient free memory. Do not stop or move other GPU services.

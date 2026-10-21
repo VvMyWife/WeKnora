@@ -5,7 +5,7 @@
     "a418adc45f383b9accb0d51bdcf226c468e656fb",
     "eecfe4b3c8c34c94e9b559e5dd02187b4ae447cd"
   ],
-  "custom_frontend": "freeze until user confirms module",
+  "custom_frontend": "All six modules approved 2026-10-21; preserve custom brand, layout, capabilities and original preview; candidate only",
   "production_deployment": false,
   "official_frontend_overrides": {
     "frontend/src/components/ChatReferenceSourceView.vue": "b98df16a61cd58ec816adc1aad2c3916891b3a3c3908410d1cd9956332e66521",
@@ -14,5 +14,19 @@
     "frontend/src/utils/filePreview.test.ts": "ca24185ef4c5720c1f03e9d563007d249b8f200bfc256e50a8265dbc54540779",
     "frontend/src/components/ChatReferenceSourceView.test.ts": "3078a348813490e71cacb329c3a7801ab42806b61e9204da33edcaef4185538f"
   },
-  "approved_decision": "2026-10-20 user: candidate28180 uses mapped original type/PDF viewer; 28182 unchanged"
+  "approved_decision": "2026-10-20 user: candidate28180 uses mapped original type/PDF viewer; 28182 unchanged",
+  "custom_frontend_approval": {
+    "date": "2026-10-21",
+    "scope": [
+      "chat and agents",
+      "knowledge bases and parsing",
+      "graphs and galleries",
+      "models MCP and skills",
+      "automation and notifications",
+      "workspace permissions and administration"
+    ],
+    "source": "User: continue according to proposed six-module adaptation",
+    "production_deployment": false,
+    "clarification": "User: all official frontend features to18182; retain existing custom additions"
+  }
 }
