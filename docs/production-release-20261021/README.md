@@ -84,3 +84,17 @@ docker exec WeKnora-frontend-custom-preview nginx -s reload
 5. 检查正式数据、旧API和原件功能，再开放入口。保留新版库/上线后备份供人工核对，不清理镜像和卷。
 
 完整原始镜像备份仍位于20261020-upstream/rollback-images.tar.gz；本次正式最新数据备份以20261021-production为准。
+
+## 正式GPU重排服务
+
+保留原正式模型地址http://10.20.0.15:18083，使用物理GPU1及已有缓存权重，不使用CPU。服务weknora-bge-rerank.service由systemd开机启动、异常退出后重启；原候选18085临时GPU进程已停止，未移动其他GPU模型。
+
+~~~bash
+systemctl is-active weknora-bge-rerank.service
+systemctl is-enabled weknora-bge-rerank.service
+curl --fail http://10.20.0.15:18083/health
+nvidia-smi
+journalctl -u weknora-bge-rerank.service -n 30 --no-pager
+~~~
+
+首次安装使用sudo安装deploy/production-20261021/weknora-bge-rerank.service到/etc/systemd/system，daemon-reload并enable；确认同GPU候选旧进程退出后才start。不得同时启动旧候选GPU脚本与正式服务。

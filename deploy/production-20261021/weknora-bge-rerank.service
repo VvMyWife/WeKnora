@@ -1,0 +1,20 @@
+[Unit]
+Description=WeKnora production BGE reranker on GPU1
+After=network-online.target docker.service
+Wants=network-online.target
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+User=ubuntu
+Group=ubuntu
+WorkingDirectory=/home/ubuntu/RAG_Weknora-upstream-20261020
+ExecStart=/bin/bash /home/ubuntu/RAG_Weknora-upstream-20261020/scripts/ljc_production_gpu_rerank.sh
+Restart=on-failure
+RestartSec=30
+TimeoutStopSec=30
+KillSignal=SIGTERM
+Environment=PYTHONUNBUFFERED=1
+
+[Install]
+WantedBy=multi-user.target
