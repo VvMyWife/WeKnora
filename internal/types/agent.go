@@ -8,27 +8,23 @@ import (
 	"time"
 )
 
-// DefaultMaxContextTokens is the context window assumed for a model that does
-// not declare one. 200k matches typical windows on current chat/VLM models
-// (GPT-4.1, Claude, Gemini, Qwen, etc.).
-//
-// It is still below the largest windows on the market. Guessing high is
-// the dangerous direction: compaction never fires, and the first sign of
-// trouble is the provider rejecting the request. Guessing low only costs some
-// history that would have fit.
-const DefaultMaxContextTokens = 200000
+// DefaultMaxContextTokens is a conservative budget, not a claim about an
+// unknown provider's capacity. Operators should declare the real model window.
+// In particular, never assume 200K for a locally served 49,152-token model.
+const DefaultMaxContextTokens = 32768
 
 // AgentMaxContextTokens picks the context window for one agent run. An
-// explicit agent setting wins, then whatever the model declares, then the
-// assumed default.
+// explicit setting may reduce, but never enlarge, the declared model window.
+// Unknown model windows use the conservative default as an upper bound.
 func AgentMaxContextTokens(configured, modelContextWindow int) int {
+	window := modelContextWindow
+	if window <= 0 {
+		window = DefaultMaxContextTokens
+	}
 	if configured > 0 {
-		return configured
+		return min(configured, window)
 	}
-	if modelContextWindow > 0 {
-		return modelContextWindow
-	}
-	return DefaultMaxContextTokens
+	return window
 }
 
 // DefaultSmartReasoningMaxCompletionTokens is the per-round budget when the

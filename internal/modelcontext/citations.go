@@ -35,6 +35,9 @@ const citationEnabledProtocolPrompt = `
 - If a source has no citation handle, use its exact supplied HTTP(S) URL as a Markdown link when available.
   If neither is available, omit the citation; never invent or borrow a source.
 - Never output <kb> or <web> tags yourself; the system expands valid <ref/> tags after generation.
+- Add each <ref/> while generating the answer, immediately after the supported factual sentence, list item or table row.
+  Cite different sources beside their respective claims, even within one paragraph. Pure transitions and headings need no citation.
+  Do not add a reference list instead of inline refs, and do not perform extra tool calls solely to fill citations.
 - Keep each <ref/> inline on the same line as the claim it supports. Do not group citations ` +
 	`at the end. For a requested exact output format, use citations only where the format ` +
 	`permits them; do not break a required schema to add citations.

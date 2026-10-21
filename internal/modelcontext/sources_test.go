@@ -67,6 +67,19 @@ func TestRegistrySuppressesSourceCitationsWhenDisabled(t *testing.T) {
 	))
 }
 
+func TestInlineCitationProtocolRequiresGenerationTimeClaimBindings(t *testing.T) {
+	protocol := sourceProtocolPrompt(true)
+	for _, rule := range []string{"while generating the answer", "factual sentence, list item or table row", "Pure transitions and headings", "not perform extra tool calls solely"} {
+		require.Contains(t, protocol, rule)
+	}
+	registry := newSourceRegistry(true)
+	registry.RegisterChunk(ChunkReference{ChunkID: "chunk-a", DocumentTitle: "A"})
+	registry.RegisterChunk(ChunkReference{ChunkID: "chunk-b", DocumentTitle: "B"})
+	out := registry.ExpandText(`甲。<ref id="c1"/>乙。<ref id="c2"/>`)
+	require.Contains(t, out, `甲。<kb doc="A" chunk_id="chunk-a"`)
+	require.Contains(t, out, `乙。<kb doc="B" chunk_id="chunk-b"`)
+}
+
 func TestRegistryDecodesAliasesInNestedToolArguments(t *testing.T) {
 	registry := NewRegistry(true)
 	registry.RegisterDocument("knowledge-uuid-1")

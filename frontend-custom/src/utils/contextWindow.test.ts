@@ -10,7 +10,7 @@ import {
   modelHasContextWindow,
 } from './contextWindow.ts'
 
-test('effectiveContextWindow falls back to 200K', () => {
+test('effectiveContextWindow uses conservative unknown-model budget', () => {
   assert.equal(effectiveContextWindow(undefined), DEFAULT_MODEL_CONTEXT_WINDOW)
   assert.equal(effectiveContextWindow(0), DEFAULT_MODEL_CONTEXT_WINDOW)
   assert.equal(effectiveContextWindow(256000), 256000)
@@ -26,7 +26,7 @@ test('formatTokenCount uses K/M for round thousands', () => {
 })
 
 test('formatContextWindow uses the default when unset', () => {
-  assert.equal(formatContextWindow(undefined), '200K')
+  assert.equal(formatContextWindow(undefined), '32K')
   assert.equal(formatContextWindow(128000), '128K')
 })
 

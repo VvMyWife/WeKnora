@@ -86,11 +86,17 @@ func TestAgentMaxContextTokens(t *testing.T) {
 	if got := AgentMaxContextTokens(0, 32768); got != 32768 {
 		t.Fatalf("model window unused: got %d, want 32768", got)
 	}
-	if got := AgentMaxContextTokens(64000, 32768); got != 64000 {
-		t.Fatalf("explicit agent setting must win, got %d", got)
+	if got := AgentMaxContextTokens(64000, 32768); got != 32768 {
+		t.Fatalf("explicit agent setting cannot exceed model window, got %d", got)
 	}
-	if got := AgentMaxContextTokens(64000, 0); got != 64000 {
-		t.Fatalf("explicit agent setting with unknown model = %d, want 64000", got)
+	if got := AgentMaxContextTokens(64000, 0); got != DefaultMaxContextTokens {
+		t.Fatalf("unknown model must use conservative limit, got %d", got)
+	}
+	if got := AgentMaxContextTokens(16000, 49152); got != 16000 {
+		t.Fatalf("smaller explicit budget lost: %d", got)
+	}
+	if got := AgentMaxContextTokens(0, 49152); got != 49152 {
+		t.Fatalf("declared service window lost: %d", got)
 	}
 }
 

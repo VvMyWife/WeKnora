@@ -36,3 +36,8 @@ docker run --rm -v "$PWD:/src" -v /home/ubuntu/RAG_Weknora/.go-modcache:/go/pkg/
 ```
 
 Build/test/release instructions and measured results are completed in subsequent stages. Do not confuse a commit or successful build with a live18182 deployment.
+
+## Stage results
+
+- Stage0 baseline tests: `internal/archivalcitations` and `internal/modelcontext` passed; commit `c11b8f0bf`.
+- Stage1 emits refs during factual sentence/list/table generation. Unknown context windows budget conservatively at32768 instead of claiming200K; declared model limits cap agent settings. This is a budgeting fallback, not provider capability detection. The current9B service was read-only verified as49152; its service configuration is unchanged. Explicitly declare model capacity in model settings for accurate sizing.

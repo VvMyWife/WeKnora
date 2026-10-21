@@ -1,11 +1,11 @@
 /** Matches internal/types.DefaultMaxContextTokens. */
-export const DEFAULT_MODEL_CONTEXT_WINDOW = 200000
+export const DEFAULT_MODEL_CONTEXT_WINDOW = 32768
 
 export function modelHasContextWindow(type?: string): boolean {
   return type === 'KnowledgeQA' || type === 'VLLM' || type === 'chat' || type === 'vllm'
 }
 
-/** Tokens the backend will actually use: the model's value, or 200K. */
+/** Model-declared value, or the conservative backend fallback (not verified capacity). */
 export function effectiveContextWindow(tokens?: number | null): number {
   if (typeof tokens === 'number' && tokens > 0) {
     return tokens
