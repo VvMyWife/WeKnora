@@ -94,10 +94,9 @@ services:
   custom-ui:
     image: weknora-ui-custom:ljc-upstream-eecfe4b3
     container_name: ljc-upstream-acceptance-custom-ui
-    profiles: [custom]
+    profiles: [retired-internal]
     labels: {ljc.operation: upstream-20261020}
     environment: {APP_HOST: app, APP_PORT: '8080', DEFAULT_LOCALE: zh-CN}
-    ports: ['28182:80']
     networks: [validation, egress]
     depends_on: {app: {condition: service_healthy}}
 networks:

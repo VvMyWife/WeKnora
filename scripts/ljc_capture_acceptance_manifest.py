@@ -67,6 +67,9 @@ def capture(private_dir):
 
 
 def main():
+    release_state = Path('/home/ubuntu/weknora-fork-migration/20261021-production/state.json')
+    if release_state.exists() and json.loads(release_state.read_text()).get('stage') in ('cutover', 'complete'):
+        raise SystemExit('Candidate capture retired after production promotion; use scripts/ljc_production_selfcheck.py and docs/production-release-20261021/release-manifest.json')
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--private-dir", type=Path,
                         default=Path("/home/ubuntu/weknora-fork-migration/20261020-upstream"))

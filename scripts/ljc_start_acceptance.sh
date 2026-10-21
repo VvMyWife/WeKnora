@@ -12,6 +12,6 @@ docker compose --env-file "$LJC_ACCEPTANCE_ENV" -f deploy/upstream-integration/c
 # nginx resolves the backend hostname at config load; refresh candidate routes
 # after a recreated backend receives a different IP. No production UI is touched.
 docker exec ljc-upstream-acceptance-official-ui nginx -s reload
-if docker inspect ljc-upstream-acceptance-custom-ui >/dev/null 2>&1; then
+if [ "$(docker inspect -f '{{.State.Running}}' ljc-upstream-acceptance-custom-ui 2>/dev/null || true)" = true ]; then
  docker exec ljc-upstream-acceptance-custom-ui nginx -s reload
 fi

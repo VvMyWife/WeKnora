@@ -15,7 +15,7 @@
     "custom_frontend": "bed35dcd79c3f0266388b01aad7d02edd37aa370",
     "citation_environment_and_acceptance": "c14c58b23e2cf6ead0f6b5d5305f8ac6033c711a"
   },
-  "production_modified": false,
+  "production_modified": true,
   "maintenance_branch_advanced": true,
   "pending": [],
   "resume": [
@@ -41,8 +41,9 @@
   "maintenance_worktree": "/home/ubuntu/RAG_Weknora-upstream-20261020",
   "runtime_branch": "ljc/runtime-baseline-20261021",
   "runtime_head": "a418adc45f383b9accb0d51bdcf226c468e656fb",
-  "production_release": "excluded; no production database migration or service replacement",
+  "production_release": "../production-release-20261021/release-manifest.json",
   "external_acceptance_limits": "see frontend-modules.md; sandbox/MCP/browser extension/notifications not configured",
   "delivery_status": "integration and candidate handoff complete; production release excluded; configured-external-workflow limits documented",
-  "fork_publish": "fork-publish.json; later documentation commit is pushed and checked separately in private final-delivery-results.json"
+  "fork_publish": "fork-publish.json; later documentation commit is pushed and checked separately in private final-delivery-results.json",
+  "production_deployed": true
 }

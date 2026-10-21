@@ -1,0 +1,209 @@
+{
+  "released_at": "2026-10-21T07:04:51.439798+00:00",
+  "canonical_frontend": "http://10.20.0.15:18182",
+  "backend": "http://10.20.0.15:18081",
+  "upstream_target": "eecfe4b3c8c34c94e9b559e5dd02187b4ae447cd",
+  "production_deployed": true,
+  "retired_28182": true,
+  "candidate_frontend_image_reused_exactly": true,
+  "production_data_not_replaced_by_test_data": true,
+  "ledger": {
+    "official": 128,
+    "personal": 4,
+    "dirty": false
+  },
+  "preservation": {
+    "baseline_ledger": "94|f",
+    "all_baseline_ids_preserved": true,
+    "tables": [
+      {
+        "table": "users",
+        "baseline_rows": 3,
+        "current_rows": 3,
+        "baseline_ids_missing": 0,
+        "added_after_cutover": 0,
+        "baseline_ids_sha256": "e9ed9c45013452b05864e8c20a5c6c027ad6d43b41d76365668ffd8e59f69fb6"
+      },
+      {
+        "table": "tenants",
+        "baseline_rows": 3,
+        "current_rows": 3,
+        "baseline_ids_missing": 0,
+        "added_after_cutover": 0,
+        "baseline_ids_sha256": "d0730e722a0a6d0dfa3b5884ff3c1d6c20a3490b6627a9ed7ac84b60ae64e227"
+      },
+      {
+        "table": "knowledge_bases",
+        "baseline_rows": 29,
+        "current_rows": 29,
+        "baseline_ids_missing": 0,
+        "added_after_cutover": 0,
+        "baseline_ids_sha256": "237e436f48e336c963edd034a8c175bb235e3a8a852d28aac33ae09bdc6434ad"
+      },
+      {
+        "table": "knowledges",
+        "baseline_rows": 7313,
+        "current_rows": 7313,
+        "baseline_ids_missing": 0,
+        "added_after_cutover": 0,
+        "baseline_ids_sha256": "451ac10989681f56769df6f47bc68d68d446463a65fe0e6b7c534604d15e8826"
+      },
+      {
+        "table": "chunks",
+        "baseline_rows": 232877,
+        "current_rows": 232877,
+        "baseline_ids_missing": 0,
+        "added_after_cutover": 0,
+        "baseline_ids_sha256": "0a938824a4df4866512174d3fb75c847857e24eaf5fc824fc61bb21211c4f703"
+      },
+      {
+        "table": "sessions",
+        "baseline_rows": 61,
+        "current_rows": 65,
+        "baseline_ids_missing": 0,
+        "added_after_cutover": 4,
+        "baseline_ids_sha256": "1659f67dbc1d04d6bdcbed60fffd672e2535d08048b5df3e11b598e162de0e96"
+      },
+      {
+        "table": "messages",
+        "baseline_rows": 188,
+        "current_rows": 196,
+        "baseline_ids_missing": 0,
+        "added_after_cutover": 8,
+        "baseline_ids_sha256": "e679089c411fe1962fa6b04c9970ecc924b199dc0c4b1805fd365f51b67ca157"
+      },
+      {
+        "table": "wiki_pages",
+        "baseline_rows": 19327,
+        "current_rows": 19327,
+        "baseline_ids_missing": 0,
+        "added_after_cutover": 0,
+        "baseline_ids_sha256": "ec329cb2b4d509ff959babcf6e5004d18fb4897bb36ca5329ef9257c68cc5141"
+      },
+      {
+        "table": "archive_mapping_versions",
+        "baseline_rows": 735,
+        "current_rows": 735,
+        "baseline_ids_missing": 0,
+        "added_after_cutover": 0,
+        "baseline_ids_sha256": "3e1f779ddc41bfca928bcf5937ae953e405c49f26be91ba80912444c103243be"
+      },
+      {
+        "table": "message_citation_evidence",
+        "baseline_rows": 5,
+        "current_rows": 8,
+        "baseline_ids_missing": 0,
+        "added_after_cutover": 3,
+        "baseline_ids_sha256": "b49160a811f45c1a734a351a522ebc1fc38ffbd36eb628992bf06a44267d5e08"
+      },
+      {
+        "table": "enrichment_recoveries",
+        "baseline_rows": 100,
+        "current_rows": 100,
+        "baseline_ids_missing": 0,
+        "added_after_cutover": 0,
+        "baseline_ids_sha256": "47005c624a8948a2b00abb6c54bf4e000fdbff2e36f5785376eb918d964f510b"
+      },
+      {
+        "table": "tenant_api_keys",
+        "baseline_rows": 0,
+        "current_rows": 0,
+        "baseline_ids_missing": 0,
+        "added_after_cutover": 0,
+        "baseline_ids_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    ],
+    "note": "Live service has new sessions/messages; they are retained, not treated as migration loss"
+  },
+  "artifacts": [
+    {
+      "component": "postgres",
+      "container": "WeKnora-postgres-20261021",
+      "container_id": "faa8a2e1e9fdb193d654d4ca59adae26c12a2275f5bc4a1a8c26c4d8c9fe82d1",
+      "image_id": "sha256:78d65750f0f88a56548526201bcab9910f83b90fe929cdbf979890f3f80b0f95",
+      "source_commit": null,
+      "restart": "unless-stopped"
+    },
+    {
+      "component": "app",
+      "container": "WeKnora-app",
+      "container_id": "594c7889d1617f1468d3f2d7b30dc117c76c16150dfc19bb827198c1b47a7785",
+      "image_id": "sha256:76399c0e703a7118ec3d7b5f7cd5140388f0c147bad32c2df6b154b1f92c51e1",
+      "source_commit": "50b901328bc127229f04cb118318239a329054e8",
+      "restart": "unless-stopped"
+    },
+    {
+      "component": "docreader",
+      "container": "WeKnora-docreader",
+      "container_id": "2ab7efef803e6ba1005cc8846ab18b11d41e24d7712b739aacf9f13a075d7498",
+      "image_id": "sha256:fd18e28658738021e322fae832a11b8964341d1c19c52fcf6fb4cf35e10d9f2e",
+      "source_commit": "a00419105467f514c5999a3bb34a53b638734e01",
+      "restart": "unless-stopped"
+    },
+    {
+      "component": "frontend",
+      "container": "WeKnora-frontend-custom-preview",
+      "container_id": "384b00d3a024d63a4eabfd920dd5f8d480b0ad63cc5dc743f4463d97f1f9e675",
+      "image_id": "sha256:66b71bd73accc993f5c641dbeab4bc2bb8c999eae1f6050428c1fc147892043f",
+      "source_commit": "bed35dcd79c3f0266388b01aad7d02edd37aa370",
+      "restart": "unless-stopped"
+    }
+  ],
+  "gpu": {
+    "physical_device": 1,
+    "service": "weknora-bge-rerank.service",
+    "address": "http://10.20.0.15:18083",
+    "device": "cuda:0"
+  },
+  "verification": {
+    "existing_persisted_session": true,
+    "authenticated_routes": 8,
+    "original_pdf_browser": true,
+    "historical_download_sha256": true,
+    "real_retrieval_gpu_rerank_applied": true,
+    "browser_errors_observed": 0,
+    "no_new_chat_created_by_acceptance_browser": true
+  },
+  "backup_private_directory": "/home/ubuntu/weknora-fork-migration/20261021-production",
+  "runtime_worktree": "/home/ubuntu/RAG_Weknora-upstream-20261020",
+  "legacy_runtime_checkout": "/home/ubuntu/RAG_Weknora",
+  "old_postgres": "WeKnora-postgres (stopped; original94 volume retained)",
+  "evidence": [
+    {
+      "file": "preflight-results.json",
+      "sha256": "c7778bb9973330ea485a3d03f2f619b16ed24e7f95f4e711a50598ce4c0d3e9b"
+    },
+    {
+      "file": "backup-sha256.json",
+      "sha256": "17c1600071c0c4c0aa20231af5efb8eb85695bf9d198b48901da51667c34897c"
+    },
+    {
+      "file": "migration-results.json",
+      "sha256": "d7c5dd6a87a51ec033db4687c3c703531b421f8624a36cf3d8bdf4b9e7fc4523"
+    },
+    {
+      "file": "cutover-results.json",
+      "sha256": "f222133900062067a3f6dc464a79704c095a71a9a22ccad2135876f9d67c3b85"
+    },
+    {
+      "file": "production-api-results.json",
+      "sha256": "7ff05c927a9639370fe560a0e9fae1541730b68df551b8b1c34fd414f1711e22"
+    },
+    {
+      "file": "skill-catalog-results.json",
+      "sha256": "b12a30cc6e1f2ab3dbe40d4b5062ced9f9fd42bec1e691f8ab6ca5ed5c5afaf5"
+    },
+    {
+      "file": "browser-acceptance-results.json",
+      "sha256": "ce9990162139a7ed1b89419905d0bf0db856e3b0996ea19d4e74738c92cac769"
+    },
+    {
+      "file": "gpu-transition-results.json",
+      "sha256": "063e7bd1d1aacb9fe19a323dab227d54eb18a8b761f2f6f91c2c586e6bb1f0c3"
+    },
+    {
+      "file": "baseline-id-preservation-results.json",
+      "sha256": "0ee0b8342d9e440390c129ae8020854cd15fa4013e838091971ec3ea90036d9c"
+    }
+  ]
+}
