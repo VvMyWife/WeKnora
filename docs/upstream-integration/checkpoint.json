@@ -17,9 +17,7 @@
   },
   "production_modified": false,
   "maintenance_branch_advanced": true,
-  "pending": [
-    "push final delivery commits to origin and verify remote refs"
-  ],
+  "pending": [],
   "resume": [
     "python3 scripts/ljc_status.py",
     "python3 scripts/ljc_integration_selfcheck.py --resume-safe-jobs"
@@ -44,5 +42,7 @@
   "runtime_branch": "ljc/runtime-baseline-20261021",
   "runtime_head": "a418adc45f383b9accb0d51bdcf226c468e656fb",
   "production_release": "excluded; no production database migration or service replacement",
-  "external_acceptance_limits": "see frontend-modules.md; sandbox/MCP/browser extension/notifications not configured"
+  "external_acceptance_limits": "see frontend-modules.md; sandbox/MCP/browser extension/notifications not configured",
+  "delivery_status": "integration and candidate handoff complete; production release excluded; configured-external-workflow limits documented",
+  "fork_publish": "fork-publish.json; later documentation commit is pushed and checked separately in private final-delivery-results.json"
 }

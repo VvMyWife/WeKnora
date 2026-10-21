@@ -1,0 +1,10 @@
+{
+  "verified_at": "2026-10-21T02:25:24.102800+00:00",
+  "repository": "https://github.com/VvMyWife/WeKnora",
+  "verified_refs": {
+    "refs/heads/ljc/custom": "7e1867acb06745d0a64dd51da984e53fa213c3d4",
+    "refs/heads/ljc/integrate-20261020-upstream-main": "7e1867acb06745d0a64dd51da984e53fa213c3d4"
+  },
+  "transport": "public Git bundle to local existing SSH identity; no server private key copied",
+  "production_deployed": false
+}

@@ -62,9 +62,7 @@ bash scripts/ljc_integration_job.sh backend-image
 bash scripts/ljc_integration_job.sh custom-frontend
 ~~~
 
-定制前端严格构建目前因韩语/俄语15个翻译键缺失而失败：416项中414通过、2失败，类型检查通过。
-2026-10-21已获准接入全部官方前端功能；28182在新版构建及验收前仍运行review-only旧候选，具体版本以产物清单为准。
-不得跳过这两项失败测试来标记正式通过。
+定制前端已完整接入官方功能，1479项测试、类型检查及构建通过，28182已运行bed35dcd79对应的完整候选。历史韩语/俄语15个缺失翻译键已补齐，没有跳过失败测试。
 
 ## 4. 新建独立数据库并显式迁移
 
@@ -255,3 +253,32 @@ curl --fail -I http://10.20.0.15:28182/
 
 候选登录使用本轮私有测试账号；不要在候选页面输入生产凭据。记录中的第三方集成限制见frontend-modules.md。
 运行目录代码、生产数据库和运行镜像均未升级；上线前另行确认维护窗口、运行任务、备份与数据库/扩展切换及恢复顺序。
+
+
+## 从本机发布（沿用已登录的GitHub身份）
+
+服务器没有GitHub SSH私钥。本轮由服务器生成Git bundle，通过Paramiko密码登录传到本机E盘，使用原有本机SSH身份推送；未复制私钥到服务器。
+原远端push URL保持SSH，本机发布副本只是传输中转，权威源码仍在服务器。
+修改及测试后可按以下顺序发布，禁止使用force覆盖远端新提交。
+
+服务器生成增量包（OLD_SHA为已确认的远端祖先；先检查is-ancestor）：
+
+~~~bash
+cd /home/ubuntu/RAG_Weknora-upstream-20261020
+git merge-base --is-ancestor "$OLD_SHA" ljc/custom
+git bundle create /home/ubuntu/weknora-fork-migration/20261020-upstream/integration-public.bundle ljc/custom ljc/integrate-20261020-upstream-main "^$OLD_SHA"
+git bundle verify /home/ubuntu/weknora-fork-migration/20261020-upstream/integration-public.bundle
+~~~
+
+本机PowerShell：
+
+~~~powershell
+Set-Location -LiteralPath 'E:\desktop\文档RAG'
+& 'E:\download\pycharm\python.exe' runtime/weknora-fork/transfer_integration.py
+git -C runtime/weknora-fork/publish.git bundle verify ../integration-public.bundle
+git -C runtime/weknora-fork/publish.git fetch ../integration-public.bundle refs/heads/ljc/custom:refs/heads/ljc/custom refs/heads/ljc/integrate-20261020-upstream-main:refs/heads/ljc/integrate-20261020-upstream-main
+git -C runtime/weknora-fork/publish.git push --atomic origin ljc/custom ljc/integrate-20261020-upstream-main
+git -C runtime/weknora-fork/publish.git ls-remote origin refs/heads/ljc/custom refs/heads/ljc/integrate-20261020-upstream-main
+~~~
+
+输入ubuntu密码时为隐藏提示。先对比服务器和本机bundle SHA256，再发布。若push被拒绝，读取远端新提交后重新集成，不盲目重试或强推。
