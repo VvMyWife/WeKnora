@@ -83,6 +83,38 @@ class MaintenanceChecks(unittest.TestCase):
         (self.root / "frontend/original.txt").write_text("unapproved replacement")
         self.assertFalse(module.inspect(self.root)["frontend_frozen"])
 
+    def test_custom_candidate_requires_approval_and_exact_content(self):
+        policy_dir = self.root / "docs/upstream-integration"
+        policy_dir.mkdir(parents=True)
+        custom = self.root / "frontend-custom/custom.txt"
+        custom.write_text("approved custom adaptation")
+        manifest = {"files": [{"path": "frontend-custom/custom.txt",
+                               "sha256": hashlib.sha256(custom.read_bytes()).hexdigest()}]}
+        (policy_dir / "candidate.json").write_text(json.dumps(manifest))
+        policy = {"custom_frontend_manifest": "docs/upstream-integration/candidate.json"}
+        (policy_dir / "policy.json").write_text(json.dumps(policy))
+        self.assertFalse(module.inspect(self.root)["frontend_frozen"])
+        policy["custom_frontend_approval"] = {"scope": ["all six modules"]}
+        (policy_dir / "policy.json").write_text(json.dumps(policy))
+        self.assertTrue(module.inspect(self.root)["frontend_frozen"])
+        custom.write_text("unexpected later edit")
+        self.assertFalse(module.inspect(self.root)["frontend_frozen"])
+        custom.unlink()
+        self.assertFalse(module.inspect(self.root)["frontend_frozen"])
+
+    def test_custom_candidate_rejects_unpinned_new_file(self):
+        policy_dir = self.root / "docs/upstream-integration"
+        policy_dir.mkdir(parents=True)
+        freeze = json.loads((self.root / "docs/fork-maintenance/frontend-freeze.json").read_text())
+        (policy_dir / "candidate.json").write_text(json.dumps(freeze))
+        (policy_dir / "policy.json").write_text(json.dumps({
+            "custom_frontend_manifest": "docs/upstream-integration/candidate.json",
+            "custom_frontend_approval": {"scope": ["all six modules"]},
+        }))
+        (self.root / "frontend-custom/new.txt").write_text("not pinned")
+        self.git("add", "frontend-custom/new.txt")
+        self.assertFalse(module.inspect(self.root)["frontend_frozen"])
+
     def test_interrupted_cherry_pick_is_reported(self):
         (self.root / ".git/CHERRY_PICK_HEAD").write_text(self.git("rev-parse", "HEAD"))
         result = module.inspect(self.root)

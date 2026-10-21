@@ -28,5 +28,6 @@
     "source": "User: continue according to proposed six-module adaptation",
     "production_deployment": false,
     "clarification": "User: all official frontend features to18182; retain existing custom additions"
-  }
+  },
+  "custom_frontend_manifest": "docs/upstream-integration/custom-frontend-candidate.json"
 }

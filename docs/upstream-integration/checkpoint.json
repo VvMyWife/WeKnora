@@ -10,14 +10,14 @@
     "official_original_preview": "3f67e24f8",
     "pdf_metadata": "5db558801",
     "acceptance_workflow": "50b901328bc127229f04cb118318239a329054e8",
-    "runtime_evidence": "adae95e56914e58ba38e0a2dfd178172a7f3cc89"
+    "runtime_evidence": "adae95e56914e58ba38e0a2dfd178172a7f3cc89",
+    "gpu_rerank_and_frontend_approval": "ca3514298"
   },
   "production_modified": false,
   "maintenance_branch_advanced": false,
   "pending": [
-    "frontend module scope user decision",
-    "custom UI two existing locale audit failures",
-    "remaining frontend module browser flows and approval/management acceptance",
+    "complete all-feature custom frontend three-way integration tests/build and browser flows",
+    "sandbox-dependent skills, browser and approval flows: record isolated environment coverage honestly",
     "maintenance branch advancement and fork push after required acceptance"
   ],
   "resume": [
@@ -33,5 +33,10 @@
     "Neo4j entity extraction and provenance isolation for two documents",
     "nine exact PDF locators match source hash and bounded page coordinates",
     "official28180 scan citation jumps to page2 and shows OCR region boxes; custom28182 excerpt behavior retained"
-  ]
+  ],
+  "current_work": {
+    "date": "2026-10-21",
+    "gpu_rerank": "physical GPU1; bridge18085; actual rerank applied/outcome ok; CPU fixture stopped",
+    "frontend": "complete source integration: 1479 tests + typecheck + Vite/image build passed; exact candidate manifest pinned; pending committed-version rebuild and browser acceptance"
+  }
 }

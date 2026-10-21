@@ -1,0 +1,145 @@
+{
+  "upstream_target": "eecfe4b3",
+  "official_files": 1013,
+  "missing_official_files": [],
+  "custom_only_files": [
+    ".npmrc",
+    "README.md",
+    "frontendctl",
+    "public/favicon.png",
+    "qa/README.md",
+    "qa/archival.html",
+    "qa/archival.ts",
+    "qa/boot.js",
+    "qa/clear-module-cache.js",
+    "qa/deny.js",
+    "qa/legacy.js",
+    "qa/live-scroll.js",
+    "qa/open-live.js",
+    "qa/page-error.js",
+    "qa/pdf.js",
+    "qa/wiki.js",
+    "scripts/prepare-pdf-assets.mjs",
+    "src/api/archival-citations.ts",
+    "src/api/archive-mapping.ts",
+    "src/assets/custom-brand.css",
+    "src/assets/img/yifang-brand-symbol.png",
+    "src/components/ArchivalCitations.vue",
+    "src/components/ArchivalPdfViewer.vue",
+    "src/components/BrandIdentity.vue",
+    "src/utils/archivalCitations.test.ts",
+    "src/utils/archivalCitations.ts",
+    "src/utils/archivalStream.test.ts",
+    "src/utils/archivalStream.ts",
+    "src/utils/relativeImageSource.test.ts",
+    "src/utils/relativeImageSource.ts",
+    "src/views/knowledge/archiveMapping.test.ts",
+    "src/views/knowledge/archiveMapping.ts",
+    "src/views/knowledge/components/ArchiveMappingDialog.vue",
+    "src/views/knowledge/components/ExternalChunksDialog.vue",
+    "src/views/knowledge/externalChunks.test.ts",
+    "src/views/knowledge/externalChunks.ts",
+    "src/views/knowledge/processingControl.test.ts",
+    "src/views/knowledge/processingControl.ts",
+    "src/views/knowledge/processingOverview.test.ts",
+    "src/views/knowledge/processingOverview.ts",
+    "src/views/knowledge/wiki/DocumentGraphSelector.vue",
+    "src/views/knowledge/wiki/documentGraphScope.test.ts",
+    "src/views/knowledge/wiki/documentGraphScope.ts"
+  ],
+  "missing_custom_only_files": [],
+  "three_way_conflicts": [
+    {
+      "path": "nginx.conf",
+      "kind": "text",
+      "hunks": 1
+    },
+    {
+      "path": "package-lock.json",
+      "kind": "text",
+      "hunks": 3
+    },
+    {
+      "path": "package.json",
+      "kind": "text",
+      "hunks": 1
+    },
+    {
+      "path": "src/api/knowledge-base/index.ts",
+      "kind": "text",
+      "hunks": 2
+    },
+    {
+      "path": "src/components/doc-content.vue",
+      "kind": "text",
+      "hunks": 1
+    },
+    {
+      "path": "src/components/document-preview.vue",
+      "kind": "text",
+      "hunks": 5
+    },
+    {
+      "path": "src/components/empty-knowledge.vue",
+      "kind": "text",
+      "hunks": 1
+    },
+    {
+      "path": "src/components/upload-mask.vue",
+      "kind": "text",
+      "hunks": 1
+    },
+    {
+      "path": "src/composables/useChatStreamHandler.ts",
+      "kind": "text",
+      "hunks": 1
+    },
+    {
+      "path": "src/i18n/locales/en-US.ts",
+      "kind": "text",
+      "hunks": 2
+    },
+    {
+      "path": "src/i18n/locales/ko-KR.ts",
+      "kind": "text",
+      "hunks": 1
+    },
+    {
+      "path": "src/i18n/locales/ru-RU.ts",
+      "kind": "text",
+      "hunks": 1
+    },
+    {
+      "path": "src/i18n/locales/zh-CN.ts",
+      "kind": "text",
+      "hunks": 2
+    },
+    {
+      "path": "src/main.ts",
+      "kind": "text",
+      "hunks": 1
+    },
+    {
+      "path": "src/utils/chatMarkdownRenderer.ts",
+      "kind": "text",
+      "hunks": 1
+    },
+    {
+      "path": "src/utils/markdownDomPurify.ts",
+      "kind": "text",
+      "hunks": 1
+    },
+    {
+      "path": "src/views/knowledge/KnowledgeBase.vue",
+      "kind": "text",
+      "hunks": 7
+    },
+    {
+      "path": "src/views/knowledge/wiki/WikiBrowser.vue",
+      "kind": "text",
+      "hunks": 4
+    }
+  ],
+  "method": "a418 frontend / a418 frontend-custom / official candidate frontend three-way integration",
+  "upload_adaptation": "Official persistent global upload queue plus retained full-KB processing/pause/failure overview"
+}

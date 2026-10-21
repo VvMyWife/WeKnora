@@ -63,7 +63,7 @@ bash scripts/ljc_integration_job.sh custom-frontend
 ~~~
 
 定制前端严格构建目前因韩语/俄语15个翻译键缺失而失败：416项中414通过、2失败，类型检查通过。
-28182当前是单独生成的review-only预览，不能当作严格验收通过。前端源码尚未按官方模块移植。
+2026-10-21已获准接入全部官方前端功能；28182在新版构建及验收前仍运行review-only旧候选，具体版本以产物清单为准。
 不得跳过这两项失败测试来标记正式通过。
 
 ## 4. 新建独立数据库并显式迁移
@@ -127,21 +127,10 @@ docker compose --env-file "$LJC_ACCEPTANCE_ENV" -f deploy/upstream-integration/c
 本轮验收未全部通过前，不推进ljc/custom、不推送最终完成状态。原工作区config/config.yaml被生产bind-mount，不能用checkout覆盖实时配置。
 
 
-## 8. 候选CPU真实重排（可选）
+## 8. 重排验收入口
 
-原生产10.20.0.15:18083未监听。已有权重和Python依赖可用于CPU验收，无需下载、不占GPU，只绑定隔离Docker网桥地址。
-
-~~~bash
-cd /home/ubuntu/RAG_Weknora-upstream-20261020
-nohup bash scripts/ljc_acceptance_cpu_rerank.sh > /home/ubuntu/weknora-fork-migration/20261020-upstream/cpu-rerank-manual.log 2>&1 < /dev/null &
-gateway=$(docker network inspect -f '{{(index .IPAM.Config 0).Gateway}}' ljc-upstream-validate)
-curl -fsS "http://$gateway:18083/health"
-~~~
-
-候选acceptance.env的SSRF_WHITELIST应包含该网桥IP（本机192.168.16.1），只在候选模型配置中把重排URL设为http://192.168.16.1:18083。
-修改候选env后运行bash scripts/ljc_start_acceptance.sh；脚本在后端健康后刷新候选nginx的上游解析。
-生产URL、模型配置、GPU和服务均不改变。使用真实权重的返回meta.rerank必须applied=true且outcome=ok，回退不算通过。
-CPU模型依赖使用已有/home/ubuntu/RAG/runtime/eval-venv和/home/ubuntu/RAG/runtime/models/BAAI/bge-reranker-v2-m3；不同机器须配置对应路径。
+2026-10-21起使用下文GPU重排步骤。旧CPU脚本及结果只保留为历史对照，不作为当前启动方式。
+候选模型URL为Docker桥接内网http://192.168.16.1:18085；真实后端检索必须返回meta.rerank.applied=true且outcome=ok。
 
 ## 9. 本机真实回归脚本和原始证据
 
@@ -190,7 +179,7 @@ python3 -m json.tool docs/upstream-integration/artifact-manifest.json
 
 完整重跑后端、官方前端和构建的命令见上文。artifact-manifest中的镜像标签、不可变image_id和image revision
 用于核对实际运行的候选；工作区dist哈希单独列出，不能把工作区文件自动当成服务已部署内容。
-本轮只交付候选：28180为官方界面，28182为冻结定制界面；生产18180/18182仍使用原镜像。
+本轮只交付候选：28180为官方界面，28182为定制候选界面（具体源码及验收状态见产物清单）；生产18180/18182仍使用原镜像。
 
 本轮实例的运行验收脚本保存在私有目录，所需密码从acceptance.env读取，禁止输出或提交此文件。
 以下第一条为只读复核，第二条在已有本轮样本时只读，第三条会在已存在的隔离扫描件上重新解析，运行前等当前任务完成：
@@ -223,3 +212,22 @@ python3 /home/ubuntu/weknora-fork-migration/20261020-upstream/acceptance-gpu-rer
 期望health.device为cuda:0（CUDA可见设备被限定到上面UUID，即物理GPU1），后端meta.rerank.applied=true且outcome=ok。
 12段相同输入、预热2次后5次测量：CPU中位2923.83ms，GPU中位45.33ms，仅代表本机该重排样本，不代表端到端聊天耗时。
 不再启动旧CPU辅助脚本；CPU结果文件仅保留为历史对照。
+
+## 定制前端完整接入后的复核
+
+源码位于同一权威仓库的隔离工作区frontend-custom。保留档案智查品牌、原件映射/版本、外部分块、档案引用、全库进度/暂停和按档案图谱。
+官方上传任务队列接管上传进度，切换页面后任务继续；全库处理进度面板仍单独显示。
+每次修改后按以下顺序复核，生产端口不在这些命令范围内：
+
+```bash
+cd /home/ubuntu/RAG_Weknora-upstream-20261020
+python3 -m unittest discover -s scripts -p test_ljc_status.py
+python3 scripts/ljc_status.py
+bash scripts/ljc_integration_job.sh custom-frontend
+python3 scripts/ljc_integration_selfcheck.py
+```
+
+定制目录在外层历史Git规则中被忽略，因此新增源码必须显式git add -f具体文件，不能把node_modules/dist/临时文件强制加入。
+获批源码校验使用custom-frontend-candidate.json；原frontend-freeze.json保留作历史基线。
+SSR单元测试关闭无用watch，并限制并发2；不改主机inotify设置。完整依赖从持久化国内镜像配置安装。
+PDF.js保留定制版本6.4.299，canvas固定1.0.11以保证多平台锁文件完整；所有npm包下载地址使用npmmirror。

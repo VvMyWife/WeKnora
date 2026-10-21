@@ -15,6 +15,16 @@ def inspect(root):
     root = Path(root).resolve()
     baseline = json.loads((root / "docs/fork-maintenance/baseline.json").read_text())
     freeze = json.loads((root / "docs/fork-maintenance/frontend-freeze.json").read_text())
+    policy_path = root / "docs/upstream-integration/policy.json"
+    policy = json.loads(policy_path.read_text()) if policy_path.is_file() else {}
+    candidate_manifest = policy.get("custom_frontend_manifest")
+    if candidate_manifest and policy.get("custom_frontend_approval"):
+        manifest_path = (root / candidate_manifest).resolve()
+        if not manifest_path.is_relative_to(root):
+            raise ValueError("Candidate manifest must stay within the repository")
+        freeze = json.loads(manifest_path.read_text())
+        if not freeze.get("files") or any(not x["path"].startswith("frontend-custom/") for x in freeze["files"]):
+            raise ValueError("Candidate manifest must pin frontend-custom files")
     failures = []
     expected = {item["path"]: item["sha256"] for item in freeze["files"]}
     for name, digest in expected.items():
@@ -51,7 +61,8 @@ def inspect(root):
         "root": str(root),
         "branch": git(root, "branch", "--show-current"),
         "head": git(root, "rev-parse", "HEAD"),
-        "frontend_frozen": not failures,
+        "frontend_frozen": not failures,  # historical key: now means exact approved frontend policy matches
+        "frontend_policy": "approved candidate manifest" if candidate_manifest and policy.get("custom_frontend_approval") else "historical freeze",
         "changed_frontend_paths": sorted(set(failures)),
         "pending_git_operations": pending,
         "working_tree": git(root, "status", "--porcelain"),

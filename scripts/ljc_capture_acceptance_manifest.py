@@ -19,6 +19,7 @@ def capture(private_dir):
                               "--private-dir", str(private_dir)))
     policy = json.loads((ROOT / "docs/upstream-integration/policy.json").read_text())
     manifest = {
+        "custom_frontend_scope": policy.get("custom_frontend_approval"),
         "captured_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
         "integration_head": run("git", "rev-parse", "HEAD"),
         "upstream_target": policy["upstream_target"],
@@ -42,7 +43,7 @@ def capture(private_dir):
                        if k.startswith(("org.opencontainers.image.", "ljc."))},
             "state": container["State"]["Status"],
             "acceptance": ("review-only; frozen custom UI; pending module decision and locale fixes"
-                           if component == "custom-ui" else "candidate; not production"),
+                           if component == "custom-ui" and labels.get("ljc.acceptance") == "review-only" else "candidate; not production"),
         })
     for frontend in ("frontend", "frontend-custom"):
         directory = ROOT / frontend / "dist"
@@ -75,7 +76,7 @@ def main():
     data = capture(args.private_dir)
     args.output.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n")
     print("Candidate artifact manifest saved:", args.output)
-    print("Production boundary verified; custom UI remains review-only.")
+    print("Production boundary verified; candidate release status is recorded from image labels.")
 
 
 if __name__ == "__main__":

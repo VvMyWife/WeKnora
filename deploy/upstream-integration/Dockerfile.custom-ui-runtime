@@ -1,9 +1,16 @@
-FROM archive-intelligence-ui:document-graph-20261019-195330-r2
+FROM m.daocloud.io/docker.io/library/nginx:1.30.3-alpine@sha256:0d3b80406a13a767339fbe2f41406d6c7da727ab89cf8fae399e81f780f814d1
 ARG SOURCE_REVISION
-LABEL org.opencontainers.image.revision=${SOURCE_REVISION} ljc.operation=upstream-20261020
+LABEL org.opencontainers.image.revision=${SOURCE_REVISION} ljc.operation=upstream-20261020 ljc.acceptance=candidate
 RUN rm -rf /usr/share/nginx/html/*
 COPY frontend-custom/dist /usr/share/nginx/html
 COPY frontend-custom/nginx.conf /etc/nginx/templates/default.conf.template
 COPY frontend-custom/nginx-api-proxy.conf /etc/nginx/api-proxy.conf
+COPY frontend-custom/nginx-http.conf /etc/nginx/conf.d/00-weknora-http.conf
 COPY frontend-custom/docker-entrypoint.sh /docker-entrypoint.sh
-RUN chmod +x /docker-entrypoint.sh
+RUN chmod +x /docker-entrypoint.sh \
+ && sed -i 's/application\/javascript[[:space:]]*js;/application\/javascript js mjs;/' /etc/nginx/mime.types \
+ && grep -Eq 'application/javascript[[:space:]]+js[[:space:]]+mjs;' /etc/nginx/mime.types
+
+ENV MAX_FILE_SIZE_MB=50
+EXPOSE 80
+ENTRYPOINT ["/docker-entrypoint.sh"]
