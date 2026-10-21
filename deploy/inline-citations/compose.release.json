@@ -1,0 +1,10 @@
+{
+  "services": {
+    "app": {
+      "image": "sha256:ccba5915625333f46d2cd3c4e57525049c4605512dcfbbbad43c4528f4becc23"
+    },
+    "frontend": {
+      "image": "sha256:b57758c9199d56d54197f2442db639bd175d45838980fa2be48c50d66d17dae5"
+    }
+  }
+}
