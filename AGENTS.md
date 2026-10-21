@@ -26,3 +26,10 @@
 ## Approved custom candidate integration (2026-10-21)
 - User approved all six frontend module adaptations following the presented recommendation. Technical compatibility fixes and locale corrections are authorized. Keep custom brand/layout and existing original preview. Validate in28182 only; production18182 remains unchanged.
 - User requires GPU reranking; candidate GPU service uses cached BGE weights and an explicitly selected GPU with sufficient free memory. Do not stop or move other GPU services.
+
+
+## Production release authorization and canonical frontend (2026-10-21)
+- User explicitly authorized full production database/backend upgrade with backups and task checks, followed by18182 browser acceptance and stopping28182.
+- 18182 is the only canonical daily frontend. Do not direct users to28182; do not recreate a28182 host binding after retirement.
+- 18180 is retained only for legacy troubleshooting; it is not a daily or release acceptance endpoint.
+- Production commands and recovery: docs/production-release-20261021/README.md. Prior candidate-only boundaries describe the pre-release period.
