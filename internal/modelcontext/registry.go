@@ -17,6 +17,7 @@ import (
 	"reflect"
 	"sort"
 	"strings"
+	"sync"
 
 	"github.com/Tencent/WeKnora/internal/models/api"
 	"github.com/Tencent/WeKnora/internal/models/chat"
@@ -47,11 +48,12 @@ Some durable resources and high-entropy Wiki slugs are represented by request-lo
 // protected as one resource-like handle before the embedded document ID can be
 // compacted to dN. Callers therefore cannot accidentally reverse the codecs.
 type Registry struct {
-	sources    *sourceRegistry
-	resources  *resourceRegistry
-	issues     *HandleTable
-	mcpServers *HandleTable
-	mcpTools   *HandleTable
+	decodedResponses sync.Map // response pointer -> decoded text fingerprint; request-local only
+	sources          *sourceRegistry
+	resources        *resourceRegistry
+	issues           *HandleTable
+	mcpServers       *HandleTable
+	mcpTools         *HandleTable
 }
 
 // NewRegistry creates a registry for one model request/Agent execution.
@@ -205,6 +207,12 @@ func (r *Registry) DecodeResponse(response *types.ChatResponse) {
 	if r == nil || response == nil {
 		return
 	}
+	// Only skip our own unchanged response object. Never authorize model-written
+	// canonical tags or text received in a different object/request.
+	if previous, ok := r.decodedResponses.Load(response); ok && previous == response.Content+"\x00"+response.ReasoningContent {
+		r.DecodeToolCalls(response.ToolCalls)
+		return
+	}
 	response.Content = r.DecodeOutputText(response.Content)
 	reasoningBefore := response.ReasoningContent
 	response.ReasoningContent = r.DecodeOutputText(response.ReasoningContent)
@@ -218,6 +226,7 @@ func (r *Registry) DecodeResponse(response *types.ChatResponse) {
 		response.ReasoningSignature = ""
 	}
 	r.DecodeToolCalls(response.ToolCalls)
+	r.decodedResponses.Store(response, response.Content+"\x00"+response.ReasoningContent)
 }
 
 // StreamDecoder creates one ordered decoder for a response text channel.

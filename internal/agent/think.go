@@ -62,6 +62,7 @@ func (e *AgentEngine) streamLLMToEventBus(
 
 	// Model-context encoding owns codec ordering and temporary-handle lifecycle.
 	messages = e.modelContext.EncodeMessages(messages)
+	messages = e.modelContext.WithAgentCitationReminder(messages)
 	e.modelContext.CaptureArchival(ctx)
 	reportModelContextLeaks(ctx, "Agent", e.modelContext, messages)
 	prefixFingerprint := chat.PromptPrefixFingerprint(messages, opts)
