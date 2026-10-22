@@ -1,0 +1,17 @@
+{
+  "status": "deployed_acceptance_passed_with_documented_limits",
+  "source_revision": "eccda4115935f39e75fa527f2af6b1a6267792d0",
+  "app_image": "sha256:391885b29deae41638a817f831f0da506094022a51e7f26324b34b43125314e1",
+  "previous_app_image": "sha256:94f2d38aa0663ee9441157715007f72f5514a40d2b56ae06318b8908b2e366e8",
+  "unchanged_frontend_image": "sha256:8242e2acfe8fb4b3720da0b06630150d890568801345900bf2b29673c44847b6",
+  "endpoint": "http://10.20.0.15:18182",
+  "protected_container_count": 87,
+  "repair_calls": 0,
+  "samples": [
+    {"request": "rLIZ95I0VwtW", "mode": "intelligent", "raw_refs": 5, "expanded_refs": 5, "unique_saved_citations": 5},
+    {"request": "YgUibXsVy64Y", "mode": "intelligent_with_actual_compaction", "raw_refs": 19, "expanded_refs": 19, "unique_saved_citations": 15},
+    {"request": "dHJwULJci3hg", "mode": "quick", "unique_saved_citations": 4},
+    {"request": "p0l3rKiuIjkc", "mode": "unrelated_greeting", "unique_saved_citations": 0}
+  ],
+  "limitations": ["Not a guarantee of complete factual coverage", "Existing context-compaction latency remains", "Partial notice HTML may briefly appear during frontend typewriter playback; settled and reloaded views hide notices"]
+}

@@ -52,7 +52,7 @@ docker build -f deploy/inline-citations/Dockerfile.app --build-arg BASE_IMAGE=we
 
 ## Release and acceptance
 
-Prepared source is `eccda4115935f39e75fa527f2af6b1a6267792d0`. Tested and built image is `sha256:391885b29deae41638a817f831f0da506094022a51e7f26324b34b43125314e1` (`weknora-app:ljc-agent-citations-eccda4115`). At preparation, the three race-tested packages and Agent/chat-pipeline regressions passed. **Not yet deployed or real-model accepted: awaiting this feature's restart authorization.** Existing live backend remains the baseline image.
+Source is `eccda4115935f39e75fa527f2af6b1a6267792d0`. Tested, built and deployed image is `sha256:391885b29deae41638a817f831f0da506094022a51e7f26324b34b43125314e1` (`weknora-app:ljc-agent-citations-eccda4115`). The three race-tested packages and Agent/chat-pipeline regressions passed. The user granted this feature's restart authorization on2026-10-22; subsequent live acceptance is recorded below. Preparation initially stopped before deployment pending that authorization.
 
 The app-only release helper has a read-only preflight and an explicit authorization gate:
 
@@ -88,3 +88,22 @@ docker exec WeKnora-frontend-custom-preview nginx -s reload
 ```
 
 Reload nginx only to refresh app DNS after recreation. Keep new evidence records; do not roll back with a destructive migration or restore an old database.
+
+## Live acceptance and release record
+
+- App-only guarded promotion succeeded. All87 other pre-existing containers retained their IDs/images, including18182 frontend,18180, databases and model services. App health is healthy. The custom frontend remains image `sha256:8242e2acfe8fb4b3720da0b06630150d890568801345900bf2b29673c44847b6`, source `872fe87b0`.
+- Private before-compose/result: `/home/ubuntu/weknora-fork-migration/20261021-production/agent-citations-391885b29dea/`. The apply command above is historical and intentionally refuses replay after deployment.
+- Frontend citation regressions:16 passed and typecheck passed; no frontend rebuild/restart. Backend tests include race checks on modelcontext/compaction/archivalcitations and Agent/chat-pipeline regressions.
+
+| Mode/sample | Request | Session | Evidence binding |
+| --- | --- | --- | --- |
+| Intelligent: original岗位职责 question, no added request for citations | `rLIZ95I0VwtW` | `e62a62b9-3c52-4529-b1c9-882749ba091b` |5 raw refs,5 expanded,5 unique saved chunks across4 source versions;12 eligible evidence chunks; no rejects/capture failures; validation1ms/save13ms |
+| Intelligent: original“介绍一下药品经营许可证”, including real long-document read/compaction | `YgUibXsVy64Y` | `c6d6e8ea-decf-46d1-b38b-09ac252af303` |19 raw refs,19 expanded,15 unique saved chunks;49 eligible evidence chunks; no rejects/capture failures; validation3ms/save12ms |
+| Quick QA: GB/T20988 operation/maintenance requirements | `dHJwULJci3hg` | `46aed0a1-af41-463c-8960-e37edbc560f2` |4 saved chunks, inline citations visible |
+| Intelligent: unrelated greeting, no retrieval requested | `p0l3rKiuIjkc` | `df545b78-61e5-4275-9ac5-cafa42bab040` |0 tool calls,0 citations, state not_applicable; no fabricated source/footer |
+
+All samples have `repair_attempted=false`; intelligent finalization logs report `repair_calls=0`. The second request actually ran the existing context-compaction model call at14:51:58 before its final cited answer at14:53:27. This is not a citation-repair call, and its latency was not eliminated by this feature. Single/multiple-document results and full-document reading are covered by these actual tool paths; Wiki/graph provenance is additionally covered by automated regressions, not claimed as separately manually generated Wiki/graph answers.
+
+Real18182 browser verified numbered inline footnotes after completion and reload; versioned chunk drawer; copied-original success toast; actual19-page original PDF rendering with honest no-anchor homepage fallback; source directory listing4 versions/5 chunks. Local screenshot artifacts stay outside Git. The original source really contains the cited岗位职责/年度考核 row; copying the pinned snapshot does not mix in model explanations.
+
+Limits: these successful samples do not establish100% fact coverage or a controlled speed benchmark. The backend still recorded10 and48 reviewable blocks respectively; they are not automatically assigned nearby references. Finished/reloaded answers hide their notices as before. During typewriter playback a partial server-added notice span was briefly visible as text before the settled rendering; this frontend behavior was observed but the frontend was deliberately kept unchanged in this authorized backend-only release.
