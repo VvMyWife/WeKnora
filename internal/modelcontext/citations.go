@@ -221,8 +221,9 @@ func escapeAttr(value string) string { return html.EscapeString(value) }
 // citationStreamExpander prevents partial private <ref/> tags from reaching SSE while
 // preserving normal streaming for all other content.
 type citationStreamExpander struct {
-	registry *sourceRegistry
-	pending  string
+	registry    *sourceRegistry
+	pending     string
+	diagnostics CitationDiagnostics
 }
 
 func newCitationStreamExpander(registry *sourceRegistry) *citationStreamExpander {
@@ -256,6 +257,7 @@ func (d *citationStreamExpander) Feed(chunk string) string {
 				break
 			}
 			tag := data[:end+1]
+			d.registry.classifyCitation(tag, &d.diagnostics)
 			if refTagRE.MatchString(tag) {
 				out.WriteString(d.registry.ExpandText(tag))
 			}
@@ -268,6 +270,7 @@ func (d *citationStreamExpander) Feed(chunk string) string {
 				d.pending = data
 				break
 			}
+			d.registry.classifyCitation(data[:end+1], &d.diagnostics)
 			data = data[end+1:]
 			continue
 		}
@@ -311,6 +314,10 @@ func (d *citationStreamExpander) Flush() string {
 	d.pending = ""
 	lower := strings.ToLower(pending)
 	if isSourceTagPending(lower) {
+		if pending != "" {
+			d.diagnostics.Raw++
+			d.diagnostics.Malformed++
+		}
 		return ""
 	}
 	return d.registry.ExpandText(pending)

@@ -38,6 +38,14 @@ func WithScope(ctx context.Context, store *Store, tenant uint64, session, messag
 }
 func FromContext(ctx context.Context) *Scope { s, _ := ctx.Value(scopeKey{}).(*Scope); return s }
 
+// DiagnosticMessageID is immutable request metadata, not evidence content.
+func (s *Scope) DiagnosticMessageID() string {
+	if s == nil {
+		return ""
+	}
+	return s.message
+}
+
 // NoteCaptureFailure records registration failures without storing source text.
 func (s *Scope) NoteCaptureFailure(chunk string) {
 	if s == nil {
@@ -270,7 +278,7 @@ func (s *Scope) Finalize(ctx context.Context, answer string) (string, *Manifest,
 	if e := s.store.Save(ctx, s.tenant, s.session, s.message, answer, manifest, records); e != nil {
 		return answer, &manifest, e
 	}
-	logger.Infof(ctx, "[Citations] stage=finalize evidence=%d valid=%d invalid=%d capture_failed=%d review=%d repair_calls=0 validation_ms=%d save_ms=%d", len(s.evidence), len(manifest.Citations), invalidCount, len(s.captureFailures), len(manifest.Unbound), validated.Sub(started).Milliseconds(), time.Since(validated).Milliseconds())
+	logger.Infof(ctx, "[Citations] stage=finalize session=%s message=%s evidence=%d valid=%d invalid=%d capture_failed=%d review=%d repair_calls=0 validation_ms=%d save_ms=%d", s.session, s.message, len(s.evidence), len(manifest.Citations), invalidCount, len(s.captureFailures), len(manifest.Unbound), validated.Sub(started).Milliseconds(), time.Since(validated).Milliseconds())
 	s.finalAnswer = answer
 	s.finalManifest = &manifest
 	return answer, &manifest, nil

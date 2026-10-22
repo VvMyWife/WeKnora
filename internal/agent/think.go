@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/Tencent/WeKnora/internal/archivalcitations"
 	"github.com/Tencent/WeKnora/internal/modelcontext"
 	"strings"
 	"sync"
@@ -32,6 +33,8 @@ type streamLLMResult struct {
 	FinishReason       string // actual finish_reason from LLM (captured from last stream chunk)
 	StreamError        string // error message from stream (e.g., timeout), kept separate from Content
 }
+
+type citationRoundKey struct{}
 
 // streamLLMToEventBus streams LLM response through EventBus (generic method)
 // emitFunc: callback to emit each chunk event
@@ -85,6 +88,16 @@ func (e *AgentEngine) streamLLMToEventBus(
 	var protocolErr error
 	answerDecoder := e.modelContext.StreamDecoder()
 	thinkingDecoder := e.modelContext.StreamDecoder()
+	defer func() {
+		stats := answerDecoder.CitationDiagnostics()
+		reasoning := thinkingDecoder.CitationDiagnostics()
+		message := ""
+		if scope := archivalcitations.FromContext(ctx); scope != nil {
+			message = scope.DiagnosticMessageID()
+		}
+		logger.Infof(ctx, "[Citations] stage=decode session=%s message=%s round=%v raw=%d expanded=%d malformed=%d unknown=%d ineligible=%d legacy=%d disabled=%d reasoning_raw=%d",
+			e.sessionID, message, ctx.Value(citationRoundKey{}), stats.Raw, stats.Expanded, stats.Malformed, stats.Unknown, stats.Ineligible, stats.Legacy, stats.Disabled, reasoning.Raw)
+	}()
 
 	for chunk := range stream {
 		lastChunkAt.Store(time.Now().UnixNano())
@@ -296,6 +309,7 @@ func (e *AgentEngine) streamThinkingToEventBus(
 	sessionID string,
 	runtimeNotices ...string,
 ) (*types.ChatResponse, error) {
+	ctx = context.WithValue(ctx, citationRoundKey{}, iteration+1)
 	runtimeNotice := strings.Join(runtimeNotices, "\n")
 	budgetMessages := messages
 	if runtimeNotice != "" {
