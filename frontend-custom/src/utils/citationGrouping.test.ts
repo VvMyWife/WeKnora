@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { DOMParser, XMLSerializer } from '@xmldom/xmldom'
-import { groupCitationTree } from './citationGrouping.ts'
+import { groupCitationTree, hideUnboundCitationTree } from './citationGrouping.ts'
 
 const ref = (id='a') => `<span class="citation citation-archival" data-citation-id="${id.repeat(64)}">[${id==='a'?1:2}]</span>`
 function grouped(html: string, streaming=false) {
@@ -10,6 +10,33 @@ function grouped(html: string, streaming=false) {
   return new XMLSerializer().serializeToString(doc)
 }
 const count = (html:string) => (html.match(/class="citation citation-archival"/g)||[]).length
+
+function displayed(html:string, consolidate=true) {
+  const doc=new DOMParser().parseFromString(`<div>${html}</div>`,'text/xml')
+  const root=doc.documentElement as unknown as Element
+  if(consolidate)groupCitationTree(root)
+  hideUnboundCitationTree(root)
+  return new XMLSerializer().serializeToString(doc)
+}
+test('hide current and historical missing-binding notices without changing saved text or valid refs',()=>{
+ const source=`<p>引言<span class="citation-unbound" title="missing">〔引用待核验〕</span></p><p>事实${ref()}</p><p>过渡<span class="citation-unbound">〔未绑定来源〕</span></p>`
+ for(const consolidate of [true,false]){
+  const out=displayed(source,consolidate)
+  assert.doesNotMatch(out,/citation-unbound|引用待核验|未绑定来源/)
+  assert.match(out,/引言/);assert.match(out,/过渡/);assert.equal(count(out),1)
+ }
+ assert.match(source,/引用待核验/)
+})
+test('hidden notices still prevent false same-source consolidation across unsupported text',()=>{
+ const out=displayed(`<p>甲${ref()}过渡<span class="citation-unbound">〔引用待核验〕</span>乙${ref()}</p><ul><li>丙${ref()}</li><li>过渡<span class="citation-unbound">〔未绑定来源〕</span></li><li>丁${ref()}</li></ul>`)
+ assert.equal(count(out),4)
+ assert.doesNotMatch(out,/citation-unbound|data-citation-group-size/)
+})
+test('hide only UI notice spans, not prose, escaped code, other warnings or code examples',()=>{
+ const out=displayed('<p>正文提及引用待核验</p><code>&lt;span class="citation-unbound"&gt;例子&lt;/span&gt;</code><pre><span class="citation-unbound">代码例子</span></pre><div class="archival-warning">来源不可访问</div>')
+ assert.match(out,/正文提及引用待核验/);assert.match(out,/代码例子/)
+ assert.match(out,/&lt;span/);assert.match(out,/来源不可访问/)
+})
 
 test('same-source sentences display a single final ref; canonical input stays intact', () => {
   const source = `<p>甲。${ref()}乙。${ref()}丙。${ref()}</p>`

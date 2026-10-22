@@ -2,6 +2,14 @@ export type CitationLocation = {pages:number[];status:'known'|'missing'|'version
 export type ArchivalCitation = {id:string;number:number;chunk_id:string;knowledge_id:string;knowledge_base_id:string;title:string;content_revision:number;content_sha256:string;archive_version_id?:string;archive_file_name?:string;archive_sha256?:string;source_kind:string;wiki_page_id?:string;origins?:{knowledge_id:string;title:string;chunk_ids:string[]}[];location:CitationLocation}
 export type CitationBinding = {index:number;end_index:number;sha256:string;kind:string;citation_ids:string[];state:string;reason_code?:string}
 export type CitationManifest = {version:1;state:string;citations:ArchivalCitation[];unbound_blocks:{index:number;end_index?:number;sha256:string;reason:string;reason_code?:string}[];repair_attempted:boolean;bindings?:CitationBinding[]}
+/** Missing bindings remain in the manifest, but are not an answer UI warning. */
+export function citationDisplayStatus(state?:string, complete=true):string {
+ if(!complete)return '来源绑定校验中'
+ if(state==='validation_failed')return '来源校验或证据保存失败，请勿将本回答视为已验证引用'
+ if(state==='answer_changed')return '回答已修改，旧引用不能代表当前回答'
+ if(!state||['needs_review','legacy','not_applicable'].includes(state))return ''
+ return '来源绑定已校验（不代表事实已自动核实）'
+}
 export function citationInitialPage(location:CitationLocation):number {
   return location.status==='known'&&Number.isSafeInteger(location.pages[0])&&location.pages[0]>0 ? location.pages[0] : 1
 }

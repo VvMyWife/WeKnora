@@ -1,7 +1,15 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import {citationInitialPage,citationPageLabel,citationPageTarget,citationSourceGroups,type ArchivalCitation} from './archivalCitations.ts'
+import {citationDisplayStatus,citationInitialPage,citationPageLabel,citationPageTarget,citationSourceGroups,type ArchivalCitation} from './archivalCitations.ts'
 import {preprocessCitationTags} from './citationMarkdown.ts'
+
+test('missing citations show no warning and are never relabelled verified; real failures remain visible',()=>{
+ for(const state of ['needs_review','legacy','not_applicable',undefined])assert.equal(citationDisplayStatus(state),'')
+ assert.match(citationDisplayStatus('verified'),/已校验/)
+ assert.match(citationDisplayStatus('validation_failed'),/失败/)
+ assert.match(citationDisplayStatus('answer_changed'),/回答已修改/)
+ assert.match(citationDisplayStatus('needs_review',false),/校验中/)
+})
 test('known physical pages and no-page fallback',()=>{
  assert.equal(citationInitialPage({status:'known',pages:[9,10]}),9)
  assert.equal(citationInitialPage({status:'missing',pages:[]}),1)

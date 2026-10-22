@@ -101,3 +101,24 @@ export function groupCitationHtml(html: string, streaming = false): string {
   groupCitationTree(doc.body, streaming)
   return doc.body.innerHTML
 }
+
+/** Remove presentation notices only, after grouping has used them as boundaries. */
+export function hideUnboundCitationTree(root: Element): void {
+  const walk = (node: Node) => {
+    // Literal examples and document content in code blocks are not UI notices.
+    if (['pre', 'code'].includes(tag(node))) return
+    if (element(node) && tag(node) === 'span' && classes(node).includes('citation-unbound')) {
+      node.parentNode?.removeChild(node)
+      return
+    }
+    children(node).forEach(walk)
+  }
+  children(root).forEach(walk)
+}
+
+export function hideUnboundCitationHtml(html: string): string {
+  if (typeof DOMParser === 'undefined' || !html.includes('citation-unbound')) return html
+  const doc = new DOMParser().parseFromString(html, 'text/html')
+  hideUnboundCitationTree(doc.body)
+  return doc.body.innerHTML
+}

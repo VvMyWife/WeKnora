@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import {computed,onBeforeUnmount,ref,watch} from 'vue'
 import {getCitationEvidence,getCitationManifest,getCitationOrigin,type CitationDetail} from '@/api/archival-citations'
-import {citationPageLabel,citationSourceGroups,type CitationManifest,type CitationSourceGroup} from '@/utils/archivalCitations'
+import {citationDisplayStatus,citationPageLabel,citationSourceGroups,type CitationManifest,type CitationSourceGroup} from '@/utils/archivalCitations'
 import {safeMarkdownToHTML} from '@/utils/security'
 import {copyToClipboard} from '@/utils/clipboard'
 import {MessagePlugin} from 'tdesign-vue-next'
@@ -21,7 +21,8 @@ let originRevision=0,manifestRevision=0
 let originAbort:AbortController|undefined
 let manifestAbort:AbortController|undefined,detailAbort:AbortController|undefined,revision=0
 const rendered=computed(()=>detail.value?safeMarkdownToHTML(detail.value.snapshot):'')
-const status=computed(()=>!props.complete?'来源绑定校验中':manifest.value?.state==='validation_failed'?'来源校验或证据保存失败，请勿将本回答视为已验证引用':manifest.value?.state==='legacy'?'历史回答：没有版本化引用记录':manifest.value?.state==='answer_changed'?'回答已修改，旧引用不能代表当前回答':manifest.value?.state==='needs_review'?'部分引用待核验':'来源绑定已校验（不代表事实已自动核实）')
+const status=computed(()=>citationDisplayStatus(manifest.value?.state,!!props.complete))
+const hasVisibleSources=computed(()=>!!(status.value||unavailable.value||manifest.value?.citations?.length))
 async function refresh(){
  manifestAbort?.abort();manifestAbort=new AbortController()
  const ticket=++manifestRevision
@@ -64,12 +65,8 @@ onBeforeUnmount(()=>{revision++;originRevision++;manifestRevision++;originAbort?
 defineExpose({openCitation})
 </script>
 <template>
- <section v-if="enabled && manifest?.state!=='not_applicable'" class="archival-citations" aria-label="回答来源校验">
-  <div class="archival-status" role="status">{{status}} <span v-if="unavailable"> · {{unavailable}} 个来源当前不可访问</span></div>
-  <details v-if="manifest?.unbound_blocks?.length" class="archival-warning">
-   <summary>{{manifest.unbound_blocks.length}} 处引用待核验；不代表知识库没有来源。查看原因</summary>
-   <ul><li v-for="(block,index) in manifest.unbound_blocks" :key="index">正文位置 {{block.index+1}}{{block.end_index!==undefined && block.end_index>block.index?`—${block.end_index+1}`:''}}：{{block.reason_code?block.reason:'历史回答未建立有效引用绑定；未自动重新校验或改写'}} <code v-if="block.reason_code">{{block.reason_code}}</code></li></ul>
-  </details>
+ <section v-if="enabled && manifest?.state!=='not_applicable' && hasVisibleSources" class="archival-citations" aria-label="回答来源校验">
+  <div v-if="status || unavailable" class="archival-status" role="status">{{status}} <span v-if="unavailable"> · {{unavailable}} 个来源当前不可访问</span></div>
   <div v-if="manifest?.citations?.length" class="archival-footnotes" aria-label="引用脚注">
    <button v-for="c in manifest.citations" :key="c.id" type="button" @click="openCitation(c.id)">[{{c.number}}] {{c.title}}</button>
   </div>
