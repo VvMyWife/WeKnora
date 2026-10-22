@@ -52,6 +52,19 @@ docker build -f deploy/inline-citations/Dockerfile.app --build-arg BASE_IMAGE=we
 
 ## Release and acceptance
 
+Prepared source is `eccda4115935f39e75fa527f2af6b1a6267792d0`. Tested and built image is `sha256:391885b29deae41638a817f831f0da506094022a51e7f26324b34b43125314e1` (`weknora-app:ljc-agent-citations-eccda4115`). At preparation, the three race-tested packages and Agent/chat-pipeline regressions passed. **Not yet deployed or real-model accepted: awaiting this feature's restart authorization.** Existing live backend remains the baseline image.
+
+The app-only release helper has a read-only preflight and an explicit authorization gate:
+
+```bash
+cd /home/ubuntu/RAG_Weknora-upstream-20261020
+python3 scripts/ljc_release_agent_citations.py --image sha256:391885b29deae41638a817f831f0da506094022a51e7f26324b34b43125314e1
+# Only after the user approves this feature's restart window:
+python3 scripts/ljc_release_agent_citations.py --image sha256:391885b29deae41638a817f831f0da506094022a51e7f26324b34b43125314e1 --apply --restart-authorized
+```
+
+It refuses a changed/already-promoted baseline, validates that only app image differs, saves a private before-compose, restarts app only, reloads existing custom nginx for new backend DNS, checks health/HTTP, verifies every other container ID/image unchanged, and rolls the app image back if promotion checks fail. Do not replay on an already promoted release.
+
 Record the image ID/source revision, resolved production compose, current task counts and protected container identities first. Obtain a new backend restart window. Change only `services.app.image` in `/home/ubuntu/weknora-fork-migration/20261021-production/compose.production.json`, preserving every other resolved field. Keep a private rollback copy outside Git. Run `docker compose -f <production-compose> up -d --no-deps app`, check app health and nginx connectivity on18182; do not recreate database/docreader/model/18180/frontend containers.
 
 Use separate acceptance conversations, not edits to existing user answers:
