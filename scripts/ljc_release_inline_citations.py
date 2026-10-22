@@ -11,8 +11,8 @@ import urllib.request
 
 ROOT = Path(__file__).resolve().parents[1]
 CONFIG = Path('/home/ubuntu/weknora-fork-migration/20261021-production/compose.production.json')
-REVISION = '97c809a990f93d1634cb103f2a6ac40ea709e330'
-BASES = {'WeKnora-app': 'sha256:76399c0e703a7118ec3d7b5f7cd5140388f0c147bad32c2df6b154b1f92c51e1', 'WeKnora-frontend-custom-preview': 'sha256:66b71bd73accc993f5c641dbeab4bc2bb8c999eae1f6050428c1fc147892043f'}
+REVISION = '51935395ed18967f60b2017536ef469d02734271'
+BASES = {'WeKnora-app': 'sha256:ccba5915625333f46d2cd3c4e57525049c4605512dcfbbbad43c4528f4becc23', 'WeKnora-frontend-custom-preview': 'sha256:b57758c9199d56d54197f2442db639bd175d45838980fa2be48c50d66d17dae5'}
 PROTECTED = ['WeKnora-postgres-20261021', 'WeKnora-docreader', 'WeKnora-redis', 'WeKnora-neo4j', 'WeKnora-frontend', 'scu-qwen35-9b']
 
 def run(*args):

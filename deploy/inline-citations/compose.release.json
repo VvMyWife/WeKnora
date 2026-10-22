@@ -1,10 +1,10 @@
 {
   "services": {
     "app": {
-      "image": "sha256:ccba5915625333f46d2cd3c4e57525049c4605512dcfbbbad43c4528f4becc23"
+      "image": "sha256:94f2d38aa0663ee9441157715007f72f5514a40d2b56ae06318b8908b2e366e8"
     },
     "frontend": {
-      "image": "sha256:b57758c9199d56d54197f2442db639bd175d45838980fa2be48c50d66d17dae5"
+      "image": "sha256:79ab0a372e3858ac37dbabc10156e0e81b3a340e06cfde0107f56a200a3e0c79"
     }
   }
 }
