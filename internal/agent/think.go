@@ -319,7 +319,8 @@ func (e *AgentEngine) streamThinkingToEventBus(
 			chat.Message{Role: "system", Content: runtimeNotice},
 		)
 	}
-	budget := e.clampCompletionBudgetToContext(e.tokenEstimator.EstimateMessages(budgetMessages))
+	// Reserve the bounded model-only tool reminder as part of the same call.
+	budget := e.clampCompletionBudgetToContext(e.tokenEstimator.EstimateMessages(budgetMessages) + 128)
 	logger.Debugf(ctx, "[Agent][Thinking] Iteration-%d: temp=%.2f, tools=%d, thinking=%v, max_tokens=%d",
 		iteration+1, e.config.Temperature, len(tools), e.config.Thinking, budget)
 
