@@ -24,7 +24,9 @@ Existing persistent builder/dependency volume uses the configured China mirror; 
 cd /home/ubuntu/RAG_Weknora-upstream-20261020
 REV=$(git rev-parse HEAD)
 docker run --rm -e VITE_IS_DOCKER=true -e VITE_FRONTEND_COMMIT="$REV" -v "$PWD:/src" -v ljc-upstream-custom-node-modules:/src/frontend-custom/node_modules -w /src/frontend-custom weknora-frontend-builder:upstream-20261020 sh -ec 'find src -name "*.test.ts" -print0 | xargs -0 npm test -- --test-concurrency=2; npm run build'
-docker build -f deploy/inline-citations/Dockerfile.frontend --build-arg BASE_IMAGE=sha256:79ab0a372e3858ac37dbabc10156e0e81b3a340e06cfde0107f56a200a3e0c79 --build-arg SOURCE_REVISION="$REV" -t "weknora-ui-custom:ljc-notice-$REV" .
+docker tag sha256:79ab0a372e3858ac37dbabc10156e0e81b3a340e06cfde0107f56a200a3e0c79 weknora-ui-custom:ljc-notice-baseline-20261022
+test "$(docker image inspect --format '{{.Id}}' weknora-ui-custom:ljc-notice-baseline-20261022)" = sha256:79ab0a372e3858ac37dbabc10156e0e81b3a340e06cfde0107f56a200a3e0c79
+docker build -f deploy/inline-citations/Dockerfile.frontend --build-arg BASE_IMAGE=weknora-ui-custom:ljc-notice-baseline-20261022 --build-arg SOURCE_REVISION="$REV" -t "weknora-ui-custom:ljc-notice-$REV" .
 IMAGE=$(docker image inspect --format '{{.Id}}' "weknora-ui-custom:ljc-notice-$REV")
 python3 scripts/ljc_release_citation_notice_ui.py --image "$IMAGE"
 python3 scripts/ljc_release_citation_notice_ui.py --image "$IMAGE" --apply
@@ -60,3 +62,14 @@ docker exec WeKnora-frontend-custom-preview nginx -t
 ```
 
 Retain canonical evidence records. No destructive rollback migration.
+
+## Recorded acceptance
+
+- Source commit: `872fe87b0a4824bc294f1fd8a38d2772806b22e6`, Author/Committer `ljc <ljc@local>`.
+- 16 targeted tests and typecheck passed; full frontend suite 1490 passed, 0 failed; production build passed.
+- Deployed custom frontend image: `sha256:8242e2acfe8fb4b3720da0b06630150d890568801345900bf2b29673c44847b6`.
+- Guarded frontend-only promotion passed nginx/HTTP checks; all 77 other containers kept the same ID and image, including backend and legacy18180. No task or model restart.
+- Actual18182 browser: screenshot conversation now has no inline/footer pending-review notice and retains two clickable chunk footnotes plus the1-file/2-chunk directory. Footnote evidence table and original22-page PDF preview opened successfully.
+- Historical conversation retains safe five-item same-source grouping but no old unbound warnings. The no-valid-citation conversation retains the answer without an empty citation footer or invented reference. No new answer generation was needed.
+- Private rollback compose: `/home/ubuntu/weknora-fork-migration/20261021-production/citation-notice-ui-8242e2acfe8f/compose.before.json`.
+- Initial Docker build using a raw image ID as `FROM` was rejected by registry resolution; corrected reproducible commands use a locally pinned baseline tag and verify its image ID before build. Application code did not change after its successful tests/build.
