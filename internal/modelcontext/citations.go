@@ -43,6 +43,13 @@ const citationEnabledProtocolPrompt = `
 	`permits them; do not break a required schema to add citations.
 - These rules supersede earlier, saved, or custom prompt instructions about citation syntax.`
 
+// A short literal example avoids models replacing machine-readable refs with
+// prose such as "原文：...". This is generation-time instruction, not repair.
+const generationTimeCitationExample = `
+引用输出格式：需要依据的事实句、列表项和表格行，生成时就紧跟 <ref id="实际来源句柄"/>，不能只写“原文：……”或文末资料列表。
+格式示例（句柄仅示意，必须换成本轮实际提供且支持该事实的句柄）：- 要求甲。<ref id="c1"/> - 要求乙。<ref id="c2"/>
+过渡句和标题无需引用。无支持证据就明确说明，不借用旁边或同文件其他分块的引用。系统负责把标记转换为可点击脚注，不要省略标记。`
+
 const citationDisabledProtocolPrompt = `
 - Source citations are disabled for this answer. Do not add <ref>, <kb>, <web>, or source ` +
 	`attribution links to the answer. This does not prohibit a URL explicitly requested by the ` +
@@ -53,7 +60,7 @@ const citationDisabledProtocolPrompt = `
 // model call. Citation formatting stays out of custom and template prompts.
 func sourceProtocolPrompt(citationsEnabled bool) string {
 	if citationsEnabled {
-		return sourceHandleProtocolPrompt + citationEnabledProtocolPrompt
+		return sourceHandleProtocolPrompt + citationEnabledProtocolPrompt + generationTimeCitationExample
 	}
 	return sourceHandleProtocolPrompt + citationDisabledProtocolPrompt
 }

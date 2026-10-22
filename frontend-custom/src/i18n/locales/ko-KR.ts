@@ -3823,7 +3823,7 @@ export default {
       embeddingImageInputDesc: '모델이 이미지를 텍스트와 같은 벡터 공간에 임베딩할 수 있는지 여부. 카탈로그 모델은 자동으로 인식되며, 사용자 정의 모델은 직접 선언합니다',
       contextWindowLabel: '컨텍스트 창',
       contextWindowPlaceholder: '기본값 {value}',
-      contextWindowDesc: '모델이 한 요청에 수용할 수 있는 토큰 수입니다. 에이전트 대화 압축이 이 한도를 사용합니다. 비워 두면 기본값 200000(200K)을 사용합니다. 공급자 문서의 실제 값을 입력하세요. 더 크게 설정하면 압축이 발생하지 않고 요청이 거부될 수 있습니다.',
+      contextWindowDesc: '모델이 한 요청에 수용할 수 있는 토큰 수입니다. 에이전트 대화 압축이 이 한도를 사용합니다. 비워 두면 기본값 {value}({label})을 사용합니다. 공급자 문서의 실제 값을 입력하세요. 더 크게 설정하면 압축이 발생하지 않고 요청이 거부될 수 있습니다.',
       contextWindowDefaultHint: '설정되지 않음, 기본값 {value} 사용',
       contextWindowTokens: '{count} 토큰',
       maxConcurrencyLabel: '백그라운드 동시 실행 상한',

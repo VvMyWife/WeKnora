@@ -3825,7 +3825,7 @@ export default {
       embeddingImageInputDesc: '模型能把圖片編碼到與文字相同的向量空間。目錄內的模型會自動識別，自訂模型需手動宣告',
       contextWindowLabel: '脈絡視窗',
       contextWindowPlaceholder: '預設 {value}',
-      contextWindowDesc: '該模型一次請求能容納的 token 數。智慧代理壓縮對話歷史會按此上限工作。留空則使用預設 200000（200K）。請按廠商文件填寫真實值，填大會導致壓縮不觸發、上遊直接拒絕請求。',
+      contextWindowDesc: '該模型一次請求能容納的 token 數。智慧代理壓縮對話歷史會按此上限工作。留空則使用預設 {value}（{label}）。請按廠商文件填寫真實值，填大會導致壓縮不觸發、上遊直接拒絕請求。',
       contextWindowDefaultHint: '未設定，使用預設 {value}',
       contextWindowTokens: '{count} tokens',
       maxConcurrencyLabel: '後台併發上限',

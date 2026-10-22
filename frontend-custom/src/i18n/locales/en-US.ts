@@ -5392,7 +5392,7 @@ export default {
         embeddingImageInputDesc: 'The model embeds images into the same vector space as text. Catalogued models are detected automatically; declare it for custom models',
         contextWindowLabel: 'Context Window',
         contextWindowPlaceholder: 'Default {value}',
-        contextWindowDesc: 'How many tokens this model can take in one request. Agent history compaction uses this limit. Leave empty for the default 200000 (200K). Use the provider’s real window — a larger guess means compaction never fires and the provider rejects the request.',
+        contextWindowDesc: 'How many tokens this model can take in one request. Agent history compaction uses this limit. Leave empty for the default {value} ({label}). Use the provider’s real window — a larger guess means compaction never fires and the provider rejects the request.',
         contextWindowDefaultHint: 'Unset, using default {value}',
         contextWindowTokens: '{count} tokens',
         maxConcurrencyLabel: 'Background concurrency limit',

@@ -94,6 +94,15 @@ docker logs --since 10m WeKnora-app 2>&1 | grep '\[Citations\]'
 
 Keep18180 unchanged. If acceptance fails, restore only the saved app/frontend image pair (or the two baseline IDs above) and recreate those services with the same upgraded database/configuration. Reload nginx and recheck health. Do not reverse migrations, delete evidence, reset the branch or remove database/queue volumes. To disable only grouping, rebuild with `VITE_CITATION_GROUPING_ENABLED=false`; do not reintroduce automatic model repair.
 
-Release state: **source implementation and build preparation only; no restart authorized for this change yet**. Final image IDs and browser/runtime acceptance must be recorded before claiming live delivery.
+Release state: user authorized immediate restart; the first release is live on18182. App/custom-UI source revision `97c809a99`, release tooling `f56529616`. Only app/frontend images changed; protected container IDs and upgraded database ledger were verified unchanged. Final acceptance follow-up is recorded below.
 
 Build preparation exposed root-owned existing `runtime/`; the build helper now creates/grants ownership only to its new `runtime/inline-citations` directory using the existing builder. It does not recursively change ownership of the source tree or any production data. The failed first attempt did not start a build or touch running containers.
+
+## Post-interruption acceptance (2026-10-22)
+
+- Production selfcheck passed; source worktree clean at `f56529616`, both running images still match the approved first release.
+- Full UI suite:1486 passed,0 failed; Go archivalcitations/modelcontext/types/agent/chat_pipeline passed. Typecheck/build passed.
+- Browser: login, historical five-item list consolidation, evidence drawer, actual22-page PDF rendering and physical page2 navigation passed. The old source has no trustworthy physical anchors; the viewer correctly declares this and opens page1 before manual navigation. Historical answers are not rewritten.
+- Quick-QA sample `06d60348-461b-4aea-9d38-6ebfe8b3c7e1` / `icxsM3cmhuux`: answer model9408 input/120 output tokens; local validation0ms/save22ms/repair_calls0. It did not retrieve the target table text into the visible four-chunk prompt and produced no valid refs; this is retained as a failed coverage case, not advertised as a successful citation answer.
+- An intelligent-mode follow-up exposed early compaction at the unknown32K fallback. Confirmed real9B vLLM window49152, then updated **only** WeKnora's existing9B model `parameters.context_window` through its settings form to49152. Hash of all other parameter fields stayed `a40d623066253525e1fab471c2607475`; no service/model restart or other parameter change. Existing in-flight requests keep their old budget; new requests use the declared capacity.
+- To improve generation-time compliance without repair or a new call, add a short literal inline-ref example. Keep missing refs honest; no semantic auto-binding. Correct all six custom locale help texts to interpolate the shared budget rather than claiming200K. These follow-up corrections require a matching tested image pair before final acceptance.

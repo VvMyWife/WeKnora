@@ -16,7 +16,11 @@ expected_ui=sha256:66b71bd73accc993f5c641dbeab4bc2bb8c999eae1f6050428c1fc1478920
 freeze_base() {
   local name=$1 expected=$2 snapshot=$3 actual
   actual=$(docker inspect -f '{{.Image}}' "$name")
-  test "$actual" = "$expected" || { echo "Baseline changed for $name; inspect before rebuilding"; exit 1; }
+  local service=app
+  test "$name" != WeKnora-frontend-custom-preview || service=frontend
+  local released
+  released=$(python3 -c 'import json,sys; print(json.load(open("deploy/inline-citations/compose.release.json"))["services"][sys.argv[1]]["image"])' "$service")
+  test "$actual" = "$expected" || test "$actual" = "$released" || { echo "Baseline changed for $name; inspect before rebuilding"; exit 1; }
   if docker image inspect "$snapshot" >/dev/null 2>&1; then
     test "$(docker image inspect -f '{{.Id}}' "$snapshot")" = "$expected" || exit 1
   else docker image tag "$expected" "$snapshot"; fi

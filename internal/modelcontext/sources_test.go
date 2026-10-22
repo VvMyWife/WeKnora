@@ -78,6 +78,10 @@ func TestInlineCitationProtocolRequiresGenerationTimeClaimBindings(t *testing.T)
 	out := registry.ExpandText(`甲。<ref id="c1"/>乙。<ref id="c2"/>`)
 	require.Contains(t, out, `甲。<kb doc="A" chunk_id="chunk-a"`)
 	require.Contains(t, out, `乙。<kb doc="B" chunk_id="chunk-b"`)
+	require.Contains(t, protocol, generationTimeCitationExample)
+	require.Contains(t, protocol, "不能只写“原文：……”")
+	require.Less(t, len(generationTimeCitationExample), 1200, "keep the generation reminder compact")
+	require.NotContains(t, sourceProtocolPrompt(false), generationTimeCitationExample)
 }
 
 func TestRegistryDecodesAliasesInNestedToolArguments(t *testing.T) {

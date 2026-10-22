@@ -510,7 +510,7 @@
           <label class="form-label">{{ $t('model.editor.contextWindowLabel') }}</label>
           <t-input v-model.number="formData.contextWindow" type="number" :min="1024" :max="10000000"
             :placeholder="$t('model.editor.contextWindowPlaceholder', { value: DEFAULT_MODEL_CONTEXT_WINDOW })" />
-          <p class="form-desc">{{ $t('model.editor.contextWindowDesc') }}</p>
+          <p class="form-desc">{{ $t('model.editor.contextWindowDesc', { value: DEFAULT_MODEL_CONTEXT_WINDOW, label: formatTokenCount(DEFAULT_MODEL_CONTEXT_WINDOW) }) }}</p>
         </div>
 
         <!-- Chat: supports vision toggle (VLLM models are inherently multimodal) -->
@@ -671,7 +671,7 @@ interface ModelFormData {
   interfaceType?: 'ollama' | 'openai'
   isDefault: boolean
   supportsVision?: boolean
-  /** 对话/VLM 上下文窗口（token）。空/0 表示使用默认 200000。 */
+  /** 对话/VLM 上下文窗口（token）。空/0 使用保守预算，非已验证服务容量。 */
   contextWindow?: number
   /** 后台任务对该模型的并发上限；0/undefined 表示沿用全局默认。仅 chat/embedding/vllm 生效。 */
   maxConcurrency?: number
