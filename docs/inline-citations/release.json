@@ -1,0 +1,24 @@
+{
+  "date": "2026-10-22",
+  "canonical_frontend": "http://10.20.0.15:18182",
+  "branch": "ljc/custom",
+  "source_revision": "51935395ed18967f60b2017536ef469d02734271",
+  "release_tooling_commit": "5612cd298",
+  "author": "ljc",
+  "app_image": "sha256:94f2d38aa0663ee9441157715007f72f5514a40d2b56ae06318b8908b2e366e8",
+  "custom_ui_image": "sha256:79ab0a372e3858ac37dbabc10156e0e81b3a340e06cfde0107f56a200a3e0c79",
+  "frontend_tests": {"passed": 1486, "failed": 0},
+  "backend_packages_passed": ["archivalcitations", "modelcontext", "types", "agent", "application/service/chat_pipeline"],
+  "typecheck_and_build": "passed",
+  "production_health": "passed",
+  "protected_container_ids_unchanged": true,
+  "automatic_citation_repair_calls": 0,
+  "model_context_window_metadata": {"model": "qwen35-9b", "tokens": 49152, "other_parameter_fields_unchanged": true},
+  "browser_acceptance": "passed_with_explicit_review_warnings",
+  "limitations": [
+    "A model may omit a generation-time ref; unsupported or unbound content remains reviewable, never auto-bound.",
+    "Both successful samples retained one uncited introduction mentioning a standard.",
+    "No reliable historical PDF physical-page anchors are inferred or backfilled.",
+    "Retrieval coverage and factual correctness are not guaranteed by citation validation."
+  ]
+}

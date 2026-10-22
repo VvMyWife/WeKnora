@@ -105,4 +105,40 @@ Build preparation exposed root-owned existing `runtime/`; the build helper now c
 - Browser: login, historical five-item list consolidation, evidence drawer, actual22-page PDF rendering and physical page2 navigation passed. The old source has no trustworthy physical anchors; the viewer correctly declares this and opens page1 before manual navigation. Historical answers are not rewritten.
 - Quick-QA sample `06d60348-461b-4aea-9d38-6ebfe8b3c7e1` / `icxsM3cmhuux`: answer model9408 input/120 output tokens; local validation0ms/save22ms/repair_calls0. It did not retrieve the target table text into the visible four-chunk prompt and produced no valid refs; this is retained as a failed coverage case, not advertised as a successful citation answer.
 - An intelligent-mode follow-up exposed early compaction at the unknown32K fallback. Confirmed real9B vLLM window49152, then updated **only** WeKnora's existing9B model `parameters.context_window` through its settings form to49152. Hash of all other parameter fields stayed `a40d623066253525e1fab471c2607475`; no service/model restart or other parameter change. Existing in-flight requests keep their old budget; new requests use the declared capacity.
-- To improve generation-time compliance without repair or a new call, add a short literal inline-ref example. Keep missing refs honest; no semantic auto-binding. Correct all six custom locale help texts to interpolate the shared budget rather than claiming200K. These follow-up corrections require a matching tested image pair before final acceptance.
+- Follow-up source `51935395e`: short literal inline-ref generation example and six interpolated context-help locales. All1486 UI tests, Go regressions, typecheck and both image builds passed again. Release tooling `5612cd298` promoted only app/frontend images after checking no active document processing. Protected service IDs unchanged; no migration or model-service restart.
+
+## Final release and measured acceptance
+
+Current immutable images (source `51935395ed18967f60b2017536ef469d02734271`):
+
+- App: `sha256:94f2d38aa0663ee9441157715007f72f5514a40d2b56ae06318b8908b2e366e8`.
+- Custom UI18182: `sha256:79ab0a372e3858ac37dbabc10156e0e81b3a340e06cfde0107f56a200a3e0c79`.
+- Private deployment result/rollback compose: `/home/ubuntu/weknora-fork-migration/20261021-production/inline-citations-51935395e/`. Do not commit this directory or blindly rerun release scripts after promotion.
+- Public machine-readable release summary: `release.json`. Source revision is the binary/UI build revision; later documentation-only commits do not imply rebuilt application images.
+
+Measured real-browser samples, not a controlled speed benchmark:
+
+| Mode | Request | Result | Citation finalization |
+| --- | --- | --- | --- |
+| Intelligent | `SXZFQv4PuvEw` | About9seconds,1 search tool,3 canonical list bindings to one chunk,1 grouped final footnote; no context-compaction call in this sample | validation0ms,save59ms,repair_calls0 |
+| Quick QA | `N2moRF73QXeu` |2 factual list items with2 distinct chunk footnotes; same PDF does not merge the chunks | validation0ms,save14ms,repair_calls0 |
+
+Both samples retain1 reviewable introduction mentioning a standard but missing its own generated ref. This warning is intentional and is **not** silently covered by list citations. Do not claim100% sentence coverage, automatic truth verification or elimination of all model/retrieval latency. The earlier failed table-retrieval sample remains in the independent acceptance conversation for diagnosis; retrieval/chunk expansion ranking was not changed by this work.
+
+On the deployed follow-up UI, verified mouse and Enter activation of inline footnotes, successful original-text copy toast, versioned source drawer, historical grouped display, reload persistence and correct48K label for the declared49152 window. The model editor now explains32768/32K fallback instead of200K. Original PDF22-page rendering/manual page navigation was visually checked; missing source-page anchors still explicitly fall back to page1. No private original content or screenshots are committed.
+
+Final production selfcheck passed: upgraded ledger128+4 clean, app/frontend healthy, GPU reranker healthy, retired28182 still not listening,18180 preserved. **Release is live on18182; generation-time citation and presentation acceptance passed with the explicitly retained review warnings above.**
+
+To reproduce the guarded promotion before a future release (do not rerun on an already promoted pair):
+
+```bash
+cd /home/ubuntu/RAG_Weknora-upstream-20261020
+python3 -m py_compile scripts/ljc_release_inline_citations.py
+python3 scripts/ljc_release_inline_citations.py
+# Only with a newly authorized restart window and matching pinned baseline:
+python3 scripts/ljc_release_inline_citations.py --apply --restart-authorized
+python3 scripts/ljc_production_selfcheck.py
+git log -8 --format='%h %an <%ae> | %cn <%ce> | %s'
+```
+
+For a later change, update/pin the source revision, current before-images and new tested image pair in the release helper/overlay in its own tested Git stage. It intentionally refuses unexpected images or replay of an attempted release.
