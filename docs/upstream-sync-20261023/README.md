@@ -60,3 +60,56 @@ git worktree add --detach /home/ubuntu/RAG_Weknora-review-baseline-20261023 2b7d
 完整测试2042项：2041通过、1项条件跳过；type-check和Vite构建通过。首轮5项样式守卫失败的审计证明：原定制基线已有td-token-fallback=9、radius-literal=173、font-size-literal=45、important=426，守卫旧阈值未包含这些定制。只将这4项守卫对齐到原基线，未放宽到合并后更高值；本次新增14px圆角使用12px令牌+2px、150ms使用既有fast令牌，保持视觉数值不变。最终半径与动画违规计数没有高于原定制基线。
 
 前端文件来源/哈希见frontend-manifest.json。28182保持退役，没有建立任何生产入口或修改18180。
+
+## 可逐步执行的测试与构建
+
+构建镜像沿用已缓存工具链，Go/Python/npm/apt国内镜像为构建期配置，依赖不下载到电脑C盘。DocReader从官方锁文件导出精确版本，再通过国内索引安装，保留BuildKit持久uv缓存；新增RapidOCR只用于可选图像几何预处理，BGE/GPU模型服务没有改动。
+
+~~~bash
+cd /home/ubuntu/RAG_Weknora-upstream-20261023
+bash -n scripts/ljc_sync_20261023.sh
+bash scripts/ljc_sync_20261023.sh status
+# 确认没有同名测试/构建容器仍在运行后，分别执行：
+bash scripts/ljc_sync_20261023.sh backend > runtime/upstream-20261023/backend.manual.log 2>&1
+bash scripts/ljc_sync_20261023.sh custom-ui > runtime/upstream-20261023/custom-ui.manual.log 2>&1
+bash scripts/ljc_sync_20261023.sh official-ui > runtime/upstream-20261023/official-ui.manual.log 2>&1
+bash scripts/ljc_sync_20261023.sh docreader > runtime/upstream-20261023/docreader.manual.log 2>&1
+~~~
+
+测试阶段禁止使用生产env；后端协议测试的域名映射只用于mock用例，不能带入真实运行验收。脚本有flock、PID和退出状态；中断先检查同名容器及日志，不因观察超时盲目重跑。状态为0才代表该任务成功。
+
+原生anydoc源代码本轮未变，静态库从已验证旧工作区缓存复用。如新建工作区缺少库，先检查源码一致再复制：
+
+~~~bash
+git diff --exit-code 2b7d874de -- third_party/anydoc-go
+# 仅在当前目录没有lib时：
+test -d third_party/anydoc-go/lib || cp -a /home/ubuntu/RAG_Weknora-upstream-20261020/third_party/anydoc-go/lib third_party/anydoc-go/
+~~~
+
+不可变候选镜像以本轮冻结的生产镜像作运行基底，生产配置和服务不会被该命令切换。首次建标签前先比对runtime-images.txt；不要把意外变化的生产基线直接当成已验收基底。
+
+~~~bash
+docker image tag sha256:391885b29deae41638a817f831f0da506094022a51e7f26324b34b43125314e1 weknora-app:ljc-sync-base-20261023
+docker image tag sha256:8242e2acfe8fb4b3720da0b06630150d890568801345900bf2b29673c44847b6 weknora-ui-custom:ljc-sync-base-20261023
+docker image tag sha256:fd18e28658738021e322fae832a11b8964341d1c19c52fcf6fb4cf35e10d9f2e weknora-docreader:ljc-sync-base-20261023
+bash scripts/ljc_sync_20261023.sh images > runtime/upstream-20261023/images.log 2>&1
+cat runtime/upstream-20261023/artifact-manifest.json
+~~~
+
+## 隔离数据库证明
+
+私有目录保存815MiB量级的当前PG128热备副本和旧94备份；测试实例ljc-sync-20261023-postgres没有宿主端口，使用独立卷，绝不复用生产卷。生产数据只读备份；升级操作只在副本。
+
+新建证明环境使用deploy/upstream-sync-20261023/migration_proof.py；若本轮实例或成功证明已存在，脚本拒绝重放，先使用--status查看。ParadeDB的template1预装扩展，恢复必须使用template0新库，不能跳过恢复错误，也不修改生产模板。迁移工具依赖Jieba词典，测试容器挂载只读模块缓存；正式候选镜像自带词典。
+
+~~~bash
+python3 deploy/upstream-sync-20261023/migration_proof.py --status
+# 仅在脚本确认本轮证明实例及结果尚不存在时首次执行：
+python3 deploy/upstream-sync-20261023/migration_proof.py
+# 查看已完成证明：
+python3 -m json.tool /home/ubuntu/weknora-fork-migration/20261023-upstream/migration-proof.json
+~~~
+
+当前128副本和旧94副本分别验证升至官方133+个人4；SQLite单元测试验证官方50+个人3。所有up重复执行，个人业务表计数逐项比较，dirty状态拒绝推进。具体实测结论以最终验收记录为准，不能用此说明替代尚未结束的证明。
+
+正式上线仍需记录本轮维护窗口、运行任务处理、最新一致备份、133迁移与18182浏览器验收；本脚本没有生产部署入口。不要重放20261021的一次性发布脚本或旧128迁移流程。

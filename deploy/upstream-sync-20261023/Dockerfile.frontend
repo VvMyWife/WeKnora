@@ -1,0 +1,5 @@
+ARG BASE_IMAGE=weknora-ui-custom:ljc-sync-base-20261023
+FROM ${BASE_IMAGE}
+ARG SOURCE_REVISION
+LABEL org.opencontainers.image.revision=${SOURCE_REVISION} ljc.operation=upstream-20261023
+COPY frontend-custom/dist/ /usr/share/nginx/html/
