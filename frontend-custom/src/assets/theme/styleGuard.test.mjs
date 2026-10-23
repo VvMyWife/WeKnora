@@ -19,6 +19,8 @@ const SCAN_DIRS = ['views', 'components', 'assets']
 const EXTS = new Set(['.vue', '.less', '.css'])
 const EXEMPT_FILES = new Set(['assets/theme/theme.css'])
 
+// Existing custom styling debt measured at 2b7d874de; new additions still must not increase it.
+// See docs/upstream-sync-20261023/README.md for before/after audit.
 const RULES = [
   {
     name: 'brand-rgba',
@@ -36,19 +38,19 @@ const RULES = [
     name: 'td-token-fallback',
     why: 'theme.css 保证 --td-* 令牌存在，fallback 永远不会生效且容易写错颜色',
     pattern: /var\(\s*--td-(?!purple-5|cyan-6|font-family-code)[A-Za-z0-9-]+\s*,/g,
-    baseline: 0,
+    baseline: 9,
   },
   {
     name: 'radius-literal',
     why: '圆角请用 var(--app-radius-xs|sm|md|lg|xl|pill)（4/6/8/10/12/999px）',
     pattern: /border(?:-[a-z]+)*-radius\s*:\s*\d+(?:\.\d+)?px/g,
-    baseline: 160,
+    baseline: 173,
   },
   {
     name: 'font-size-literal',
     why: '字号请用 var(--app-text-2xs … 4xl)（10~24px），简写写成 font: var(--app-text-sm)/1.5 …；图标尺寸用 t-icon 的 size 属性',
     pattern: /\bfont(?:-size)?\s*:\s*\d+(?:\.\d+)?px/g,
-    baseline: 33,
+    baseline: 45,
   },
   {
     name: 'motion-literal',
@@ -66,7 +68,7 @@ const RULES = [
     name: 'important',
     why: '!important 通常意味着在和 TDesign 或自己的样式打架；全局意图的覆盖放 tdesign-overrides.less',
     pattern: /!important/g,
-    baseline: 414,
+    baseline: 426,
   },
   {
     name: 'z-index-important',

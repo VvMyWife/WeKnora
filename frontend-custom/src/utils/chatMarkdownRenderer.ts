@@ -17,6 +17,7 @@ import {
   stripIncompleteCitationTag,
   type CitationKnowledgeRef,
 } from './citationMarkdown.ts'
+import { renderWeKnoraEntityLinks, type WeKnoraEntityLinkLabels } from './weknoraEntityLinks.ts'
 
 const STREAMING_IMAGE_PLACEHOLDER =
   '<span class="streaming-image-loading"><span class="streaming-image-loading__skeleton"></span></span>'
@@ -49,6 +50,8 @@ export type RenderChatMarkdownOptions = {
   cachedMermaidSvgHtml?: CachedMermaidSvgHtml
   injectCachedMermaidSvg?: (html: string, cachedSvgHtml?: CachedMermaidSvgHtml) => string
   prepareMarkdown?: (markdown: string, cachedSvgHtml?: CachedMermaidSvgHtml) => string
+  /** Render `weknora://` URIs as clickable entity links with these labels. */
+  entityLinkLabels?: WeKnoraEntityLinkLabels
 }
 
 export function configureMarkedForChatMarkdown(): void {
@@ -512,8 +515,11 @@ export function renderChatMarkdown(rawMarkdown: unknown, options: RenderChatMark
   const citationHtml = options.collapseStandaloneCitations === false
     ? restoredHtml
     : collapseStandaloneCitationParagraphs(restoredHtml)
+  const entityHtml = options.entityLinkLabels
+    ? renderWeKnoraEntityLinks(citationHtml, options.entityLinkLabels)
+    : citationHtml
   const groupedHtml = options.consolidateCitations === false || import.meta.env?.VITE_CITATION_GROUPING_ENABLED === 'false'
-    ? citationHtml : groupCitationHtml(citationHtml, Boolean(options.streaming))
+    ? entityHtml : groupCitationHtml(entityHtml, Boolean(options.streaming))
   const tableWrappedHtml = wrapChatMarkdownTables(hideUnboundCitationHtml(groupedHtml))
   const strongTitleHtml = markStandaloneStrongParagraphs(tableWrappedHtml)
   const sanitized = options.sanitizeHtml(strongTitleHtml)

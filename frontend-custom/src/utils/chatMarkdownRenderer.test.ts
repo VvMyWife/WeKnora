@@ -665,3 +665,22 @@ test('renderChatMarkdown keeps ~~strikethrough~~ while leaving single tildes lit
   assert.match(html, /2020~2035/)
   assert.match(html, /8:00~12:00/)
 })
+
+test('official durable entity links coexist with custom archival footnote markup', () => {
+  const citationID = 'a'.repeat(64)
+  const html = renderChatMarkdown(
+    '保存到 [资料库](weknora://kb/kb-0001)。' +
+    '<span class="citation citation-archival" data-citation-id="' + citationID + '">[1]</span>' +
+    '<table><tr><td colspan="2">证据</td></tr></table>',
+    {
+      renderer: createChatMarkdownRenderer(),
+      escapeMarkdown: (text: string) => text,
+      sanitizeHtml: (html: string) => html,
+      entityLinkLabels: { kb: '知识库', doc: '文档', chunk: '片段' },
+    },
+  )
+  assert.match(html, /data-entity-kind="kb"/)
+  assert.match(html, /data-entity-id="kb-0001"/)
+  assert.match(html, new RegExp('data-citation-id="' + citationID + '"'))
+  assert.match(html, /colspan="2"/)
+})
