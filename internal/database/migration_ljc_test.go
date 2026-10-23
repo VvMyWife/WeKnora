@@ -66,7 +66,7 @@ func TestLJCMigrationsFreshAndLegacySQLite(t *testing.T) {
 			require.NoError(t, err)
 			require.NoError(t, RunMigrationsWithOptions("sqlite3://unused", opts))
 			version, dirty := sqliteMigrationState(t, db)
-			require.Equal(t, 45, version)
+			require.Equal(t, 50, version)
 			require.False(t, dirty)
 			var customVersion int
 			var customDirty bool
@@ -112,7 +112,7 @@ func TestLJCMigrationPostgresRestore(t *testing.T) {
 	var version, custom int
 	var dirty bool
 	require.NoError(t, db.QueryRow("SELECT version,dirty FROM schema_migrations").Scan(&version, &dirty))
-	require.Equal(t, 128, version)
+	require.Equal(t, 133, version)
 	require.False(t, dirty)
 	require.NoError(t, db.QueryRow("SELECT version,dirty FROM "+ljcMigrationTable).Scan(&custom, &dirty))
 	require.Equal(t, 4, custom)

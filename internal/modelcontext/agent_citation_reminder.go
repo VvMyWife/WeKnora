@@ -7,7 +7,7 @@ import (
 
 // Static, bounded ASCII text (<128 tokens even under byte-level tokenization).
 // One copy in a model-facing tool result, never in canonical history/evidence.
-const agentCitationReminder = "\n<cite>Facts need <ref id=\"cN\"/> using the matching chunk id above. No refs for headings. Never invent ids.</cite>"
+const agentCitationReminder = "\n<cite>Facts need <ref id=\"chunk://N\"/> using the matching chunk id above. No refs for headings. Never invent ids.</cite>"
 
 func (r *Registry) WithAgentCitationReminder(messages []chat.Message) []chat.Message {
 	if r == nil || r.sources == nil || !r.sources.citationsEnabled {

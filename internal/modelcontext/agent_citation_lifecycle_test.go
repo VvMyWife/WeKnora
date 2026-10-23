@@ -53,7 +53,7 @@ func TestAgentCitationToolsToPersistedEvidence(t *testing.T) {
 			}
 			result := &types.ToolResult{Success: true, Output: "canonical tool output", Data: data}
 			output := r.ModelToolResultForTool(tool, result)
-			if !strings.Contains(output, `id="c1"`) {
+			if !strings.Contains(output, `id="chunk://1"`) {
 				t.Fatalf("no adjacent handle: %s", output)
 			}
 			messages := r.WithAgentCitationReminder(r.EncodeMessages([]chat.Message{{Role: "tool", Name: tool, Content: output}}))
@@ -62,7 +62,7 @@ func TestAgentCitationToolsToPersistedEvidence(t *testing.T) {
 			}
 			r.CaptureArchival(ctx)
 			decoder := r.StreamDecoder()
-			answer := decoder.Feed(`Fact<ref id="c1"/>`) + decoder.Flush()
+			answer := decoder.Feed(`Fact<ref id="chunk://1"/>`) + decoder.Flush()
 			out, manifest, err := archivalcitations.FromContext(ctx).Finalize(ctx, answer)
 			if err != nil || len(manifest.Citations) != 1 || !strings.Contains(out, `footnote="1"`) {
 				t.Fatalf("citation not persisted: %s %+v %v", out, manifest, err)
@@ -103,7 +103,7 @@ func TestAgentHandlesSurviveParallelToolsAndCompactedHistory(t *testing.T) {
 	newRequest := NewRegistry(true)
 	newRequest.EncodeMessages([]chat.Message{{Role: "assistant", Content: out}})
 	newDecoder := newRequest.StreamDecoder()
-	if got := newDecoder.Feed(`<ref id="c1"/>`) + newDecoder.Flush(); got != "" {
+	if got := newDecoder.Feed(`<ref id="chunk://1"/>`) + newDecoder.Flush(); got != "" {
 		t.Fatal("history authorized new evidence", got)
 	}
 }
