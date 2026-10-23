@@ -1,0 +1,75 @@
+{
+  "checked_at": "2026-10-23T03:08:50.040308+00:00",
+  "upstream_sha": "bc1ade36b933ff7689f1659d670cfd5683c174c5",
+  "production_deployed": false,
+  "backend_package_ok_lines": 135,
+  "custom_frontend": {
+    "passed": 2041,
+    "skipped": 1,
+    "failed": 0,
+    "typecheck": "passed",
+    "build": "passed"
+  },
+  "official_frontend": {
+    "passed": 1998,
+    "skipped": 1,
+    "failed": 0,
+    "typecheck": "passed",
+    "build": "passed"
+  },
+  "docreader": {
+    "total": 388,
+    "skipped": 12,
+    "failed": 0
+  },
+  "native_anydoc": "passed",
+  "migration_proofs": {
+    "fresh": {
+      "official": "133:false",
+      "custom": "4:false",
+      "counts_preserved": true,
+      "repeated_up": "passed"
+    },
+    "current128": {
+      "official": "133:false",
+      "custom": "4:false",
+      "counts_preserved": true,
+      "repeated_up": "passed"
+    },
+    "legacy94": {
+      "official": "133:false",
+      "custom": "4:false",
+      "counts_preserved": true,
+      "repeated_up": "passed"
+    }
+  },
+  "sqlite": {
+    "official": 50,
+    "personal": 3
+  },
+  "runtime_regressions": [
+    "real file upload and keyword/vector/hybrid retrieval",
+    "original mapping and two-version download hashes",
+    "external chunks and duplicate preflight",
+    "permissions and credential redaction",
+    "automation CRUD and pause without scheduled execution",
+    "GPU BGE rerank applied=true outcome=ok cuda:0",
+    "Wiki nine pages and document union graph four nodes; document isolation",
+    "original PDF browser rendering; zero console errors/warnings"
+  ],
+  "limitations": [
+    "Async shell end-to-end not exercised; Docker sandbox disabled in isolated acceptance",
+    "Conditional tests skipped as counted",
+    "Citation fixtures explicitly set model and 8192 output budget; initial unconfigured truncated answer is not a passed case"
+  ],
+  "agent_generation_citations": {
+    "fact_17": true,
+    "citation_count": 1,
+    "repair_attempted": false
+  },
+  "quick_generation_citations": {
+    "fact_17": true,
+    "citation_count": 1,
+    "repair_attempted": false
+  }
+}

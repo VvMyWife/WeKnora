@@ -2,7 +2,7 @@
 
 固定官方目标：bc1ade36b933ff7689f1659d670cfd5683c174c5。
 定制基线：2b7d874de33ca562405829eb3f58cd721e2c67f8。
-权威Git仓库：/home/ubuntu/RAG_Weknora；当前维护工作区：/home/ubuntu/RAG_Weknora-upstream-20261020。
+权威Git仓库：/home/ubuntu/RAG_Weknora；同步前维护工作区：/home/ubuntu/RAG_Weknora-upstream-20261020。
 本轮隔离工作区：/home/ubuntu/RAG_Weknora-upstream-20261023，分支ljc/integrate-20261023-upstream-main。
 
 ## 分阶段实施
@@ -113,3 +113,26 @@ python3 -m json.tool /home/ubuntu/weknora-fork-migration/20261023-upstream/migra
 当前128副本和旧94副本分别验证升至官方133+个人4；SQLite单元测试验证官方50+个人3。所有up重复执行，个人业务表计数逐项比较，dirty状态拒绝推进。具体实测结论以最终验收记录为准，不能用此说明替代尚未结束的证明。
 
 正式上线仍需记录本轮维护窗口、运行任务处理、最新一致备份、133迁移与18182浏览器验收；本脚本没有生产部署入口。不要重放20261021的一次性发布脚本或旧128迁移流程。
+
+## 最终验收与交付
+
+39个官方提交已正式合并至bc1ade36。后端、原生anydoc、两套前端、DocReader测试及构建通过，数量与条件跳过见acceptance.json。新库、当前128真实备份、旧94真实备份均验证到官方133＋个人4，业务表计数保持，重复up通过；SQLite为官方50＋个人3。恢复用template0并先创建vector，索引恢复设置maintenance_work_mem=512MB、max_parallel_maintenance_workers=0，证明实例分配4GB共享内存。不跳过恢复错误。
+
+真实接口与浏览器验收覆盖上传、三种检索、GPU重排、原件映射及双版本、外部分块、权限、自动化CRUD、Wiki、文档范围图谱和生成时引用。Quick/Agent显式配置测试模型和8192输出预算，最终答案包含17个档案箱事实及绑定引用，repair_attempted=false。初始无预算配置的Quick截断样例不算通过。图谱connections只表示跨文档联系，单文档为空属正常，另用union验证实体。自动化仅增改暂停，未等待2030年任务执行；异步Shell沙箱未做端到端验收。
+
+候选镜像精确映射见artifact-manifest.json，镜像内源码为e845680a5，之后仅更新迁移证明辅助脚本及交付文档。验收仅绑定127.0.0.1:28281/28282，数据库、Redis、Neo4j、存储独立。BGE调用现有GPU18083，未用CPU替代。测试日志卷需appuser可写，启动须先等待Redis PONG及PG就绪，再启动app，后启动frontend。
+
+旧20261020工作区被生产挂载config，保留原SHA和全部文件，仅重命名为运行基线分支；新的ljc/custom位于20261023工作区。checkpoint.json记录旧配置哈希，禁止在旧目录checkout/reset。
+
+~~~bash
+cd /home/ubuntu/RAG_Weknora-upstream-20261023
+git status --short --branch
+git merge-base --is-ancestor bc1ade36b933ff7689f1659d670cfd5683c174c5 ljc/custom
+cat docs/upstream-sync-20261023/acceptance.json
+cat docs/upstream-sync-20261023/artifact-manifest.json
+docker compose -p ljc-sync-20261023 -f /home/ubuntu/weknora-fork-migration/20261023-upstream/compose.acceptance.json ps -a
+# 停止本轮验收环境，保留卷和镜像：
+docker compose -p ljc-sync-20261023 -f /home/ubuntu/weknora-fork-migration/20261023-upstream/compose.acceptance.json stop
+~~~
+
+**本轮未切换生产18182、正式后端或数据库。** 正式发布另定维护窗口，检查运行任务并做当时一致备份，迁移133，切换候选镜像后在18182验收；失败要恢复匹配数据库与旧镜像。不可重放20261021旧的一次性发布脚本。生产发布尚未实施，因此这里不提供未经验证的新发布命令。

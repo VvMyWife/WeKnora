@@ -1,0 +1,8 @@
+{
+  "upstream_sha": "bc1ade36b933ff7689f1659d670cfd5683c174c5",
+  "image_source_sha": "e845680a5c80fe1de05bc08218a44b7caa88769a",
+  "old_runtime_worktree": "/home/ubuntu/RAG_Weknora-upstream-20261020",
+  "old_runtime_sha": "2b7d874de33ca562405829eb3f58cd721e2c67f8",
+  "old_config_sha256": "577274f349696a7bd00bcb3215c5376f9814866482d5fa2fa2c0fe5980c9ff9d",
+  "production_deployed": false
+}

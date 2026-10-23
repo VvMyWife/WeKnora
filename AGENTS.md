@@ -33,3 +33,9 @@
 - 18182 is the only canonical daily frontend. Do not direct users to28182; do not recreate a28182 host binding after retirement.
 - 18180 is retained only for legacy troubleshooting; it is not a daily or release acceptance endpoint.
 - Production commands and recovery: docs/production-release-20261021/README.md. Prior candidate-only boundaries describe the pre-release period.
+
+## Current full upstream synchronization (2026-10-23)
+- Full official target bc1ade36 is approved for both frontend trees, preserving custom capabilities. Earlier UI selection and candidate port notes are historical.
+- Current maintenance worktree: /home/ubuntu/RAG_Weknora-upstream-20261023; evidence: docs/upstream-sync-20261023/README.md.
+- Preserve 20261020 runtime files because production mounts config; do not checkout new code there.
+- This batch covers code and isolated candidates. Production128-to133 migration and switching need a new maintenance window. Keep28182 retired.

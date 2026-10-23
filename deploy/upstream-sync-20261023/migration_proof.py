@@ -25,7 +25,7 @@ def main():
  env=PRIVATE/'proof-postgres.env';env.write_text('POSTGRES_USER=postgres\nPOSTGRES_PASSWORD='+password+'\nPOSTGRES_DB=postgres\n');env.chmod(0o600)
  run(['docker','network','create','--label','ljc.operation='+LABEL,NET],stdout=sp.DEVNULL)
  run(['docker','volume','create','--label','ljc.operation='+LABEL,NAME],stdout=sp.DEVNULL)
- run(['docker','run','-d','--name',NAME,'--network',NET,'--label','ljc.operation='+LABEL,'--env-file',str(env),'-v',NAME+':/var/lib/postgresql/data',source['Image']],stdout=sp.DEVNULL)
+ run(['docker','run','-d','--name',NAME,'--network',NET,'--label','ljc.operation='+LABEL,'--env-file',str(env),'--shm-size','4g','-v',NAME+':/var/lib/postgresql/data',source['Image']],stdout=sp.DEVNULL)
  target=inspect(NAME);assert target['Config']['Labels']['ljc.operation']==LABEL
  assert target['HostConfig']['PortBindings'] in ({},None)
  assert all(m['Source'] not in {s['Source'] for s in source['Mounts']} for m in target['Mounts'])
@@ -44,8 +44,9 @@ def main():
   db='ljc_sync_'+key
   run(['docker','exec',NAME,'createdb','-T','template0','-U','postgres',db])
   if dump:
+   sql(db,'CREATE EXTENSION IF NOT EXISTS vector WITH SCHEMA public;')
    with dump.open('rb') as handle:
-    run(['docker','exec','-i',NAME,'pg_restore','--no-owner','--no-privileges','--exit-on-error','-U','postgres','-d',db],stdin=handle)
+    run(['docker','exec','-i','-e','PGOPTIONS=-c maintenance_work_mem=512MB -c max_parallel_maintenance_workers=0',NAME,'pg_restore','--no-owner','--no-privileges','--exit-on-error','-U','postgres','-d',db],stdin=handle)
   else:
    sql(db,'CREATE EXTENSION IF NOT EXISTS vector; CREATE EXTENSION IF NOT EXISTS pg_search;')
   before=counts(db); before_version=sql(db,"SELECT CASE WHEN to_regclass('schema_migrations') IS NULL THEN 0 ELSE 1 END")

@@ -1,0 +1,19 @@
+{
+  "source_sha": "e845680a5c80fe1de05bc08218a44b7caa88769a",
+  "upstream_sha": "bc1ade36b933ff7689f1659d670cfd5683c174c5",
+  "images": {
+    "app": {
+      "tag": "weknora-app:ljc-sync-e845680a5",
+      "id": "sha256:5b43a83e2eba60ea432002103564c1868ea157b0375ba517cd00d04f14a11874"
+    },
+    "frontend": {
+      "tag": "weknora-ui-custom:ljc-sync-e845680a5",
+      "id": "sha256:f23b666154bcf10c7998797c7ecd205f271f47812a46c692a6352256291d9fc1"
+    },
+    "docreader": {
+      "tag": "weknora-docreader:ljc-sync-e845680a5",
+      "id": "sha256:38fdd04cf3eaba0a89f1a18c2e1ffa32a5cff4befb4b398c471730c863d40644"
+    }
+  },
+  "production_deployed": false
+}
