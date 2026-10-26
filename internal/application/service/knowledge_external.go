@@ -156,6 +156,17 @@ func (s *knowledgeService) StartExternalImport(ctx context.Context, kbID, batchI
 	if errors.Is(e, gorm.ErrRecordNotFound) {
 		folder, file := types.SplitKnowledgeRelativePath(payload.Document.RelativePath)
 		knowledge = &types.Knowledge{ID: record.KnowledgeID, TenantID: tenant, KnowledgeBaseID: kbID, Type: "file", Source: "external_chunks", Channel: "web", Title: payload.Document.Title, FileName: file, FolderPath: folder, FileType: "md", ParseStatus: "pending", SummaryStatus: "none", EnableStatus: "disabled", EmbeddingModelID: kb.EmbeddingModelID, CreatedAt: time.Now(), UpdatedAt: time.Now()}
+		if len(payload.Chunks) > 0 {
+			if archive, ok := payload.Chunks[0].Metadata["archive"].(map[string]interface{}); ok {
+				metadata := map[string]interface{}{"档案页数": archive["page_count"], "检索切块数": len(payload.Chunks)}
+				if payload.Document.OriginalFile != "" {
+					metadata["附件格式"] = strings.TrimPrefix(path.Ext(payload.Document.OriginalFile), ".")
+					metadata["档案附件字节"] = manifest.Files[payload.Document.OriginalFile].Size
+				}
+				value, _ := json.Marshal(metadata)
+				knowledge.CustomMetadata = types.JSON(value)
+			}
+		}
 		knowledge.Metadata, _ = json.Marshal(map[string]any{"external_import": map[string]string{"record_id": record.ID, "source_system": manifest.SourceSystem, "dataset_id": manifest.DatasetID, "generation_id": manifest.GenerationID, "document_id": record.ExternalDocumentID}})
 		if e = s.repo.CreateKnowledge(ctx, knowledge); e != nil {
 			return e

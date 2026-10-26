@@ -88,6 +88,7 @@ func RegisterKnowledgeRoutes(r *gin.RouterGroup, handler *handler.KnowledgeHandl
 		kbRead.GET("/processing-control", g.Viewer(), g.KBAccessRead("id"), handler.GetKnowledgeProcessingControl)
 		kb.PUT("/processing-control", g.OwnedKBOrAdmin(), g.KBAccessWrite("id"), handler.SetKnowledgeProcessingControl)
 		kbRead.GET("/failures", g.Viewer(), g.KBAccessRead("id"), handler.ListKnowledgeProcessingFailures)
+		kb.POST("/retry-failed", g.OwnedKBOrAdmin(), g.KBAccessWrite("id"), handler.RetryArchiveBatchFailures)
 		// 原始文件下载沿用单文件下载的 Contributor + Editor 权限边界。
 		kbRead.POST("/batch-download", g.Contributor(), g.KBAccessWrite("id"), handler.BatchDownloadKnowledge)
 		kbRead.GET("/folders", g.Viewer(), g.KBAccessRead("id"), handler.ListKnowledgeFolders)
@@ -135,6 +136,8 @@ func RegisterKnowledgeRoutes(r *gin.RouterGroup, handler *handler.KnowledgeHandl
 		// (k.DELETE("/:id"), k.POST("/:id/reparse"), k.PUT("/:id")).
 		kRead.GET("/batch", g.Viewer(), handler.GetKnowledgeBatch)
 		kRead.GET("/:id", g.Viewer(), g.KBAccessReadFromKnowledgeIDParam("id"), handler.GetKnowledge)
+		kRead.GET("/:id/archive-context", g.Viewer(), g.KBAccessReadFromKnowledgeIDParam("id"), handler.GetArchiveDocumentContext)
+		k.POST("/:id/retry-failed", g.OwnedKnowledgeKBOrAdmin(), g.KBAccessWriteFromKnowledgeIDParam("id"), handler.RetryArchiveDocumentFailures)
 		kRead.GET("/:id/archive-source", g.Viewer(), g.KBAccessReadFromKnowledgeIDParam("id"), handler.GetArchiveSource)
 		k.PUT("/:id/archive-source", g.OwnedKnowledgeKBOrAdmin(), g.KBAccessWriteFromKnowledgeIDParam("id"), handler.SetArchiveSource)
 		kRead.GET("/:id/stages", g.Viewer(), g.KBAccessReadFromKnowledgeIDParam("id"), handler.GetKnowledgeSpans)

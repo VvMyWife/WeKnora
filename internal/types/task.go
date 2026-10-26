@@ -396,7 +396,9 @@ type SummaryGenerationPayload struct {
 	// Refresh marks an independently queued refresh after document metadata or
 	// chunk edits. Refresh tasks are not part of the parse attempt's pending
 	// subtask counter and update existing summary chunks in place.
-	Refresh bool `json:"refresh,omitempty"`
+	Refresh          bool  `json:"refresh,omitempty"`
+	RecoveryID       int64 `json:"recovery_id,omitempty"`
+	RecoveryDispatch int64 `json:"recovery_dispatch,omitempty"`
 	// Attempt links this task to the parent parse attempt so the worker
 	// can record a postprocess.summary subspan under the right attempt's
 	// postprocess stage. See QuestionGenerationPayload.Attempt notes.

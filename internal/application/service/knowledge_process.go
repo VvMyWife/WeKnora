@@ -1414,6 +1414,19 @@ func (s *knowledgeService) ProcessSummaryGeneration(ctx context.Context, t *asyn
 	}
 	if payload.Refresh {
 		var err error
+		if payload.RecoveryID > 0 {
+			span := s.beginPostprocessSubspan(ctx, payload.KnowledgeID, payload.Attempt, "postprocess.summary", types.JSONMap{"manual_retry": true})
+			defer func() {
+				if err != nil {
+					s.failPostprocessSubspan(ctx, span, "SUMMARY_FAILED", err.Error(), err)
+				} else {
+					s.endPostprocessSubspan(ctx, span, types.JSONMap{"manual_retry": true})
+				}
+				if recovery := enrichmentRecovery.Load(); recovery != nil {
+					_ = recovery.Complete(context.WithoutCancel(ctx), payload.RecoveryID, int(payload.RecoveryDispatch), err)
+				}
+			}()
+		}
 		ctx, err = restoreSummaryRefreshTenantInfo(ctx, s.tenantRepo, payload.TenantID)
 		if err == nil {
 			_, err = s.RegenerateKnowledgeSummary(ctx, payload.KnowledgeID)
