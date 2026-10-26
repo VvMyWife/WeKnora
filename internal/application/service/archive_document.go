@@ -46,10 +46,18 @@ func (s *knowledgeService) ArchiveDocumentContext(ctx context.Context, id string
 		return nil, err
 	}
 	pages := []map[string]any{}
+	chunkIDs := map[string]bool{}
+	for _, chunk := range chunks {
+		chunkIDs[chunk.ID] = true
+	}
 	for _, p := range all {
 		for _, source := range p.SourceKnowledgeIDs() {
 			if source == id {
-				pages = append(pages, map[string]any{"slug": p.Slug, "title": p.Title, "page_type": p.PageType, "summary": p.Summary, "content": p.Content, "chunk_refs": p.ChunkRefs})
+				refs := []string{}
+				for _, ref := range p.ChunkRefs {
+					if chunkIDs[ref] { refs = append(refs, ref) }
+				}
+				pages = append(pages, map[string]any{"slug": p.Slug, "title": p.Title, "page_type": p.PageType, "summary": p.Summary, "content": p.Content, "chunk_refs": refs})
 				break
 			}
 		}

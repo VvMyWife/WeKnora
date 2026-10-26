@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { ref, computed, watch, onUnmounted } from 'vue';
 import { getArchiveDocumentContext, retryArchiveFailures } from '@/api/knowledge-base/index';
-import { safeMarkdownToHTML } from '@/utils/security';
+import { marked } from 'marked';
+import DOMPurify from 'dompurify';
 import { MessagePlugin } from 'tdesign-vue-next';
 
 const props = defineProps<{ knowledgeId: string; view: 'wiki' | 'graph' | 'processing'; canEdit?: boolean }>();
@@ -9,6 +10,9 @@ const emit = defineEmits<{ (e: 'locate-chunk', id: string): void }>();
 const data = ref<any>(null);
 const error = ref('');
 const busy = ref(false);
+function renderWiki(content: string) {
+  return DOMPurify.sanitize(marked.parse(content || '', { async: false }) as string);
+}
 let epoch = 0;
 let timer: ReturnType<typeof setTimeout> | undefined;
 async function load() {
@@ -55,7 +59,7 @@ const stateLabel = computed(() => (({ complete: '已完成', partial: '部分完
       <p v-if="!pages.length">当前档案尚未生成 Wiki，请查看处理记录。</p>
       <details v-for="page in pages" :key="page.slug" :open="page.page_type === 'summary'">
         <summary>{{ page.page_type === 'summary' ? '档案概览' : page.title }}</summary>
-        <article class="markdown-body" v-html="safeMarkdownToHTML(page.content || page.summary || '')"></article>
+        <article class="markdown-body" v-html="renderWiki(page.content || page.summary || '')"></article>
         <button v-for="chunkId in (page.chunk_refs || [])" :key="chunkId" @click="emit('locate-chunk', chunkId)">查看档案证据</button>
       </details>
     </template>

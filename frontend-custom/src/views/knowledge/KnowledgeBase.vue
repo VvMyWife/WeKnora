@@ -70,6 +70,8 @@ import type { KnowledgeProcessOverrides } from '@/types/knowledgeProcess';
 import { useUploadConfirmStore, type UploadConfirmResult } from '@/stores/uploadConfirm';
 import { useUploadTasksStore } from '@/stores/uploadTasks';
 import WikiBrowser from './wiki/WikiBrowser.vue';
+import ArchiveLibraryBrowser from '@/components/ArchiveLibraryBrowser.vue';
+const showGlobalWiki = ref(false);
 import ImageGallery from './gallery/ImageGallery.vue';
 import { getWikiStats } from '@/api/wiki';
 import {
@@ -1794,7 +1796,9 @@ const openCardDetails = (item: KnowledgeCard) => {
 };
 
 // Open source document preview from WikiBrowser
-const openSourceDoc = (knowledgeId: string) => {
+const archiveEvidenceChunkId = ref('');
+const openSourceDoc = (knowledgeId: string, chunkId?: string) => {
+  archiveEvidenceChunkId.value = chunkId || '';
   isCardDetails.value = true;
   getCardDetails({ id: knowledgeId });
 };
@@ -2647,7 +2651,9 @@ const handleKBEditorSuccess = (kbIdValue: string) => {
 
       <!-- Wiki Browser / Graph (shown when wiki or graph tab is active) -->
       <div v-if="isWiki && (activeKbTab === 'wiki' || activeKbTab === 'graph')" class="wiki-main-area">
-        <WikiBrowser v-if="kbId" :knowledge-base-id="kbId" :view="activeKbTab === 'graph' ? 'graph' : 'browser'"
+        <button class="archive-view-toggle" @click="showGlobalWiki = !showGlobalWiki">{{ showGlobalWiki ? '返回档案视图' : '切换全库主题视图' }}</button>
+        <ArchiveLibraryBrowser v-if="kbId && !showGlobalWiki" :knowledge-base-id="kbId" :view="activeKbTab === 'graph' ? 'graph' : 'wiki'" :can-edit="canEdit" @open-source-doc="openSourceDoc" />
+        <WikiBrowser v-if="kbId && showGlobalWiki" :knowledge-base-id="kbId" :view="activeKbTab === 'graph' ? 'graph' : 'browser'"
           :can-edit="canEdit" @open-source-doc="openSourceDoc" @status-change="onWikiStatusChange"
           @view-graph="onViewWikiInGraph" />
       </div>
@@ -3058,7 +3064,7 @@ const handleKBEditorSuccess = (kbIdValue: string) => {
       </template>
 
       <!-- DocContent drawer (shared by documents tab and wiki source refs) -->
-      <DocContent ref="docContentRef" :visible="isCardDetails" :details="details" :canEditKB="canEdit"
+      <DocContent ref="docContentRef" :visible="isCardDetails" :details="details" :canEditKB="canEdit" :initial-chunk-id="archiveEvidenceChunkId"
         :canDownloadKB="canDownloadKnowledge" :kbId="kbId"
         @closeDoc="closeDoc" @getDoc="getDoc" @summaryStateChange="syncDocumentSummaryState">
       </DocContent>
@@ -3162,10 +3168,13 @@ const handleKBEditorSuccess = (kbIdValue: string) => {
 }
 
 .wiki-main-area {
+  display: flex;
+  flex-direction: column;
   flex: 1;
   min-height: 0;
   overflow: hidden;
 }
+.archive-view-toggle { align-self: flex-end; margin: 8px 20px; border: 1px solid #ddd; background: white; border-radius: 6px; padding: 6px 12px; cursor: pointer; }
 
 // Directory navigation and the document content share the available width.
 .knowledge-main {

@@ -244,7 +244,7 @@ mermaid.initialize({
     topPadding: 50
   }
 });
-const props = defineProps(["visible", "details", "knowledgeType", "sourceInfo", "canEditKB", "canDownloadKB", "parse_status", "kbId"]);
+const props = defineProps(["visible", "details", "knowledgeType", "sourceInfo", "canEditKB", "canDownloadKB", "parse_status", "kbId", "initialChunkId"]);
 const archiveSource = ref<ArchiveVersion | null>(null);
 const previewSource = ref<'auto'|'parsed'>('auto');
 const archiveLocate = ref(null);
@@ -262,6 +262,9 @@ const locateArchiveChunkId = async (id: string) => {
   try { const result = await getChunkByIdOnly(id); if (result.data?.knowledge_id !== props.details.id) return;
     locateArchiveChunk(result.data); } catch { MessagePlugin.error('证据读取失败，请稍后重试'); }
 };
+watch(() => [props.visible, props.details?.id, props.initialChunkId], ([visible, id, chunkId]) => {
+  if (visible && id && chunkId) void locateArchiveChunkId(String(chunkId));
+});
 watch(() => [props.visible, props.details?.id], async ([visible,id]) => {
   archiveSource.value=null;previewSource.value='auto';
   if (!visible || !id) return;
