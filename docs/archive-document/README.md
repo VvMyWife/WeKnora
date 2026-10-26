@@ -53,6 +53,8 @@ Go 测试覆盖持久化摘要重试去重、图谱实体端点身份，以及�
 ```bash
 cd /home/ubuntu/RAG_Weknora-upstream-20261020
 python3 deploy/archive-document/release.py status
+# 前端独立修复、验收且获授权后，只刷新前端，后端保持运行：
+# python3 deploy/archive-document/release.py refresh-frontend
 # 新一次交付尚未 prepare 时：
 # python3 deploy/archive-document/release.py prepare
 # 获得该次发布授权且验收通过后：
@@ -80,5 +82,11 @@ python3 deploy/archive-document/release.py rollback
 - 摘要失败夹具：暂停时 first accepted=1、duplicate=0，恢复后 recovered；正文切块/索引摘要指纹与 95 段成功图谱保持不变。
 - 图谱失败夹具：自动预算耗尽后批量重新提交 accepted=1，重复=0；暂停时 attempts=0，恢复后 recovered。
 - 原 RAG 全量 92 测试通过；完整目录 102 档案、2634 页、5998 切块。
+- 正式 102 份档案逐项核验 PDF 字节、5998 正文切块和 OCR 来源锚点全部一致；102 份均已有一篇档案概览。
+- PDF 页定位曾使用预览器不接受的标记，已修正并增加扫描 PDF 第 2 页定位回归；`mapping=exact` 仅表示归档页序确定，不宣称 OCR 框达到精确文字级映射。切换档案会清除上份档案的位置。
+
+正式新库 ID：`a8589430-613a-4018-814c-0ddbab1117c6`。
+发布的后端源码是 `f45137d3f`，前端修复源码是 `e5df8a440`；只有前端进行了后续独立刷新。发布脚本保存两者的镜像关系与原始回退版本。
+截至本次交付记录，62 份全流程完成、40 份仍 finalizing，17 条图谱阶段失败记录仍在自动重试流程内，尚无当前新库的最终 dead-letter；这不是全部图谱完成。后续实际状态以页面实时数据为准。
 
 正式新库使用“编目排序样本集-档案版”；旧 2634 文档库保留。正式处理进度以 `production-state.json` 和页面实时状态为准，不能把 ZIP 已导入或向量化结束写成 Wiki/图谱全部结束。
