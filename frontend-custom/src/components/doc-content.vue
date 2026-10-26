@@ -26,6 +26,7 @@ import { useAuthStore } from '@/stores/auth';
 import { useAssistantStore } from '@/stores/assistant';
 import DocumentPreview from '@/components/document-preview.vue';
 import ArchiveDocumentPanel from '@/components/ArchiveDocumentPanel.vue';
+import { archiveDocumentLocate } from '@/utils/archiveDocumentLocator';
 import { getArchiveSource, type ArchiveVersion } from '@/api/archive-mapping';
 import DocumentFileIcon from '@/views/knowledge/components/DocumentFileIcon.vue';
 import KnowledgeProcessingTimeline from '@/components/knowledge-processing-timeline.vue';
@@ -253,9 +254,8 @@ const archiveChunkPage = (chunk: any) => {
   return typeof anchor?.page_index === 'number' ? anchor.page_index + 1 : null;
 };
 const locateArchiveChunk = (chunk: any) => {
-  const page = archiveChunkPage(chunk);
-  archiveLocate.value = { locators: page ? [{ type: 'pdf', page, mapping: 'page' }] : [],
-    quotes: [chunk.content || ''], token: Date.now(), sourceMarkdown: chunk.content || '' };
+  const anchor = getChunkMetadata(chunk)?.external_import?.source_anchors?.[0];
+  archiveLocate.value = archiveDocumentLocate(anchor?.page_index, chunk.content || '', Date.now());
   previewSource.value = 'auto'; viewMode.value = 'preview';
 };
 const locateArchiveChunkId = async (id: string) => {
