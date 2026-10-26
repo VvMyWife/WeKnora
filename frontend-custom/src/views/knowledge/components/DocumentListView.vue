@@ -329,9 +329,9 @@ const handleAction = (action: 'download' | 'edit' | 'reparse' | 'cancel-parse' |
             <span class="row-file-meta">
               <span class="row-source"><t-icon :name="getSourceInfo(item).icon" />{{ getSourceInfo(item).label }}</span>
               <span v-if="item.custom_metadata?.['档案页数']"> · {{ item.custom_metadata['档案页数'] }} 页 · {{ item.custom_metadata['检索切块数'] }} 个切块</span>
-              <template v-if="formatFileSize(item.file_size)">
+              <template v-if="formatFileSize(item.custom_metadata?.['档案附件字节'] || item.file_size)">
                 <span class="meta-sep" aria-hidden="true">·</span>
-                <span>{{ formatFileSize(item.file_size) }}</span>
+                <span>{{ formatFileSize(item.custom_metadata?.['档案附件字节'] || item.file_size) }}</span>
               </template>
               <span class="meta-sep" aria-hidden="true">·</span>
               <span :title="t('knowledgeBase.columnUpdatedAt')">{{ formatTime(item.updated_at) }}</span>

@@ -200,6 +200,7 @@ const detailTags = computed(() => {
 
 const headerIconFileName = computed(() => {
   const detail = props.details;
+  if (detail?.custom_metadata?.['附件格式']) return `document.${detail.custom_metadata['附件格式']}`;
   return detail?.file_type
     ? `document.${detail.file_type.toLowerCase()}`
     : detail?.original_file_name || detail?.file_name || detail?.title || '';
@@ -1019,6 +1020,7 @@ const getTypeLabel = () => {
     case 'manual':
       return t('knowledgeBase.typeManual');
     case 'file':
+      if (props.details.custom_metadata?.['附件格式']) return String(props.details.custom_metadata['附件格式']).toUpperCase();
       return props.details.file_type ? props.details.file_type.toUpperCase() : t('knowledgeBase.typeFile');
     default:
       return '';
