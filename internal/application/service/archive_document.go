@@ -55,7 +55,9 @@ func (s *knowledgeService) ArchiveDocumentContext(ctx context.Context, id string
 			if source == id {
 				refs := []string{}
 				for _, ref := range p.ChunkRefs {
-					if chunkIDs[ref] { refs = append(refs, ref) }
+					if chunkIDs[ref] {
+						refs = append(refs, ref)
+					}
 				}
 				pages = append(pages, map[string]any{"slug": p.Slug, "title": p.Title, "page_type": p.PageType, "summary": p.Summary, "content": p.Content, "chunk_refs": refs})
 				break
