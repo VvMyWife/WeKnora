@@ -23,5 +23,8 @@
   "production_deployed": false,
   "delivery_remote": "origin (GitHub)",
   "delivery_branch": "ljc/custom",
-  "push_mode": "explicit normal push, no force"
+  "push_mode": "explicit normal push, no force",
+  "code_merge_commit": "af4814961e3531fd0ddd855ad349a755a3769a6d",
+  "github_code_merge_verified": true,
+  "push_channel": "Windows Git Credential Manager over HTTPS; server Ubuntu has no GitHub SSH push key"
 }

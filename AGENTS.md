@@ -46,3 +46,4 @@
 - This user-approved delivery flow authorizes the completed feature merge/push; it does not authorize production migrations or restarts. Record deployed image revisions separately.
 - Do not configure GitLab or an automatic push hook/cron. Preserve push.default=nothing and explicit branch selection.
 - Detailed manual commands and interruption checks: docs/custom-delivery/README.md.
+- Current push credential path: server Ubuntu has no GitHub SSH key; use the existing Windows Git Credential Manager over HTTPS with a verified Git bundle, as documented in docs/custom-delivery/README.md. Do not probe unrelated deployment keys or disable host-key checks.
