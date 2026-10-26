@@ -1,5 +1,15 @@
 import { get, post, put, del, postUpload, getDown } from "../../utils/request";
 import type { KnowledgeProcessOverrides } from '@/types/knowledgeProcess';
+
+export function getArchiveDocumentContext(id: string) {
+  return get(`/api/v1/knowledge/${id}/archive-context`);
+}
+export function retryArchiveFailures(id: string, stage = '') {
+  return post(`/api/v1/knowledge/${id}/retry-failed`, { stage });
+}
+export function retryArchiveBatchFailures(kbId: string, stage = '') {
+  return post(`/api/v1/knowledge-bases/${kbId}/knowledge/retry-failed`, { stage });
+}
 import type { AuditLog, AuditOutcome, ListAuditLogResponse } from '@/api/tenant/audit-log';
 import { buildListKnowledgeFilesQuery } from './knowledgeFileListQuery';
 

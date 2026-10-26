@@ -22,6 +22,7 @@ interface KnowledgeItem {
   folder_path?: string;
   file_type?: string;
   file_size?: number | string;
+  custom_metadata?: Record<string, any>;
   type?: string;
   tags?: Tag[];
   parse_status?: string;
@@ -319,7 +320,7 @@ const handleAction = (action: 'download' | 'edit' | 'reparse' | 'cancel-parse' |
 
         <div class="cell cell-name" role="cell">
           <DocumentFileIcon :source-type="item.type"
-            :file-name="item.file_type ? `document.${item.file_type.toLowerCase()}` : (item.original_file_name || item.file_name)" />
+            :file-name="item.custom_metadata?.['附件格式'] ? `document.${item.custom_metadata['附件格式']}` : (item.file_type ? `document.${item.file_type.toLowerCase()}` : (item.original_file_name || item.file_name))" />
           <div class="row-file-text">
             <div class="row-title-line">
               <button type="button" class="row-file-name" :title="item.description ? `${item.file_name}\n${item.description}` : item.file_name"
@@ -327,6 +328,7 @@ const handleAction = (action: 'download' | 'edit' | 'reparse' | 'cancel-parse' |
             </div>
             <span class="row-file-meta">
               <span class="row-source"><t-icon :name="getSourceInfo(item).icon" />{{ getSourceInfo(item).label }}</span>
+              <span v-if="item.custom_metadata?.['档案页数']"> · {{ item.custom_metadata['档案页数'] }} 页 · {{ item.custom_metadata['检索切块数'] }} 个切块</span>
               <template v-if="formatFileSize(item.file_size)">
                 <span class="meta-sep" aria-hidden="true">·</span>
                 <span>{{ formatFileSize(item.file_size) }}</span>

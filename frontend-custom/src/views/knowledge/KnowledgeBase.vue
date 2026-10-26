@@ -41,6 +41,8 @@ import {
   setKnowledgeProcessingControl,
   type KnowledgeProcessingControl,
   getKnowledgeProcessingFailures,
+  retryArchiveFailures,
+  retryArchiveBatchFailures,
   type KnowledgeProcessingOverview,
   type KnowledgeProcessingFailure,
   moveKnowledgeToFolder,
@@ -145,6 +147,21 @@ const processingProgress = computed(() => processingOverview.value
   ? buildProcessingProgress(processingOverview.value) : null);
 const processingFailuresOpen = ref(false);
 const processingFailureStage = ref('');
+const archiveRetryBusy = ref(false);
+const retryFailures = async (id?: string, stage?: string) => {
+  if (archiveRetryBusy.value || !kbId.value) return;
+  archiveRetryBusy.value = true;
+  try {
+    const response: any = id ? await retryArchiveFailures(id, stage || '') : await retryArchiveBatchFailures(kbId.value, processingFailureStage.value);
+    const rows = Array.isArray(response.data) ? response.data : [response.data];
+    const accepted = rows.reduce((sum: number, row: any) => sum + Number(row?.accepted || 0), 0);
+    const failed = rows.filter((row: any) => row?.error);
+    if (failed.length) MessagePlugin.warning(`已提交 ${accepted} 项；${failed.length} 份档案未提交，请查看处理记录`);
+    else MessagePlugin.success(accepted ? `已提交 ${accepted} 项失败阶段重试；暂停的知识库将等待恢复` : '没有需要新增提交的失败任务，或任务已在队列中');
+    await fetchProcessingFailures(kbId.value, 1);
+  } catch { MessagePlugin.error('重试提交失败，请稍后再试'); }
+  finally { archiveRetryBusy.value = false; }
+};
 const stageLabel = (stage: string) => ({docreader:'PDF / 文档解析',chunking:'切块',embedding:'向量化',multimodal:'图片处理',postprocess:'后处理',summary:'摘要',wiki:'Wiki',graph:'图谱'}[stage] || stage);
 const openProgressDocument = (id: string) => { void router.replace({query:{...route.query,knowledge_id:id}}); };
 const elapsedLabel = (seconds: number) => `${Math.floor(Math.max(0,seconds)/60)} 分 ${Math.max(0,seconds)%60} 秒`;
@@ -2740,6 +2757,7 @@ const handleKBEditorSuccess = (kbIdValue: string) => {
                   失败 {{ processingOverview.failures_total }} · 查看原因
                 </button>
                 <div v-if="processingFailuresOpen" class="kb-processing-overview__failures">
+                  <button v-if="canMutateKnowledge" type="button" :disabled="archiveRetryBusy" @click="retryFailures()">{{ archiveRetryBusy ? '提交中…' : '重试当前筛选下全部失败档案' }}</button>
                   <label>失败阶段 <select v-model="processingFailureStage" @change="fetchProcessingFailures(kbId,1)">
                     <option value="">全部阶段</option>
                     <option v-for="(_count,stage) in processingOverview?.failure_counts" :key="stage" :value="stage">{{ stageLabel(String(stage)) }}</option>
@@ -2754,6 +2772,7 @@ const handleKBEditorSuccess = (kbIdValue: string) => {
                         expected: failure.expected_pages, actual: failure.processed_pages || '0',
                       }) }}</span>
                       <span class="kb-processing-overview__failure-reason">{{ failure.reason }}</span>
+                      <button v-if="canMutateKnowledge" type="button" :disabled="archiveRetryBusy || failure.retry_status !== 'retry_available'" @click="retryFailures(failure.id, failure.stage)">重试失败阶段</button>
                     </li>
                   </ul>
                   <div v-if="processingFailuresTotal > 20" class="kb-processing-overview__failure-pages">
