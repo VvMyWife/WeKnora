@@ -31,6 +31,16 @@ func TestArchiveRetryStage(t *testing.T) {
 	require.Error(t, err)
 }
 
+func TestArchiveGraphResponseKeepsEndpointIdentities(t *testing.T) {
+	graph := &types.GraphData{Node: []*types.GraphNode{{ID: "a", Name: "Same"}, {ID: "b", Name: "Same"}}, Relation: []*types.GraphRelation{{SourceID: "a", TargetID: "b", Type: "links"}}}
+	projection := archiveGraphProjection(graph)
+	nodes := projection["node"].([]map[string]any)
+	edges := projection["relation"].([]map[string]any)
+	require.NotEqual(t, nodes[0]["id"], nodes[1]["id"])
+	require.Equal(t, nodes[0]["id"], edges[0]["source_id"])
+	require.Equal(t, nodes[1]["id"], edges[0]["target_id"])
+}
+
 func TestArchiveManualSummaryRetryDurableAndDuplicateSafe(t *testing.T) {
 	conn, mock, err := sqlmock.New()
 	require.NoError(t, err)

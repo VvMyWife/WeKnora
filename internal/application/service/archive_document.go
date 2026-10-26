@@ -112,7 +112,23 @@ func (s *knowledgeService) ArchiveDocumentContext(ctx context.Context, id string
 	if k.SummaryStatus == types.SummaryStatusFailed || k.ParseStatus == types.ParseStatusFailed {
 		state = "partial"
 	}
-	return map[string]any{"knowledge_id": id, "archive": archive, "chunks": len(chunks), "wiki_pages": pages, "graph": graph, "graph_data": graphData, "graph_error": graphError, "status": state, "stages": spans}, nil
+	return map[string]any{"knowledge_id": id, "archive": archive, "chunks": len(chunks), "wiki_pages": pages, "graph": graph, "graph_data": archiveGraphProjection(graphData), "graph_error": graphError, "status": state, "stages": spans}, nil
+}
+
+// Retrieval identities are deliberately omitted by GraphData's extraction JSON;
+// use a separate response projection to preserve actual relationship endpoints.
+func archiveGraphProjection(graph *types.GraphData) map[string]any {
+	nodes := []map[string]any{}
+	edges := []map[string]any{}
+	if graph != nil {
+		for _, node := range graph.Node {
+			nodes = append(nodes, map[string]any{"id": node.ID, "name": node.Name, "chunks": node.Chunks})
+		}
+		for _, edge := range graph.Relation {
+			edges = append(edges, map[string]any{"source_id": edge.SourceID, "target_id": edge.TargetID, "type": edge.Type})
+		}
+	}
+	return map[string]any{"node": nodes, "relation": edges}
 }
 
 func archiveRetryStage(stage string) (string, error) {

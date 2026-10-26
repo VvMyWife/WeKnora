@@ -11,7 +11,8 @@ const data = ref<any>(null);
 const error = ref('');
 const busy = ref(false);
 function renderWiki(content: string) {
-  return DOMPurify.sanitize(marked.parse(content || '', { async: false }) as string);
+  const display = (content || '').replace(/\[\[[^|\]]+\|([^\]]+)\]\]/g, '$1').replace(/\[\[([^\]]+)\]\]/g, '$1');
+  return DOMPurify.sanitize(marked.parse(display, { async: false }) as string);
 }
 let epoch = 0;
 let timer: ReturnType<typeof setTimeout> | undefined;
@@ -39,8 +40,14 @@ async function retry() {
   finally { busy.value = false; }
 }
 const pages = computed(() => [...(data.value?.wiki_pages || [])].sort((a: any, b: any) => Number(b.page_type === 'summary') - Number(a.page_type === 'summary')));
-const graphNodes = computed(() => (data.value?.graph_data?.node || []).slice(0, 40).map((node: any, n: number, array: any[]) => ({ ...node, x: 350 + 260 * Math.cos(2 * Math.PI * n / array.length), y: 290 + 230 * Math.sin(2 * Math.PI * n / array.length) })));
-const graphEdges = computed(() => (data.value?.graph_data?.relation || []).map((edge: any) => ({ ...edge, source: graphNodes.value.find((n: any) => n.name === edge.node1), target: graphNodes.value.find((n: any) => n.name === edge.node2) })).filter((edge: any) => edge.source && edge.target));
+const graphNodes = computed(() => {
+  const degree = new Map<string, number>();
+  for (const edge of data.value?.graph_data?.relation || []) {
+    for (const id of [edge.source_id, edge.target_id]) degree.set(id, (degree.get(id) || 0) + 1);
+  }
+  return [...(data.value?.graph_data?.node || [])].sort((a: any,b: any) => (degree.get(b.id) || 0) - (degree.get(a.id) || 0)).slice(0, 40).map((node: any, n: number, array: any[]) => ({ ...node, x: 350 + 260 * Math.cos(2 * Math.PI * n / array.length), y: 290 + 230 * Math.sin(2 * Math.PI * n / array.length) }));
+});
+const graphEdges = computed(() => (data.value?.graph_data?.relation || []).map((edge: any) => ({ ...edge, source: graphNodes.value.find((n: any) => n.id === edge.source_id), target: graphNodes.value.find((n: any) => n.id === edge.target_id) })).filter((edge: any) => edge.source && edge.target));
 const stateLabel = computed(() => (({ complete: '已完成', partial: '部分完成，有失败阶段', processing: '处理中' } as Record<string,string>)[data.value?.status as string] || '读取中'));
 </script>
 
@@ -72,13 +79,13 @@ const stateLabel = computed(() => (({ complete: '已完成', partial: '部分完
           <line :x1="edge.source.x" :y1="edge.source.y" :x2="edge.target.x" :y2="edge.target.y" stroke="#b8c6c0" />
           <text :x="(edge.source.x+edge.target.x)/2" :y="(edge.source.y+edge.target.y)/2" text-anchor="middle" font-size="10">{{ edge.type }}</text>
         </g>
-        <g v-for="node in graphNodes" :key="node.name">
+        <g v-for="node in graphNodes" :key="node.id">
           <circle :cx="node.x" :cy="node.y" r="9" fill="#07a870"><title>{{ node.name }}</title></circle>
           <text :x="node.x" :y="node.y-15" text-anchor="middle" font-size="11">{{ node.name.length > 14 ? node.name.slice(0,14)+'…' : node.name }}</text>
         </g>
       </svg>
       <p v-if="(data.graph_data?.node?.length || 0)>40">当前显示前 40 个实体。</p>
-      <details v-for="node in graphNodes" :key="node.name"><summary>{{ node.name }}</summary>
+      <details v-for="node in graphNodes" :key="node.id"><summary>{{ node.name }}</summary>
         <button v-for="id in (node.chunks || [])" :key="id" @click="emit('locate-chunk', id)">打开档案中的证据</button>
       </details>
     </template>
