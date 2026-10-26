@@ -103,6 +103,35 @@ elif phase in ['apply', 'rollback']:
             state['status'] = 'rolled_back_after_error'
             statefile.write_text(json.dumps(state, indent=2))
         raise
+elif phase == 'refresh-frontend':
+    state = json.loads(statefile.read_text())
+    assert state['status'] == 'applied' and protected_unchanged(state['protected_before'])
+    image = json.loads(run(['docker', 'image', 'inspect', TAGS['frontend']]))[0]
+    revision = image['Config']['Labels']['org.opencontainers.image.revision']
+    # A UI-only fix must not silently depend on unreleased backend changes.
+    run(['git', 'diff', '--exit-code', state['source_revision'], revision, '--', 'internal', 'cmd', 'config', 'go.mod', 'go.sum'])
+    app_before = run(['docker', 'inspect', '-f', '{{.Id}}', 'WeKnora-app']).strip()
+    previous = COMPOSE.read_bytes()
+    config = json.loads(previous)
+    assert config['services']['app']['image'] == state['new_images']['app']
+    old_ui = config['services']['frontend']['image']
+    config['services']['frontend']['image'] = image['Id']
+    (ROOT/'compose.before-frontend-refresh.json').write_bytes(previous)
+    COMPOSE.write_text(json.dumps(config, ensure_ascii=False, indent=2))
+    try:
+        run(['docker', 'compose', '-p', PROJECT, '-f', str(COMPOSE), 'up', '-d', '--no-deps', 'frontend'])
+        health()
+        assert run(['docker', 'inspect', '-f', '{{.Id}}', 'WeKnora-app']).strip() == app_before
+        assert protected_unchanged(state['protected_before'])
+        state.setdefault('frontend_updates', []).append({'previous': old_ui, 'image': image['Id'], 'source_revision': revision})
+        state['new_images']['frontend'] = image['Id']
+        state['frontend_source_revision'] = revision
+        statefile.write_text(json.dumps(state, indent=2))
+        print('FRONTEND_REFRESHED', revision, 'backend unchanged')
+    except Exception:
+        COMPOSE.write_bytes(previous)
+        run(['docker', 'compose', '-p', PROJECT, '-f', str(COMPOSE), 'up', '-d', '--no-deps', 'frontend'])
+        raise
 else:
     state = json.loads(statefile.read_text())
-    print(json.dumps({key: state[key] for key in ['status', 'source_revision', 'old_images', 'new_images']}, indent=2))
+    print(json.dumps({key: state.get(key) for key in ['status', 'source_revision', 'frontend_source_revision', 'old_images', 'new_images']}, indent=2))

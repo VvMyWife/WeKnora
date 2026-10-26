@@ -266,7 +266,7 @@ watch(() => [props.visible, props.details?.id, props.initialChunkId], ([visible,
   if (visible && id && chunkId) void locateArchiveChunkId(String(chunkId));
 });
 watch(() => [props.visible, props.details?.id], async ([visible,id]) => {
-  archiveSource.value=null;previewSource.value='auto';
+  archiveSource.value=null;archiveLocate.value=null;previewSource.value='auto';
   if (!visible || !id) return;
   try { const r=await getArchiveSource(String(id));if(props.visible && props.details?.id===id) archiveSource.value=r.data.active; }
   catch { /* Preview itself surfaces source-resolution errors. */ }
