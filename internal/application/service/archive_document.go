@@ -189,7 +189,7 @@ func (s *knowledgeService) RetryArchiveFailures(ctx context.Context, id, request
 			key = fmt.Sprintf("graph:%d:%s:%d:%s", tenant, id, attempt, p.ChunkID)
 		} else if dl.TaskType == types.TypeWikiIngest && (stage == "all" || stage == "wiki") && failed["postprocess.wiki"] {
 			var p WikiPendingOp
-			if json.Unmarshal(dl.Payload, &p) != nil || p.KnowledgeID != id {
+			if json.Unmarshal(dl.Payload, &p) != nil || p.KnowledgeID != id || p.Attempt != attempt {
 				continue
 			}
 			key = fmt.Sprintf("wiki:%d:%s:%d", tenant, id, attempt)
