@@ -42,7 +42,7 @@ func (s *knowledgeService) ArchiveDocumentContext(ctx context.Context, id string
 	}
 	var all []*types.WikiPage
 	if err := db.Where("tenant_id=? AND knowledge_base_id=? AND status<>?", tenant, k.KnowledgeBaseID, types.WikiPageStatusArchived).
-		Where("EXISTS (SELECT 1 FROM jsonb_array_elements_text(COALESCE(source_refs,'[]')::jsonb) r WHERE split_part(r,'|',1)=?)", id).Limit(500).Find(&all).Error; err != nil {
+		Where("EXISTS (SELECT 1 FROM jsonb_array_elements_text(CASE WHEN jsonb_typeof(source_refs::jsonb)='array' THEN source_refs::jsonb ELSE '[]'::jsonb END) r WHERE split_part(r,'|',1)=?)", id).Limit(500).Find(&all).Error; err != nil {
 		return nil, err
 	}
 	pages := []map[string]any{}
