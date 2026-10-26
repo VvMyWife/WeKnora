@@ -39,3 +39,10 @@
 - Current maintenance worktree: /home/ubuntu/RAG_Weknora-upstream-20261023; evidence: docs/upstream-sync-20261023/README.md.
 - Preserve 20261020 runtime files because production mounts config; do not checkout new code there.
 - This batch covers code and isolated candidates. Production128-to133 migration and switching need a new maintenance window. Keep28182 retired.
+
+## User-approved GitHub delivery workflow (2026-10-26)
+- Keep ljc/custom as the latest verified delivery branch. Develop major changes in isolated ljc/ feature branches and worktrees.
+- After relevant full regression and required isolated runtime acceptance pass, merge the feature into ljc/custom and explicitly push origin ljc/custom:ljc/custom to GitHub. Preserve both histories; never force push or overwrite another branch.
+- This user-approved delivery flow authorizes the completed feature merge/push; it does not authorize production migrations or restarts. Record deployed image revisions separately.
+- Do not configure GitLab or an automatic push hook/cron. Preserve push.default=nothing and explicit branch selection.
+- Detailed manual commands and interruption checks: docs/custom-delivery/README.md.

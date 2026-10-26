@@ -1,0 +1,27 @@
+{
+  "checked_at": "2026-10-26T06:49:48.366562+00:00",
+  "custom_parent": "5a1f74c9ce4f4e35215a61f63bb137bb62bb623c",
+  "archive_parent": "58500f74655109852a6fe1d48557cee735da580e",
+  "integration_branch": "ljc/merge-archive-into-custom-20261026",
+  "merge_conflicts": 0,
+  "backend": {
+    "full_regression": "passed",
+    "asynq_unlimited_timeout": "passed",
+    "native_anydoc": "passed",
+    "native_build": "passed"
+  },
+  "custom_frontend": {
+    "tests": 2044,
+    "passed": 2043,
+    "skipped": 1,
+    "failed": 0,
+    "typecheck": "passed",
+    "build": "passed"
+  },
+  "style_guard": "preserved baselines; new archive styles use equivalent design tokens",
+  "database_migrations_changed_vs_custom": false,
+  "production_deployed": false,
+  "delivery_remote": "origin (GitHub)",
+  "delivery_branch": "ljc/custom",
+  "push_mode": "explicit normal push, no force"
+}

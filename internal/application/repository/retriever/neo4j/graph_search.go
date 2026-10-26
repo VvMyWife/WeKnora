@@ -53,6 +53,25 @@ func (n *Neo4jRepository) SearchGraph(
 	if err != nil {
 		return nil, err
 	}
+	return n.searchGraphWithLabel(ctx, label, query)
+}
+
+// SearchArchiveGraph is an authenticated document-level projection; public KB search remains unchanged.
+func (n *Neo4jRepository) SearchArchiveGraph(ctx context.Context, namespace types.NameSpace) (*types.GraphSearchCandidates, error) {
+	if namespace.KnowledgeBase == "" || namespace.Knowledge == "" {
+		return nil, fmt.Errorf("archive graph requires knowledge base and document")
+	}
+	if n.driver == nil {
+		return nil, nil
+	}
+	labels := n.Labels(namespace)
+	for i, label := range labels {
+		labels[i] = "`" + strings.ReplaceAll(label, "`", "``") + "`"
+	}
+	return n.searchGraphWithLabel(ctx, strings.Join(labels, ":"), "")
+}
+
+func (n *Neo4jRepository) searchGraphWithLabel(ctx context.Context, label, query string) (*types.GraphSearchCandidates, error) {
 	session := n.driver.NewSession(ctx, neo4j.SessionConfig{AccessMode: neo4j.AccessModeRead})
 	defer func() {
 		if err := session.Close(ctx); err != nil {

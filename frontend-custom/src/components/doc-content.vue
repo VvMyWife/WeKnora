@@ -25,6 +25,8 @@ import { useI18n } from 'vue-i18n';
 import { useAuthStore } from '@/stores/auth';
 import { useAssistantStore } from '@/stores/assistant';
 import DocumentPreview from '@/components/document-preview.vue';
+import ArchiveDocumentPanel from '@/components/ArchiveDocumentPanel.vue';
+import { archiveDocumentLocate } from '@/utils/archiveDocumentLocator';
 import { getArchiveSource, type ArchiveVersion } from '@/api/archive-mapping';
 import DocumentFileIcon from '@/views/knowledge/components/DocumentFileIcon.vue';
 import KnowledgeProcessingTimeline from '@/components/knowledge-processing-timeline.vue';
@@ -199,6 +201,7 @@ const detailTags = computed(() => {
 
 const headerIconFileName = computed(() => {
   const detail = props.details;
+  if (detail?.custom_metadata?.['附件格式']) return `document.${detail.custom_metadata['附件格式']}`;
   return detail?.file_type
     ? `document.${detail.file_type.toLowerCase()}`
     : detail?.original_file_name || detail?.file_name || detail?.title || '';
@@ -242,11 +245,28 @@ mermaid.initialize({
     topPadding: 50
   }
 });
-const props = defineProps(["visible", "details", "knowledgeType", "sourceInfo", "canEditKB", "canDownloadKB", "parse_status", "kbId"]);
+const props = defineProps(["visible", "details", "knowledgeType", "sourceInfo", "canEditKB", "canDownloadKB", "parse_status", "kbId", "initialChunkId"]);
 const archiveSource = ref<ArchiveVersion | null>(null);
 const previewSource = ref<'auto'|'parsed'>('auto');
+const archiveLocate = ref(null);
+const archiveChunkPage = (chunk: any) => {
+  const anchor = getChunkMetadata(chunk)?.external_import?.source_anchors?.[0];
+  return typeof anchor?.page_index === 'number' ? anchor.page_index + 1 : null;
+};
+const locateArchiveChunk = (chunk: any) => {
+  const anchor = getChunkMetadata(chunk)?.external_import?.source_anchors?.[0];
+  archiveLocate.value = archiveDocumentLocate(anchor?.page_index, chunk.content || '', Date.now());
+  previewSource.value = 'auto'; viewMode.value = 'preview';
+};
+const locateArchiveChunkId = async (id: string) => {
+  try { const result = await getChunkByIdOnly(id); if (result.data?.knowledge_id !== props.details.id) return;
+    locateArchiveChunk(result.data); } catch { MessagePlugin.error('证据读取失败，请稍后重试'); }
+};
+watch(() => [props.visible, props.details?.id, props.initialChunkId], ([visible, id, chunkId]) => {
+  if (visible && id && chunkId) void locateArchiveChunkId(String(chunkId));
+});
 watch(() => [props.visible, props.details?.id], async ([visible,id]) => {
-  archiveSource.value=null;previewSource.value='auto';
+  archiveSource.value=null;archiveLocate.value=null;previewSource.value='auto';
   if (!visible || !id) return;
   try { const r=await getArchiveSource(String(id));if(props.visible && props.details?.id===id) archiveSource.value=r.data.active; }
   catch { /* Preview itself surfaces source-resolution errors. */ }
@@ -554,7 +574,7 @@ const getMarkdownRenderRoot = (): ParentNode | null =>
 let url = ref('')
 // 视图模式：chunks / merged / preview
 // file 类型默认「预览」，URL / 手动创建 默认「全文」
-const viewMode = ref<'chunks' | 'merged' | 'preview'>('merged');
+const viewMode = ref<'chunks' | 'merged' | 'preview' | 'wiki' | 'graph' | 'processing'>('preview');
 
 // 合并后的文档内容（在下方通过 computed 定义）
 
@@ -1003,6 +1023,7 @@ const getTypeLabel = () => {
     case 'manual':
       return t('knowledgeBase.typeManual');
     case 'file':
+      if (props.details.custom_metadata?.['附件格式']) return String(props.details.custom_metadata['附件格式']).toUpperCase();
       return props.details.file_type ? props.details.file_type.toUpperCase() : t('knowledgeBase.typeFile');
     default:
       return '';
@@ -1850,7 +1871,7 @@ const handleChunkPageChange = (pageInfo: { current: number }) => {
               <t-button v-if="canPreview()" size="small" :variant="viewMode === 'preview' && previewSource === 'auto' ? 'base' : 'outline'"
                 :theme="viewMode === 'preview' && previewSource === 'auto' ? 'primary' : 'default'" @click="previewSource = 'auto'; viewMode = 'preview'"
                 class="view-mode-btn">
-                {{ archiveSource ? '原件预览' : $t('preview.tab') }}
+                {{ archiveSource ? '完整档案预览' : $t('preview.tab') }}
               </t-button>
               <t-button v-if="archiveSource" size="small" :variant="viewMode === 'preview' && previewSource === 'parsed' ? 'base' : 'outline'" @click="previewSource='parsed'; viewMode='preview'">解析文档</t-button>
               <t-button v-if="!canPreview()" size="small" :variant="viewMode === 'merged' ? 'base' : 'outline'"
@@ -1863,6 +1884,9 @@ const handleChunkPageChange = (pageInfo: { current: number }) => {
                 class="view-mode-btn">
                 {{ $t('knowledgeBase.viewChunks') }}
               </t-button>
+              <t-button size="small" :variant="viewMode === 'wiki' ? 'base' : 'outline'" @click="viewMode='wiki'">档案 Wiki</t-button>
+              <t-button size="small" :variant="viewMode === 'graph' ? 'base' : 'outline'" @click="viewMode='graph'">档案图谱</t-button>
+              <t-button size="small" :variant="viewMode === 'processing' ? 'base' : 'outline'" @click="viewMode='processing'">处理与重试</t-button>
             </div>
           </div>
 
@@ -1878,7 +1902,8 @@ const handleChunkPageChange = (pageInfo: { current: number }) => {
           </div>
 
           <!-- 合并视图 -->
-          <div v-if="viewMode === 'merged'">
+          <ArchiveDocumentPanel v-if="['wiki','graph','processing'].includes(viewMode)" :knowledge-id="details.id" :view="viewMode" :can-edit="canEditKB" @locate-chunk="locateArchiveChunkId" />
+          <div v-else-if="viewMode === 'merged'">
             <div v-if="isChunkPageTransition" class="chunk-page-loading">
               <t-loading size="small" />
               <span>{{ $t('common.loading') }}</span>
@@ -1904,6 +1929,7 @@ const handleChunkPageChange = (pageInfo: { current: number }) => {
                   <div class="chunk-heading">
                     <span class="chunk-index">{{ $t('knowledgeBase.segment') }} {{ (loadedChunkPage - 1) * CHUNK_PAGE_SIZE + index + 1 }}</span>
                     <span class="chunk-meta">{{ chunk.meta }}</span>
+                    <button v-if="archiveChunkPage(chunk.original)" type="button" @click="locateArchiveChunk(chunk.original)">定位档案第 {{ archiveChunkPage(chunk.original) }} 页</button>
                   </div>
                   <div class="chunk-header-right">
                     <t-tooltip v-if="chunk.original.index_status === 'failed' && canEditContent"
@@ -2168,7 +2194,7 @@ const handleChunkPageChange = (pageInfo: { current: number }) => {
 
           <div v-else-if="viewMode === 'preview'">
             <DocumentPreview :knowledgeId="details.id" :fileType="details.file_type" :fileName="details.title"
-              :source="previewSource" :active="visible && viewMode === 'preview'" />
+              :source="previewSource" :source-mode="!!archiveLocate" :locate="archiveLocate" :active="visible && viewMode === 'preview'" />
           </div>
         </section>
       </div>

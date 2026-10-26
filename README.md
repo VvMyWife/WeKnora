@@ -1,5 +1,7 @@
 > 正式入口约定：以后仅使用18182；本次升级、逐步运行与恢复说明见[发布手册](docs/production-release-20261021/README.md)。
 
+交付分支使用 `ljc/custom`：功能分支验收后合并并推送 GitHub。完整步骤见 [功能开发与交付说明](docs/custom-delivery/README.md)。
+
 > ljc定制维护：[本轮集成与测试说明](docs/upstream-integration/README.md) · [维护手册](docs/fork-maintenance/README.md) · [原部署记录（历史版本）](docs/upstream-integration/legacy-deployment.md)
 
 <p align="center">

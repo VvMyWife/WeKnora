@@ -102,6 +102,11 @@ func latestEnrichmentAttempt(tx *gorm.DB, kid string) (int, error) {
 func recoveryAlreadySucceeded(tx *gorm.DB, row *EnrichmentRecoveryRow) (bool, error) {
 	var statuses []string
 	name := "postprocess.wiki"
+	if row.TaskType == types.TypeSummaryGeneration {
+		var status string
+		err := tx.Raw("SELECT summary_status FROM knowledges WHERE id=?", row.KnowledgeID).Scan(&status).Error
+		return status == types.SummaryStatusCompleted, err
+	}
 	if row.TaskType == types.TypeChunkExtract {
 		var p types.ExtractChunkPayload
 		if err := json.Unmarshal(row.Payload, &p); err != nil {
@@ -341,6 +346,16 @@ func (s *EnrichmentRecovery) dispatch(ctx context.Context, id int64) error {
 		}
 		payload, _ := json.Marshal(WikiIngestPayload{TenantID: row.TenantID, KnowledgeBaseID: row.KnowledgeBaseID})
 		_, err = s.tasks.Enqueue(asynq.NewTask(types.TypeWikiIngest, payload, asynq.Queue(types.QueueWiki), asynq.TaskID(wikiRecoveryTaskID(row)), asynq.MaxRetry(0), asynq.Timeout(time.Hour), asynq.Retention(24*time.Hour)))
+	} else if row.TaskType == types.TypeSummaryGeneration {
+		var p types.SummaryGenerationPayload
+		if err = json.Unmarshal(row.Payload, &p); err != nil {
+			return err
+		}
+		p.RecoveryID, p.RecoveryDispatch = row.ID, int64(row.DispatchNo)
+		payload, _ := json.Marshal(p)
+		_, err = s.tasks.Enqueue(asynq.NewTask(types.TypeSummaryGeneration, payload,
+			asynq.Queue(types.QueueSummary), asynq.TaskID(fmt.Sprintf("recovery-summary-%d-%d", row.ID, row.DispatchNo)),
+			asynq.MaxRetry(0), asynq.Timeout(30*time.Minute), asynq.Retention(24*time.Hour)))
 	} else {
 		var p types.ExtractChunkPayload
 		if err = json.Unmarshal(row.Payload, &p); err != nil {
