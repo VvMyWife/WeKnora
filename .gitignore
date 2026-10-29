@@ -66,3 +66,6 @@ miniprogram/project.private.config.json
 /third_party/anydoc-go/.anydoc-*
 
 /.pnpm-store/
+
+# Python package metadata produced by isolated protocol tests
+/mcp-server/*.egg-info/

@@ -29,7 +29,7 @@ before(async () => {
       ...Object.keys(mocks).map(find => ({ find, replacement: '\0mock:' + find })),
       { find: '@', replacement: fileURLToPath(new URL('../../', import.meta.url)) },
     ] },
-    server: { middlewareMode: true, hmr: false }, appType: 'custom',
+    server: { watch: null, middlewareMode: true, hmr: false }, appType: 'custom',
   })
   ;({ useStream } = await server.ssrLoadModule('/src/api/chat/streame.ts'))
   transport = await server.ssrLoadModule('\0mock:@microsoft/fetch-event-source') as typeof transport

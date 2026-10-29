@@ -34,7 +34,7 @@ before(async () => {
       vue(),
     ],
     resolve: { alias: { '@': fileURLToPath(new URL('../../../', import.meta.url)) } },
-    server: { middlewareMode: true }, appType: 'custom',
+    server: { watch: null, middlewareMode: true }, appType: 'custom',
   })
   Renderer = (await server.ssrLoadModule('/src/views/chat/components/ToolResultRenderer.vue')).default
 })

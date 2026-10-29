@@ -78,7 +78,7 @@ before(async () => {
     optimizeDeps: { noDiscovery: true, entries: [] },
     plugins: [vue()],
     resolve: { alias: { '@': fileURLToPath(new URL('../../../', import.meta.url)) } },
-    server: { middlewareMode: true },
+    server: { watch: null, middlewareMode: true },
     appType: 'custom',
   })
   KbFolderTree = (await server.ssrLoadModule('/src/views/knowledge/components/KbFolderTree.vue')).default

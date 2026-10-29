@@ -1,0 +1,10 @@
+**
+!runtime
+!runtime/upstream-20261029
+!runtime/upstream-20261029/WeKnora
+!runtime/upstream-20261029/ljc-migrate
+!migrations
+!migrations/**
+!config
+!config/**
+!THIRD_PARTY_NOTICES.md

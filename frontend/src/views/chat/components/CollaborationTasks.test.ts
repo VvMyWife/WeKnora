@@ -14,7 +14,7 @@ let Card: Component
 before(async () => {
   server = await createServer({ configFile: false, optimizeDeps: { noDiscovery: true, entries: [] }, plugins: [vue()],
     resolve: { alias: { '@': fileURLToPath(new URL('../../../', import.meta.url)) } },
-    server: { middlewareMode: true, hmr: false }, appType: 'custom' })
+    server: { watch: null, middlewareMode: true, hmr: false }, appType: 'custom' })
   Card = (await server.ssrLoadModule('/src/views/chat/components/CollaborationTasks.vue')).default
   // Compile the integration component as well: both timeline branches render progress.
   const source = readFileSync(new URL('./AgentStreamDisplay.vue', import.meta.url), 'utf8')

@@ -14,7 +14,7 @@ before(async () => {
   server = await createServer({
     configFile: false, optimizeDeps: { noDiscovery: true, entries: [] }, plugins: [vue()],
     resolve: { alias: { '@': fileURLToPath(new URL('../../../', import.meta.url)) } },
-    server: { middlewareMode: true, hmr: false }, appType: 'custom',
+    server: { watch: null, middlewareMode: true, hmr: false }, appType: 'custom',
   })
   Card = (await server.ssrLoadModule('/src/views/chat/components/BrowserToolDetails.vue')).default
 })

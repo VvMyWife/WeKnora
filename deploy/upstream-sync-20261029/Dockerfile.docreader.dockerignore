@@ -1,0 +1,5 @@
+**
+!docreader
+!docreader/**
+docreader/.venv
+docreader/**/__pycache__

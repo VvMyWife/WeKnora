@@ -22,7 +22,7 @@ before(async () => {
     }],
     optimizeDeps: { noDiscovery: true, entries: [] },
     resolve: { alias: { '@': fileURLToPath(new URL('../', import.meta.url)) } },
-    server: { middlewareMode: true, hmr: false },
+    server: { watch: null, middlewareMode: true, hmr: false },
     appType: 'custom',
   })
   ;({ useBrowserConnectionStore } = await server.ssrLoadModule('/src/stores/browserConnection.ts'))
