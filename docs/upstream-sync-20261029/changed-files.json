@@ -1,0 +1,2810 @@
+[
+  {
+    "path": ".env.example",
+    "custom_overlap": false
+  },
+  {
+    "path": ".github/workflows/app.yml",
+    "custom_overlap": true
+  },
+  {
+    "path": "Makefile",
+    "custom_overlap": false
+  },
+  {
+    "path": "README.md",
+    "custom_overlap": true
+  },
+  {
+    "path": "README_CN.md",
+    "custom_overlap": false
+  },
+  {
+    "path": "cli/cmd/agent/reasoning_effort_roundtrip_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "cli/cmd/auth/token.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "cli/cmd/auth/token_env_trim_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "cli/cmd/chunk/list.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "cli/cmd/chunk/list_truncation_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "cli/cmd/doc/download.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "cli/cmd/doc/download_interrupted_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "cli/cmd/doc/wait_jq_validation_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "cli/cmd/session/tool_approval.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "cli/cmd/session/tool_approval_retry_argv_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "cli/internal/cmdutil/authrefresh.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "cli/internal/cmdutil/authrefresh_keychain_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "cli/internal/cmdutil/confirm.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "cli/internal/cmdutil/confirm_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "cli/internal/cmdutil/format.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "cli/internal/mcp/download_bytes_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "cli/internal/mcp/tools.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "client/agent.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "client/agent_manage.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "client/client.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "client/download_interrupted_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "client/knowledge.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "client/knowledge_body_close_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "client/knowledge_filter_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "client/knowledgebase.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "client/knowledgebase_parser_engine_rules_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "client/response_limit_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "client/session.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "cmd/server/main.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "config/prompt_templates/generate_session_title.yaml",
+    "custom_overlap": false
+  },
+  {
+    "path": "docker-compose.dev.yml",
+    "custom_overlap": false
+  },
+  {
+    "path": "docker-compose.yml",
+    "custom_overlap": true
+  },
+  {
+    "path": "docker/Dockerfile.app",
+    "custom_overlap": false
+  },
+  {
+    "path": "docreader/README.md",
+    "custom_overlap": false
+  },
+  {
+    "path": "docreader/config.py",
+    "custom_overlap": false
+  },
+  {
+    "path": "docreader/main.py",
+    "custom_overlap": false
+  },
+  {
+    "path": "docreader/parser/docx_parser.py",
+    "custom_overlap": false
+  },
+  {
+    "path": "docreader/parser/epub_parser.py",
+    "custom_overlap": false
+  },
+  {
+    "path": "docreader/parser/excel_parser.py",
+    "custom_overlap": false
+  },
+  {
+    "path": "docreader/parser/image_preprocess.py",
+    "custom_overlap": false
+  },
+  {
+    "path": "docreader/parser/markdown_parser.py",
+    "custom_overlap": false
+  },
+  {
+    "path": "docreader/parser/markitdown_parser.py",
+    "custom_overlap": false
+  },
+  {
+    "path": "docreader/parser/mhtml_parser.py",
+    "custom_overlap": false
+  },
+  {
+    "path": "docreader/parser/parser.py",
+    "custom_overlap": false
+  },
+  {
+    "path": "docreader/parser/pdf_parser.py",
+    "custom_overlap": false
+  },
+  {
+    "path": "docreader/parser/pptx_media.py",
+    "custom_overlap": false
+  },
+  {
+    "path": "docreader/parser/stream.py",
+    "custom_overlap": false
+  },
+  {
+    "path": "docreader/parser/xlsx_repair.py",
+    "custom_overlap": false
+  },
+  {
+    "path": "docreader/parser/xmind_parser.py",
+    "custom_overlap": false
+  },
+  {
+    "path": "docreader/preprocess.py",
+    "custom_overlap": false
+  },
+  {
+    "path": "docreader/preprocess_worker.py",
+    "custom_overlap": false
+  },
+  {
+    "path": "docreader/proto/docreader.proto",
+    "custom_overlap": false
+  },
+  {
+    "path": "docreader/tests/test_config.py",
+    "custom_overlap": false
+  },
+  {
+    "path": "docreader/tests/test_decode_bytes_bom.py",
+    "custom_overlap": false
+  },
+  {
+    "path": "docreader/tests/test_docreader_memory.py",
+    "custom_overlap": false
+  },
+  {
+    "path": "docreader/tests/test_docreader_stream.py",
+    "custom_overlap": false
+  },
+  {
+    "path": "docreader/tests/test_docx_merge.py",
+    "custom_overlap": false
+  },
+  {
+    "path": "docreader/tests/test_docx_tables.py",
+    "custom_overlap": false
+  },
+  {
+    "path": "docreader/tests/test_epub_external_images.py",
+    "custom_overlap": false
+  },
+  {
+    "path": "docreader/tests/test_epub_parser.py",
+    "custom_overlap": false
+  },
+  {
+    "path": "docreader/tests/test_excel_parser.py",
+    "custom_overlap": false
+  },
+  {
+    "path": "docreader/tests/test_html_table_footer.py",
+    "custom_overlap": false
+  },
+  {
+    "path": "docreader/tests/test_markdown_table_fences.py",
+    "custom_overlap": false
+  },
+  {
+    "path": "docreader/tests/test_mhtml_root.py",
+    "custom_overlap": false
+  },
+  {
+    "path": "docreader/tests/test_parser_routing.py",
+    "custom_overlap": false
+  },
+  {
+    "path": "docreader/tests/test_pdf_embedded_images.py",
+    "custom_overlap": false
+  },
+  {
+    "path": "docreader/tests/test_pdf_router.py",
+    "custom_overlap": false
+  },
+  {
+    "path": "docreader/tests/test_pptx_media.py",
+    "custom_overlap": false
+  },
+  {
+    "path": "docreader/tests/test_preprocess_runner.py",
+    "custom_overlap": false
+  },
+  {
+    "path": "docreader/tests/test_request_memory.py",
+    "custom_overlap": false
+  },
+  {
+    "path": "docreader/tests/test_utils_split.py",
+    "custom_overlap": false
+  },
+  {
+    "path": "docreader/tests/test_xlsx_repair.py",
+    "custom_overlap": false
+  },
+  {
+    "path": "docreader/tests/test_xmind_parser.py",
+    "custom_overlap": false
+  },
+  {
+    "path": "docreader/utils/endecode.py",
+    "custom_overlap": false
+  },
+  {
+    "path": "docreader/utils/request_memory.py",
+    "custom_overlap": false
+  },
+  {
+    "path": "docreader/utils/split.py",
+    "custom_overlap": false
+  },
+  {
+    "path": "docs/LITE.md",
+    "custom_overlap": false
+  },
+  {
+    "path": "docs/assets/postprocess-inclusive-duration.png",
+    "custom_overlap": false
+  },
+  {
+    "path": "docs/docs.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "docs/swagger.json",
+    "custom_overlap": false
+  },
+  {
+    "path": "docs/swagger.yaml",
+    "custom_overlap": false
+  },
+  {
+    "path": "frontend/e2e/README.md",
+    "custom_overlap": false
+  },
+  {
+    "path": "frontend/e2e/novnc.md",
+    "custom_overlap": false
+  },
+  {
+    "path": "frontend/e2e/novnc.spec.ts",
+    "custom_overlap": false
+  },
+  {
+    "path": "frontend/src/api/default-settings.ts",
+    "custom_overlap": false
+  },
+  {
+    "path": "frontend/src/api/mcp-service.ts",
+    "custom_overlap": false
+  },
+  {
+    "path": "frontend/src/api/model/index.ts",
+    "custom_overlap": false
+  },
+  {
+    "path": "frontend/src/api/system/index.ts",
+    "custom_overlap": false
+  },
+  {
+    "path": "frontend/src/api/web-search-provider.ts",
+    "custom_overlap": false
+  },
+  {
+    "path": "frontend/src/assets/img/assistant.svg",
+    "custom_overlap": false
+  },
+  {
+    "path": "frontend/src/components/ChatActionIcon.vue",
+    "custom_overlap": false
+  },
+  {
+    "path": "frontend/src/components/EmbedInputField.test.ts",
+    "custom_overlap": false
+  },
+  {
+    "path": "frontend/src/components/EmbedInputField.vue",
+    "custom_overlap": false
+  },
+  {
+    "path": "frontend/src/components/GlobalCommandPalette/ResultItem.vue",
+    "custom_overlap": false
+  },
+  {
+    "path": "frontend/src/components/GlobalCommandPalette/commands.ts",
+    "custom_overlap": false
+  },
+  {
+    "path": "frontend/src/components/ModelEditorDialog.vue",
+    "custom_overlap": false
+  },
+  {
+    "path": "frontend/src/components/ModelSelector.vue",
+    "custom_overlap": false
+  },
+  {
+    "path": "frontend/src/components/SandboxConfigEditorDrawer.allocation.test.ts",
+    "custom_overlap": false
+  },
+  {
+    "path": "frontend/src/components/SandboxConfigEditorDrawer.vue",
+    "custom_overlap": false
+  },
+  {
+    "path": "frontend/src/components/SandboxSkillsPanel.vue",
+    "custom_overlap": false
+  },
+  {
+    "path": "frontend/src/components/assistant/AssistantActionButton.test.ts",
+    "custom_overlap": false
+  },
+  {
+    "path": "frontend/src/components/assistant/AssistantActionButton.vue",
+    "custom_overlap": false
+  },
+  {
+    "path": "frontend/src/components/assistant/AssistantActionsButton.vue",
+    "custom_overlap": false
+  },
+  {
+    "path": "frontend/src/components/assistant/AssistantButton.vue",
+    "custom_overlap": false
+  },
+  {
+    "path": "frontend/src/components/assistant/AssistantCreateDialog.vue",
+    "custom_overlap": false
+  },
+  {
+    "path": "frontend/src/components/assistant/AssistantLauncher.vue",
+    "custom_overlap": false
+  },
+  {
+    "path": "frontend/src/components/assistant/AssistantPanel.test.ts",
+    "custom_overlap": false
+  },
+  {
+    "path": "frontend/src/components/assistant/AssistantPanel.vue",
+    "custom_overlap": false
+  },
+  {
+    "path": "frontend/src/components/assistant/AssistantSelectionBubble.vue",
+    "custom_overlap": false
+  },
+  {
+    "path": "frontend/src/components/assistant/AssistantWorkflows.test.ts",
+    "custom_overlap": false
+  },
+  {
+    "path": "frontend/src/components/css/markdown.less",
+    "custom_overlap": false
+  },
+  {
+    "path": "frontend/src/components/doc-content.vue",
+    "custom_overlap": false
+  },
+  {
+    "path": "frontend/src/components/document-preview.encoding.test.ts",
+    "custom_overlap": false
+  },
+  {
+    "path": "frontend/src/components/document-preview.vue",
+    "custom_overlap": true
+  },
+  {
+    "path": "frontend/src/components/icons/ResourceIcon.vue",
+    "custom_overlap": false
+  },
+  {
+    "path": "frontend/src/components/knowledge-processing-timeline.vue",
+    "custom_overlap": false
+  },
+  {
+    "path": "frontend/src/components/manual-knowledge-editor.vue",
+    "custom_overlap": false
+  },
+  {
+    "path": "frontend/src/components/menu.vue",
+    "custom_overlap": false
+  },
+  {
+    "path": "frontend/src/components/modelSelectorFilter.ts",
+    "custom_overlap": false
+  },
+  {
+    "path": "frontend/src/components/previewMarkdownTypography.test.ts",
+    "custom_overlap": false
+  },
+  {
+    "path": "frontend/src/composables/useChatStreamHandler.collaboration.test.ts",
+    "custom_overlap": false
+  },
+  {
+    "path": "frontend/src/composables/useChatStreamHandler.dataChange.test.ts",
+    "custom_overlap": false
+  },
+  {
+    "path": "frontend/src/composables/useChatStreamHandler.integration.test.ts",
+    "custom_overlap": false
+  },
+  {
+    "path": "frontend/src/composables/useChatStreamHandler.pageButton.test.ts",
+    "custom_overlap": false
+  },
+  {
+    "path": "frontend/src/composables/useChatStreamHandler.suspend.test.ts",
+    "custom_overlap": false
+  },
+  {
+    "path": "frontend/src/composables/useChatStreamHandler.ts",
+    "custom_overlap": false
+  },
+  {
+    "path": "frontend/src/composables/useChildAgentStream.test.ts",
+    "custom_overlap": false
+  },
+  {
+    "path": "frontend/src/composables/useEmbedChatSession.test.ts",
+    "custom_overlap": false
+  },
+  {
+    "path": "frontend/src/composables/useEmbedChatSession.ts",
+    "custom_overlap": false
+  },
+  {
+    "path": "frontend/src/composables/useFloatingPreviewDrag.test.ts",
+    "custom_overlap": false
+  },
+  {
+    "path": "frontend/src/composables/useFloatingPreviewDrag.ts",
+    "custom_overlap": false
+  },
+  {
+    "path": "frontend/src/composables/useModalShell.test.ts",
+    "custom_overlap": false
+  },
+  {
+    "path": "frontend/src/composables/usePromptCountdown.ts",
+    "custom_overlap": false
+  },
+  {
+    "path": "frontend/src/composables/usePromptDock.test.mjs",
+    "custom_overlap": false
+  },
+  {
+    "path": "frontend/src/composables/usePromptDock.ts",
+    "custom_overlap": false
+  },
+  {
+    "path": "frontend/src/composables/useSandboxDesktop.ts",
+    "custom_overlap": false
+  },
+  {
+    "path": "frontend/src/config/settingsAccess.ts",
+    "custom_overlap": false
+  },
+  {
+    "path": "frontend/src/i18n/localeKeyAudit.test.ts",
+    "custom_overlap": false
+  },
+  {
+    "path": "frontend/src/i18n/locales/en-US.ts",
+    "custom_overlap": false
+  },
+  {
+    "path": "frontend/src/i18n/locales/ja-JP.ts",
+    "custom_overlap": false
+  },
+  {
+    "path": "frontend/src/i18n/locales/ko-KR.ts",
+    "custom_overlap": false
+  },
+  {
+    "path": "frontend/src/i18n/locales/ru-RU.ts",
+    "custom_overlap": false
+  },
+  {
+    "path": "frontend/src/i18n/locales/zh-CN.ts",
+    "custom_overlap": false
+  },
+  {
+    "path": "frontend/src/i18n/locales/zh-TW.ts",
+    "custom_overlap": false
+  },
+  {
+    "path": "frontend/src/stores/assistant.ts",
+    "custom_overlap": false
+  },
+  {
+    "path": "frontend/src/stores/ui.ts",
+    "custom_overlap": false
+  },
+  {
+    "path": "frontend/src/test-utils/cssRuleMatcher.ts",
+    "custom_overlap": false
+  },
+  {
+    "path": "frontend/src/utils/assistantRouteTitle.test.ts",
+    "custom_overlap": false
+  },
+  {
+    "path": "frontend/src/utils/assistantRouteTitle.ts",
+    "custom_overlap": false
+  },
+  {
+    "path": "frontend/src/utils/authRefresh.test.ts",
+    "custom_overlap": false
+  },
+  {
+    "path": "frontend/src/utils/authRefresh.ts",
+    "custom_overlap": false
+  },
+  {
+    "path": "frontend/src/utils/chatMessageShared.ts",
+    "custom_overlap": false
+  },
+  {
+    "path": "frontend/src/utils/documentPreviewMarkdown.ts",
+    "custom_overlap": false
+  },
+  {
+    "path": "frontend/src/utils/epubPreview.test.ts",
+    "custom_overlap": false
+  },
+  {
+    "path": "frontend/src/utils/epubPreview.ts",
+    "custom_overlap": false
+  },
+  {
+    "path": "frontend/src/utils/filePreview.test.ts",
+    "custom_overlap": true
+  },
+  {
+    "path": "frontend/src/utils/filePreview.ts",
+    "custom_overlap": true
+  },
+  {
+    "path": "frontend/src/utils/finalAnswer.test.ts",
+    "custom_overlap": false
+  },
+  {
+    "path": "frontend/src/utils/finalAnswer.ts",
+    "custom_overlap": false
+  },
+  {
+    "path": "frontend/src/utils/historyPagination.test.ts",
+    "custom_overlap": false
+  },
+  {
+    "path": "frontend/src/utils/historyPagination.ts",
+    "custom_overlap": false
+  },
+  {
+    "path": "frontend/src/utils/knowledgeTrace.test.ts",
+    "custom_overlap": false
+  },
+  {
+    "path": "frontend/src/utils/knowledgeTrace.ts",
+    "custom_overlap": false
+  },
+  {
+    "path": "frontend/src/utils/manualKnowledgeDraft.test.ts",
+    "custom_overlap": false
+  },
+  {
+    "path": "frontend/src/utils/manualKnowledgeDraft.ts",
+    "custom_overlap": false
+  },
+  {
+    "path": "frontend/src/utils/markdownTitleDedupe.test.ts",
+    "custom_overlap": false
+  },
+  {
+    "path": "frontend/src/utils/markdownTitleDedupe.ts",
+    "custom_overlap": false
+  },
+  {
+    "path": "frontend/src/utils/modelDefaults.test.ts",
+    "custom_overlap": false
+  },
+  {
+    "path": "frontend/src/utils/modelDefaults.ts",
+    "custom_overlap": false
+  },
+  {
+    "path": "frontend/src/utils/pageSnapshot.ts",
+    "custom_overlap": false
+  },
+  {
+    "path": "frontend/src/views/agent/AgentEditorModal.vue",
+    "custom_overlap": false
+  },
+  {
+    "path": "frontend/src/views/agent/AgentList.test.ts",
+    "custom_overlap": false
+  },
+  {
+    "path": "frontend/src/views/agent/AgentList.vue",
+    "custom_overlap": false
+  },
+  {
+    "path": "frontend/src/views/auth/Login.mobile.test.mjs",
+    "custom_overlap": false
+  },
+  {
+    "path": "frontend/src/views/auth/Login.vue",
+    "custom_overlap": false
+  },
+  {
+    "path": "frontend/src/views/automation/AutomationDetail.vue",
+    "custom_overlap": false
+  },
+  {
+    "path": "frontend/src/views/automation/AutomationList.vue",
+    "custom_overlap": false
+  },
+  {
+    "path": "frontend/src/views/automation/automationInteractions.test.ts",
+    "custom_overlap": false
+  },
+  {
+    "path": "frontend/src/views/chat/components/AgentStreamDisplay.progress.test.ts",
+    "custom_overlap": false
+  },
+  {
+    "path": "frontend/src/views/chat/components/AgentStreamDisplay.vue",
+    "custom_overlap": false
+  },
+  {
+    "path": "frontend/src/views/chat/components/ChildAgentTabBar.vue",
+    "custom_overlap": false
+  },
+  {
+    "path": "frontend/src/views/chat/components/HostApprovalCard.vue",
+    "custom_overlap": false
+  },
+  {
+    "path": "frontend/src/views/chat/components/botmsg.vue",
+    "custom_overlap": false
+  },
+  {
+    "path": "frontend/src/views/chat/components/hostApproval.test.ts",
+    "custom_overlap": false
+  },
+  {
+    "path": "frontend/src/views/chat/components/hostApproval.ts",
+    "custom_overlap": false
+  },
+  {
+    "path": "frontend/src/views/chat/index.vue",
+    "custom_overlap": false
+  },
+  {
+    "path": "frontend/src/views/embed/EmbedChatCore.vue",
+    "custom_overlap": false
+  },
+  {
+    "path": "frontend/src/views/integrations/McpServerIntegrationSettings.vue",
+    "custom_overlap": false
+  },
+  {
+    "path": "frontend/src/views/integrations/mcpServerIntegration.test.ts",
+    "custom_overlap": false
+  },
+  {
+    "path": "frontend/src/views/integrations/mcpServerIntegration.ts",
+    "custom_overlap": false
+  },
+  {
+    "path": "frontend/src/views/knowledge/KnowledgeBase.test.ts",
+    "custom_overlap": false
+  },
+  {
+    "path": "frontend/src/views/knowledge/KnowledgeBase.vue",
+    "custom_overlap": false
+  },
+  {
+    "path": "frontend/src/views/knowledge/KnowledgeBaseBatchReparse.test.ts",
+    "custom_overlap": false
+  },
+  {
+    "path": "frontend/src/views/knowledge/KnowledgeBaseEditorModal.vue",
+    "custom_overlap": false
+  },
+  {
+    "path": "frontend/src/views/knowledge/KnowledgeBaseFolderCounts.test.ts",
+    "custom_overlap": false
+  },
+  {
+    "path": "frontend/src/views/knowledge/KnowledgeBaseParserHint.test.ts",
+    "custom_overlap": false
+  },
+  {
+    "path": "frontend/src/views/knowledge/components/DocumentBatchBar.vue",
+    "custom_overlap": false
+  },
+  {
+    "path": "frontend/src/views/knowledge/components/DocumentCardView.vue",
+    "custom_overlap": false
+  },
+  {
+    "path": "frontend/src/views/knowledge/components/DocumentFolderEntries.test.ts",
+    "custom_overlap": false
+  },
+  {
+    "path": "frontend/src/views/knowledge/components/DocumentListView.vue",
+    "custom_overlap": false
+  },
+  {
+    "path": "frontend/src/views/knowledge/components/FAQEntryManager.vue",
+    "custom_overlap": false
+  },
+  {
+    "path": "frontend/src/views/knowledge/components/KbFolderTree.test.ts",
+    "custom_overlap": false
+  },
+  {
+    "path": "frontend/src/views/knowledge/components/KbFolderTree.vue",
+    "custom_overlap": false
+  },
+  {
+    "path": "frontend/src/views/knowledge/components/KnowledgeTagPopover.test.ts",
+    "custom_overlap": false
+  },
+  {
+    "path": "frontend/src/views/knowledge/components/KnowledgeTagPopover.vue",
+    "custom_overlap": false
+  },
+  {
+    "path": "frontend/src/views/knowledge/components/UploadConfirmDialog.test.ts",
+    "custom_overlap": false
+  },
+  {
+    "path": "frontend/src/views/knowledge/components/UploadConfirmDialog.vue",
+    "custom_overlap": false
+  },
+  {
+    "path": "frontend/src/views/knowledge/gallery/ImageGallery.test.ts",
+    "custom_overlap": false
+  },
+  {
+    "path": "frontend/src/views/knowledge/gallery/ImageGallery.vue",
+    "custom_overlap": false
+  },
+  {
+    "path": "frontend/src/views/knowledge/settings/DataSourceEditorDialog.tempDataSource.test.ts",
+    "custom_overlap": false
+  },
+  {
+    "path": "frontend/src/views/knowledge/settings/DataSourceEditorDialog.vue",
+    "custom_overlap": false
+  },
+  {
+    "path": "frontend/src/views/knowledge/settings/DataSourceSyncLogs.vue",
+    "custom_overlap": false
+  },
+  {
+    "path": "frontend/src/views/knowledge/settings/GraphSettings.test.ts",
+    "custom_overlap": false
+  },
+  {
+    "path": "frontend/src/views/knowledge/settings/GraphSettings.vue",
+    "custom_overlap": false
+  },
+  {
+    "path": "frontend/src/views/knowledge/settings/KBChunkingDebug.test.ts",
+    "custom_overlap": false
+  },
+  {
+    "path": "frontend/src/views/knowledge/settings/KBChunkingDebug.vue",
+    "custom_overlap": false
+  },
+  {
+    "path": "frontend/src/views/knowledge/settings/KnowledgeBaseActivityAssistant.test.ts",
+    "custom_overlap": false
+  },
+  {
+    "path": "frontend/src/views/knowledge/settings/KnowledgeBaseActivitySettings.vue",
+    "custom_overlap": false
+  },
+  {
+    "path": "frontend/src/views/knowledge/settings/chunkingSamples.ts",
+    "custom_overlap": false
+  },
+  {
+    "path": "frontend/src/views/knowledge/wiki/WikiBrowser.vue",
+    "custom_overlap": false
+  },
+  {
+    "path": "frontend/src/views/knowledge/wiki/wikiGraphViewport.test.ts",
+    "custom_overlap": false
+  },
+  {
+    "path": "frontend/src/views/organization/OrganizationMemberSearch.test.ts",
+    "custom_overlap": false
+  },
+  {
+    "path": "frontend/src/views/organization/OrganizationSettingsModal.vue",
+    "custom_overlap": false
+  },
+  {
+    "path": "frontend/src/views/settings/DefaultSettings.test.ts",
+    "custom_overlap": false
+  },
+  {
+    "path": "frontend/src/views/settings/DefaultSettings.vue",
+    "custom_overlap": false
+  },
+  {
+    "path": "frontend/src/views/settings/RetrievalSettings.test.ts",
+    "custom_overlap": false
+  },
+  {
+    "path": "frontend/src/views/settings/RetrievalSettings.vue",
+    "custom_overlap": false
+  },
+  {
+    "path": "frontend/src/views/settings/RetrievalSettingsAutosave.test.ts",
+    "custom_overlap": false
+  },
+  {
+    "path": "frontend/src/views/settings/Settings.vue",
+    "custom_overlap": false
+  },
+  {
+    "path": "frontend/src/views/settings/TenantMembers.test.ts",
+    "custom_overlap": false
+  },
+  {
+    "path": "frontend/src/views/settings/TenantMembers.vue",
+    "custom_overlap": false
+  },
+  {
+    "path": "frontend/src/views/settings/components/McpMetadataPanel.vue",
+    "custom_overlap": false
+  },
+  {
+    "path": "frontend/src/views/settings/components/McpServiceDialog.vue",
+    "custom_overlap": false
+  },
+  {
+    "path": "frontend/src/views/settings/defaultSettingsState.test.ts",
+    "custom_overlap": false
+  },
+  {
+    "path": "frontend/src/views/settings/defaultSettingsState.ts",
+    "custom_overlap": false
+  },
+  {
+    "path": "frontend/src/views/system/SystemSettings.vue",
+    "custom_overlap": false
+  },
+  {
+    "path": "frontend/src/views/system/storageQuota.test.ts",
+    "custom_overlap": false
+  },
+  {
+    "path": "frontend/src/views/system/storageQuota.ts",
+    "custom_overlap": false
+  },
+  {
+    "path": "go.mod",
+    "custom_overlap": true
+  },
+  {
+    "path": "go.sum",
+    "custom_overlap": false
+  },
+  {
+    "path": "helm/README.md",
+    "custom_overlap": false
+  },
+  {
+    "path": "helm/templates/app.yaml",
+    "custom_overlap": false
+  },
+  {
+    "path": "helm/tests/test_app_storage.py",
+    "custom_overlap": false
+  },
+  {
+    "path": "helm/values.yaml",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/agent/act.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/agent/act_tool_hint_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/agent/approval/gate.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/agent/approval/gate_host_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/agent/compaction/checkpoint_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/agent/compaction/compactor.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/agent/compaction/fileops.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/agent/compaction/fileops_retention_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/agent/compaction/length_finish_reason_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/agent/compaction/multimodal_overflow_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/agent/compaction/overflow.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/agent/compaction/prepare.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/agent/compaction/serialize.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/agent/const.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/agent/context_debug.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/agent/context_overflow_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/agent/engine.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/agent/engine_image_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/agent/engine_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/agent/failed_tool_loop_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/agent/finalize.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/agent/finalize_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/agent/observe.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/agent/observe_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/agent/operations/artifacts_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/agent/operations/catalog.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/agent/operations/catalog_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/agent/operations/common_management_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/agent/operations/request.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/agent/prompts.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/agent/prompts_shell_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/agent/resume_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/agent/stream_retry_partial_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/agent/think.go",
+    "custom_overlap": true
+  },
+  {
+    "path": "internal/agent/think_overflow_compaction_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/agent/token/estimator.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/agent/token/reasoning_artifacts_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/agent/tools/data_analysis.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/agent/tools/data_analysis_query_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/agent/tools/data_analysis_xls.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/agent/tools/data_analysis_xls_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/agent/tools/host_approval.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/agent/tools/host_approval_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/agent/tools/operations_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/agent/tools/param_cast.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/agent/tools/param_cast_integer_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/agent/tools/python_syntax.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/agent/tools/python_syntax_newlines_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/agent/tools/query_knowledge_graph.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/agent/tools/query_knowledge_graph_budget_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/agent/tools/query_knowledge_graph_evidence_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/agent/tools/query_knowledge_graph_graph_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/agent/tools/query_knowledge_graph_truncation_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/agent/tools/read_file.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/agent/tools/read_file_query_limit_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/agent/tools/read_file_query_snippet_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/agent/tools/sandbox_append_size_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/agent/tools/sandbox_edit.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/agent/tools/sandbox_edit_ambiguity_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/agent/tools/sandbox_write.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/agent/tools/sanitize_messages.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/agent/tools/sanitize_messages_multimodal_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/agent/tools/sanitize_messages_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/agent/tools/search_knowledge.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/agent/tools/shell_exec.go",
+    "custom_overlap": true
+  },
+  {
+    "path": "internal/agent/tools/testdata/legacy.xls",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/agent/tools/workspace_layout_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/agent/tools/workspace_reader.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/application/repository/chunk.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/application/repository/chunk_evidence_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/application/repository/chunk_sqlite_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/application/repository/knowledge.go",
+    "custom_overlap": true
+  },
+  {
+    "path": "internal/application/repository/knowledge_replace.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/application/repository/knowledge_replace_postgres_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/application/repository/knowledge_replace_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/application/repository/message.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/application/repository/message_checkpoint_deletion.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/application/repository/message_checkpoint_deletion_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/application/repository/organization.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/application/repository/organization_sqlite_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/application/repository/retriever/postgres/repository.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/application/repository/retriever/qdrant/repository.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/application/repository/retriever/qdrant/repository_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/application/repository/retriever/sqlite/fts_query_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/application/repository/retriever/sqlite/repository.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/application/repository/retriever/sqlite/repository_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/application/repository/user.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/application/repository/user_tenantless_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/application/repository/web_search_provider.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/application/repository/web_search_provider_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/application/repository/wiki_page.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/application/repository/wiki_page_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/application/service/agent_history_deletion_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/application/service/agent_service.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/application/service/agent_share.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/application/service/agent_share_runtime_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/application/service/audit_log_retention_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/application/service/automation_scheduler.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/application/service/automation_scheduler_timezone_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/application/service/chat_pipeline/extract_entity.go",
+    "custom_overlap": true
+  },
+  {
+    "path": "internal/application/service/chat_pipeline/query_expansion.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/application/service/chat_pipeline/query_expansion_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/application/service/chat_pipeline/rerank.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/application/service/chat_pipeline/rerank_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/application/service/chat_pipeline/search.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/application/service/chat_pipeline/search_entity.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/application/service/chat_pipeline/search_entity_scope_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/application/service/chat_pipeline/search_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/application/service/datasource_atomic_replace_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/application/service/datasource_conflict_skip_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/application/service/datasource_file_header_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/application/service/datasource_filename_ingest_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/application/service/datasource_ingest_ack_helpers_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/application/service/datasource_ingest_ack_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/application/service/datasource_ingest_error.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/application/service/datasource_ingest_rejection_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/application/service/datasource_oversized_file_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/application/service/datasource_service.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/application/service/datasource_service_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/application/service/evaluation.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/application/service/extract_data_table_orphan_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/application/service/image_multimodal.go",
+    "custom_overlap": true
+  },
+  {
+    "path": "internal/application/service/image_multimodal_resolve_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/application/service/knowledge_auto_tag.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/application/service/knowledge_auto_tag_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/application/service/knowledge_create.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/application/service/knowledge_datasource_replace.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/application/service/knowledge_datasource_replace_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/application/service/knowledge_delete.go",
+    "custom_overlap": true
+  },
+  {
+    "path": "internal/application/service/knowledge_delete_plan.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/application/service/knowledge_housekeeping.go",
+    "custom_overlap": true
+  },
+  {
+    "path": "internal/application/service/knowledge_housekeeping_queue_scan_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/application/service/knowledge_process.go",
+    "custom_overlap": true
+  },
+  {
+    "path": "internal/application/service/knowledge_process_budget_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/application/service/knowledge_process_config_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/application/service/knowledge_process_index_retry_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/application/service/knowledge_process_inline_image_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/application/service/knowledge_process_parent_child_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/application/service/knowledge_process_questions_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/application/service/knowledge_process_span_retry_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/application/service/knowledge_span_tracker.go",
+    "custom_overlap": true
+  },
+  {
+    "path": "internal/application/service/knowledge_summary_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/application/service/knowledge_util_filetype_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/application/service/knowledgebase.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/application/service/knowledgebase_generated_questions.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/application/service/knowledgebase_search.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/application/service/knowledgebase_search_embedding_dimension_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/application/service/knowledgebase_search_embedding_kb_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/application/service/knowledgebase_search_fanout.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/application/service/knowledgebase_search_partial_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/application/service/knowledgebase_search_rerank.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/application/service/knowledgebase_search_rerank_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/application/service/knowledgebase_vlm_update_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/application/service/knowledgebase_wiki_cleanup_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/application/service/memory/extract.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/application/service/memory/extract_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/application/service/memory/scope.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/application/service/memory/scope_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/application/service/metric/bleu.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/application/service/metric/bleu_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/application/service/metric/common.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/application/service/metric/common_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/application/service/metric/map.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/application/service/metric/map_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/application/service/metric/ndcg.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/application/service/metric/ndcg_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/application/service/model.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/application/service/model_defaults_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/application/service/retriever/composite.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/application/service/retriever/composite_partial_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/application/service/retriever/keywords_vector_hybrid_indexer.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/application/service/retriever/keywords_vector_hybrid_indexer_window_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/application/service/session.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/application/service/session_agent_image_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/application/service/session_agent_qa.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/application/service/session_attachment_staging.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/application/service/session_attachment_staging_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/application/service/session_delete_host_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/application/service/session_knowledge_qa.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/application/service/session_model_requirement_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/application/service/session_title.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/application/service/session_title_generation_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/application/service/session_title_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/application/service/shell_job_followup_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/application/service/storagebackend_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/application/service/system_setting.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/application/service/temporary_document_csv_limits_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/application/service/temporary_document_parse.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/application/service/tenant.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/application/service/tenant_skill_install.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/application/service/tenant_skill_source.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/application/service/tenant_skill_source_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/application/service/tenant_skill_source_utf8_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/application/service/tenant_skill_stale_sandbox_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/application/service/tenant_storage_quota.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/application/service/tenant_storage_quota_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/application/service/tenant_storagebackend_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/application/service/web_search_provider.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/application/service/wiki_ingest.go",
+    "custom_overlap": true
+  },
+  {
+    "path": "internal/application/service/wiki_ingest_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/automation/trigger.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/automation/trigger_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/background/listeners_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/common/tools.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/common/truncate_utf8_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/config/config.go",
+    "custom_overlap": true
+  },
+  {
+    "path": "internal/config/config_read_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/container/sandbox_host.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/container/sandbox_host_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/database/migration_sqlite_versioned_schema_test.go",
+    "custom_overlap": true
+  },
+  {
+    "path": "internal/datasource/connector/dingtalk/connector.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/datasource/connector/dingtalk/sync_safety_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/datasource/connector/feishu/core/client.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/datasource/connector/feishu/core/engine.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/datasource/connector/feishu/core/engine_full_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/datasource/connector/feishu/core/truncate_utf8_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/datasource/connector/feishu/core/types.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/datasource/connector/feishu/core/wiki_shortcuts.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/datasource/connector/feishu/drive/connector.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/datasource/connector/feishu/drive/junk_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/datasource/connector/feishu/wiki/connector.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/datasource/connector/ima/client.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/datasource/connector/ima/truncate_utf8_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/datasource/connector/yuque/client.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/datasource/connector/yuque/client_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/datasource/connector/yuque/truncate_utf8_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/envfile/envfile.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/envfile/envfile_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/event/event_data.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/handler/dto/model.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/handler/embed_channel.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/handler/embed_channel_update_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/handler/hybrid_search_body_limit_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/handler/initialization.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/handler/knowledge.go",
+    "custom_overlap": true
+  },
+  {
+    "path": "internal/handler/knowledge_rebuild_index_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/handler/knowledgebase.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/handler/knowledgebase_body_limit_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/handler/mcp_service.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/handler/mcp_usage_instructions.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/handler/sandbox_check.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/handler/sandbox_check_probe_line_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/handler/session/agent_stream_approval_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/handler/session/agent_stream_handler.go",
+    "custom_overlap": true
+  },
+  {
+    "path": "internal/handler/session/artifact_library.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/handler/session/attachment_processor.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/handler/session/attachment_processor_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/handler/session/resource_urls.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/handler/session/resource_urls_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/handler/settings_operations_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/handler/system.go",
+    "custom_overlap": true
+  },
+  {
+    "path": "internal/handler/system_storage_quota_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/handler/tenant.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/handler/tenant_default_settings.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/handler/tenant_default_settings_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/handler/tool_approval_decision_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/handler/upload_limit.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/handler/workspace_operations_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/im/feishu/adapter.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/im/feishu/adapter_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/im/feishu/content_disposition_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/im/feishu/factory.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/im/feishu/longconn.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/im/feishu/longconn_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/im/im_attachment_filename_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/im/mattermost/client.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/im/mattermost/truncate_utf8_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/im/resource_storage_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/im/service.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/infrastructure/chunker/protected_spans_order_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/infrastructure/chunker/splitter.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/infrastructure/chunker/strategy.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/infrastructure/chunker/strategy_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/infrastructure/docparser/anydoc/anydoc.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/infrastructure/docparser/anydoc/anydoc_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/infrastructure/docparser/anydoc/backend_cgo.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/infrastructure/docparser/anydoc/backend_stub.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/infrastructure/docparser/anydoc/pdf_structure_linked_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/infrastructure/docparser/anydoc/resource_limit_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/infrastructure/docparser/anydoc_pptx_vector_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/infrastructure/docparser/anydoc_reader.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/infrastructure/docparser/anydoc_reader_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/infrastructure/docparser/builtin_converter.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/infrastructure/docparser/builtin_image_filename_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/infrastructure/docparser/csv_converter.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/infrastructure/docparser/csv_converter_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/infrastructure/docparser/csv_limits_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/infrastructure/docparser/engine_registry_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/infrastructure/docparser/image_resolver.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/infrastructure/docparser/image_resolver_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/infrastructure/docparser/mineru_cloud_converter.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/infrastructure/docparser/mineru_cloud_download_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/infrastructure/docparser/mineru_cloud_parts.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/infrastructure/docparser/mineru_cloud_parts_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/infrastructure/docparser/mineru_converter.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/infrastructure/docparser/mineru_v1_client.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/infrastructure/docparser/mineru_v1_client_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/infrastructure/docparser/text_decode_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/infrastructure/web_fetch/fetcher.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/infrastructure/web_fetch/fetcher_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/infrastructure/web_search/duckduckgo.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/infrastructure/web_search/duckduckgo_utf8_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/localsandbox/adapter/adapter.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/localsandbox/adapter/adapter_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/localsandbox/adapter/approval.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/localsandbox/adapter/approval_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/localsandbox/adapter/layout.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/localsandbox/aliases.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/localsandbox/approval.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/localsandbox/core/command.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/localsandbox/core/command_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/localsandbox/core/denial.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/localsandbox/core/denial_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/localsandbox/core/escalation.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/localsandbox/core/escalation_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/localsandbox/core/pathguard.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/localsandbox/core/pathguard_file.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/localsandbox/core/policy.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/localsandbox/core/policy_builder.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/localsandbox/core/policy_builder_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/localsandbox/core/workspace.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/localsandbox/core/workspace_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/localsandbox/seatbelt/backend.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/localsandbox/seatbelt/backend_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/localsandbox/seatbelt/compiler.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/localsandbox/seatbelt/compiler_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/localsandbox/service.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/localsandbox/service_approval_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/localsandbox/session_state.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/localsandbox/session_state_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/logger/logger.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/logger/logger_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/mcpserver/kb_selectors_validation_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/mcpserver/scope.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/mcpserver/tools_ask.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/mcpserver/tools_retrieve.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/mcpserver/tools_search_documents_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/mcpserver/tools_wiki.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/modelcontext/citations.go",
+    "custom_overlap": true
+  },
+  {
+    "path": "internal/modelcontext/citations_literal_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/modelcontext/graph_truncation_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/modelcontext/model_output.go",
+    "custom_overlap": true
+  },
+  {
+    "path": "internal/modelcontext/sources_test.go",
+    "custom_overlap": true
+  },
+  {
+    "path": "internal/models/api/anthropicmessages/anthropicmessages_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/models/api/anthropicmessages/request.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/models/api/googlegenai/client.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/models/api/googlegenai/googlegenai_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/models/api/json_field_extractor.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/models/api/json_field_extractor_semantics_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/models/api/openaicompletions/client.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/models/api/openaicompletions/dsml.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/models/api/openaicompletions/dsml_recovery_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/models/api/openaicompletions/dsml_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/models/api/openaicompletions/stream_tool_index_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/models/api/openairesponses/client.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/models/api/openairesponses/refusal_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/models/api/sse.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/models/api/sse_framing_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/models/chat/ollama.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/models/chat/ollama_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/models/legacy_keys.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/models/limiter/heartbeat_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/models/limiter/limiter.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/models/parity/rerank_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/models/parity/testdata/catalog-baseline.json",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/models/providers/generic.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/models/providers/gpustack.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/models/providers/litellm.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/models/rerank/protocol_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/models/vlm/remote_api.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/models/vlm/remote_api_max_tokens_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/models/vlm/weknoracloud.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/models/vlm/weknoracloud_response_limit_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/reranking/passage.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/reranking/passage_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/router/router.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/router/router_api_key_capabilities_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/router/router_static_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/router/routes_knowledge.go",
+    "custom_overlap": true
+  },
+  {
+    "path": "internal/router/static.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/router/task_inspector.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/sandbox/activity_registry_redis_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/sandbox/command_approval.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/sandbox/command_approval_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/sandbox/docker_remote_client.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/sandbox/docker_remote_client_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/sandbox/docker_remote_client_utf8_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/sandbox/issue3910_repro_integration_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/sandbox/remote_errors.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/sandbox/remote_fake_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/sandbox/session_input_rebind_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/sandbox/session_lifecycle.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/sandbox/session_lifecycle_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/sandbox/session_manager.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/sandbox/session_manager_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/types/agent.go",
+    "custom_overlap": true
+  },
+  {
+    "path": "internal/types/agent_prompt.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/types/chat_manage.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/types/default_settings.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/types/default_settings_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/types/generated_question_retrieval.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/types/generated_question_retrieval_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/types/interfaces/chunk.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/types/interfaces/knowledge.go",
+    "custom_overlap": true
+  },
+  {
+    "path": "internal/types/interfaces/knowledgebase.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/types/interfaces/task_inspector.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/types/interfaces/web_search_provider.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/types/interfaces/wiki_page.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/types/knowledge.go",
+    "custom_overlap": true
+  },
+  {
+    "path": "internal/types/message_artifact.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/types/model.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/types/retriever.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/types/search.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/types/tenant.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/types/vectorstore.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/types/vectorstore_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/utils/import_filetypes.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/utils/import_filetypes_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/utils/inject.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/utils/inject_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "internal/utils/security_test.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "mcp-server/test_chat_async_preflight.py",
+    "custom_overlap": false
+  },
+  {
+    "path": "mcp-server/test_chat_sse.py",
+    "custom_overlap": false
+  },
+  {
+    "path": "mcp-server/weknora_mcp_server.py",
+    "custom_overlap": false
+  },
+  {
+    "path": "migrations/sqlite/000051_tenant_default_settings.down.sql",
+    "custom_overlap": false
+  },
+  {
+    "path": "migrations/sqlite/000051_tenant_default_settings.up.sql",
+    "custom_overlap": false
+  },
+  {
+    "path": "migrations/versioned/000134_tenant_default_settings.down.sql",
+    "custom_overlap": false
+  },
+  {
+    "path": "migrations/versioned/000134_tenant_default_settings.up.sql",
+    "custom_overlap": false
+  },
+  {
+    "path": "scripts/docker-entrypoint.sh",
+    "custom_overlap": false
+  },
+  {
+    "path": "scripts/docker-entrypoint_test.sh",
+    "custom_overlap": false
+  },
+  {
+    "path": "scripts/git-hooks/common.sh",
+    "custom_overlap": false
+  },
+  {
+    "path": "scripts/start_all.sh",
+    "custom_overlap": false
+  },
+  {
+    "path": "scripts/test-git-hooks.sh",
+    "custom_overlap": false
+  },
+  {
+    "path": "third_party/anydoc-go/errors.go",
+    "custom_overlap": false
+  },
+  {
+    "path": "website-docs/01-getting-started/02-installation.md",
+    "custom_overlap": false
+  },
+  {
+    "path": "website-docs/01-getting-started/04-configuration.md",
+    "custom_overlap": false
+  },
+  {
+    "path": "website-docs/02-architecture/02-backend-design.md",
+    "custom_overlap": false
+  },
+  {
+    "path": "website-docs/02-architecture/03-document-pipeline.md",
+    "custom_overlap": false
+  },
+  {
+    "path": "website-docs/03-features/03-document-parsing.md",
+    "custom_overlap": false
+  },
+  {
+    "path": "website-docs/03-features/06-models.md",
+    "custom_overlap": false
+  },
+  {
+    "path": "website-docs/03-features/08-mcp.md",
+    "custom_overlap": false
+  },
+  {
+    "path": "website-docs/03-features/10-datasource.md",
+    "custom_overlap": false
+  },
+  {
+    "path": "website-docs/03-features/16-observability.md",
+    "custom_overlap": false
+  },
+  {
+    "path": "website-docs/03-features/20-platform-admin.md",
+    "custom_overlap": false
+  },
+  {
+    "path": "website-docs/03-features/22-skills-sandbox.md",
+    "custom_overlap": false
+  },
+  {
+    "path": "website-docs/04-api/02-api-knowledge.md",
+    "custom_overlap": false
+  },
+  {
+    "path": "website-docs/04-api/02-api-sandbox-skills.md",
+    "custom_overlap": false
+  },
+  {
+    "path": "website-docs/04-api/02-api-tenant.md",
+    "custom_overlap": false
+  },
+  {
+    "path": "website-docs/05-clients/07-claw-skill.md",
+    "custom_overlap": false
+  },
+  {
+    "path": "website-docs/06-development/04-sandbox-deployment.md",
+    "custom_overlap": false
+  },
+  {
+    "path": "website-docs/public/screenshots/kb-document-toolbar-wrapping.png",
+    "custom_overlap": false
+  },
+  {
+    "path": "website-docs/public/screenshots/sandbox-session-skill-rollout.png",
+    "custom_overlap": false
+  },
+  {
+    "path": "website-docs/public/screenshots/sandbox-user-skill-rollout.png",
+    "custom_overlap": false
+  }
+]
