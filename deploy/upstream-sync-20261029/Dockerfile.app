@@ -7,4 +7,6 @@ COPY runtime/upstream-20261029/ljc-migrate /app/ljc-migrate
 COPY migrations /app/migrations-next-sync
 RUN mv /app/migrations /app/migrations-before-sync-20261023 && mv /app/migrations-next-sync /app/migrations
 COPY config /app/config
+# Worktrees may be created under a private umask; runtime runs as appuser.
+RUN chmod -R a+rX /app/config /app/migrations
 COPY THIRD_PARTY_NOTICES.md /app/THIRD_PARTY_NOTICES.md
