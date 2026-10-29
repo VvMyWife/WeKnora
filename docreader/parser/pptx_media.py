@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import base64
+import binascii
 import io
 import logging
 import os
@@ -19,6 +20,10 @@ logger = logging.getLogger(__name__)
 _MARKDOWN_IMAGE = re.compile(r"!\[([^\]]*)\]\(([^)]+)\)")
 _RASTER_EXT = {".png", ".jpg", ".jpeg", ".gif", ".webp", ".bmp"}
 _VECTOR_EXT = {".wmf", ".emf", ".svg"}
+_VECTOR_DATA_URI = re.compile(
+    r"^data:image/(x-wmf|wmf|x-emf|emf|svg\+xml);base64,(.*)$", re.IGNORECASE
+)
+_VECTOR_MIME_SUFFIX = {"x-wmf": ".wmf", "wmf": ".wmf", "x-emf": ".emf", "emf": ".emf", "svg+xml": ".svg"}
 
 
 def _find_convert() -> str | None:
@@ -198,6 +203,22 @@ def attach_pptx_media_to_markdown(
 
     def repl(match: re.Match[str]) -> str:
         alt, url = match.group(1), match.group(2)
+        inline_vector = _VECTOR_DATA_URI.match(url)
+        if inline_vector:
+            # Some vector formats are recognized by Pillow/MarkItDown, so they
+            # arrive as data URIs rather than fallback placeholders. Normalize
+            # them before MarkdownParser creates unsupported .x-wmf assets.
+            try:
+                raw = base64.b64decode(inline_vector.group(2), validate=True)
+            except (ValueError, binascii.Error):
+                return match.group(0)
+            suffix = _VECTOR_MIME_SUFFIX[inline_vector.group(1).lower()]
+            png = rasterize_media_bytes("inline" + suffix, raw)
+            if not png:
+                return match.group(0)
+            ref = f"images/{uuid.uuid4()}.png"
+            images[ref] = base64.b64encode(png).decode()
+            return f"![{alt}]({ref})"
         if not _is_unresolved_image_ref(url):
             return match.group(0)
         pending = sources.get(url)
@@ -223,5 +244,6 @@ def attach_pptx_media_to_markdown(
 
 def markdown_needs_pptx_media_attach(markdown: str) -> bool:
     return any(
-        _is_unresolved_image_ref(m.group(2)) for m in _MARKDOWN_IMAGE.finditer(markdown)
+        (_is_unresolved_image_ref(m.group(2)) or _VECTOR_DATA_URI.match(m.group(2)))
+        for m in _MARKDOWN_IMAGE.finditer(markdown)
     )

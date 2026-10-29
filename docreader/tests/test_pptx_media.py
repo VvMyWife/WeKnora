@@ -369,3 +369,51 @@ class TestPptxRasterTransparency(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+class TestPptxInlineVector(unittest.TestCase):
+    def test_vector_data_uri_types_are_rasterized(self):
+        for mime in ("x-wmf", "wmf", "x-emf", "emf", "svg+xml"):
+            with self.subTest(mime=mime):
+                data = deck([RED])
+                markdown = "![figure](data:image/" + mime + ";base64," + base64.b64encode(b"vector").decode() + ")"
+                self.assertTrue(pptx_media.markdown_needs_pptx_media_attach(markdown))
+                with patch.object(pptx_media, "rasterize_media_bytes", return_value=png(RED)) as raster:
+                    text, images = pptx_media.attach_pptx_media_to_markdown(markdown, data)
+                self.assertEqual(len(images), 1)
+                self.assertEqual(image_colors(text, images), [RED])
+                self.assertTrue(raster.call_args.args[0].endswith(".svg" if mime=="svg+xml" else "."+mime.replace("x-","")))
+
+    def test_failed_or_invalid_inline_vector_preserves_reference(self):
+        for encoded in ("not-base64!", base64.b64encode(b"bad-vector").decode()):
+            markdown = "![figure](data:image/x-wmf;base64,"+encoded+")"
+            with patch.object(pptx_media, "rasterize_media_bytes", return_value=None):
+                self.assertEqual(pptx_media.attach_pptx_media_to_markdown(markdown,deck([RED])),(markdown,{}))
+
+    @unittest.skipUnless(shutil.which("convert"), "ImageMagick is not installed")
+    def test_real_wmf_data_uri_survives_markitdown_pipeline(self):
+        import struct
+        def rec(fn,*params):
+            return struct.pack("<IH",3+len(params),fn)+struct.pack("<"+"H"*len(params),*params)
+        records=rec(0x0103,8)+rec(0x020B,0,0)+rec(0x020C,1000,1000)+rec(0x041B,900,900,100,100)+rec(0)
+        header=struct.pack("<I H hhhh H I",0x9AC6CDD7,0,0,0,1000,1000,1440,0)
+        checksum=0
+        for word in struct.unpack("<10H",header): checksum^=word
+        wmf=header+struct.pack("<H",checksum)+struct.pack("<HHHIHIH",1,9,0x300,(18+len(records))//2,0,7,0)+records
+        with zipfile.ZipFile(io.BytesIO(deck([RED]))) as z:
+            files={n:z.read(n) for n in z.namelist()}
+        old=next(n for n in files if n.startswith("ppt/media/"))
+        new=old.rsplit(".",1)[0]+".wmf"
+        files[new]=wmf; del files[old]
+        for name in list(files):
+            if name.endswith(".rels"):
+                files[name]=files[name].replace(old.split("/")[-1].encode(),new.split("/")[-1].encode())
+        files["[Content_Types].xml"]=files["[Content_Types].xml"].replace(b'Extension="png" ContentType="image/png"',b'Extension="wmf" ContentType="image/x-wmf"')
+        out=io.BytesIO()
+        with zipfile.ZipFile(out,"w",zipfile.ZIP_DEFLATED) as z:
+            for name,value in files.items():z.writestr(name,value)
+        document=MarkitdownParser(file_type="pptx").parse(out.getvalue())
+        self.assertTrue(document.images)
+        self.assertNotIn(".x-wmf",document.content)
+        for encoded in document.images.values():
+            with Image.open(io.BytesIO(base64.b64decode(encoded))) as im:
+                self.assertEqual(im.format,"PNG")

@@ -55,6 +55,7 @@ else
  docker build -f deploy/upstream-sync-20261029/Dockerfile.app --build-arg SOURCE_REVISION="$revision" -t "weknora-app:ljc-sync-$short" .
  docker build -f deploy/upstream-sync-20261029/Dockerfile.frontend --build-arg SOURCE_REVISION="$revision" -t "weknora-ui-custom:ljc-sync-$short" .
  docker build -f deploy/upstream-sync-20261029/Dockerfile.docreader --build-arg SOURCE_REVISION="$revision" -t "weknora-docreader:ljc-sync-$short" .
+  test "$(git rev-parse HEAD)" = "$revision" && test -z "$(git status --porcelain)" || { echo 'Source changed during build; reject artifacts and rebuild after committing' >&2; exit 1; }
  python3 - "$revision" "$short" <<'PY'
 import json,subprocess,sys
 from pathlib import Path
