@@ -3,3 +3,6 @@ FROM ${BASE_IMAGE}
 ARG SOURCE_REVISION
 LABEL org.opencontainers.image.revision=${SOURCE_REVISION} ljc.operation=upstream-20261029
 COPY frontend-custom/dist/ /usr/share/nginx/html/
+
+# Vite preserves public-asset permissions inherited from the private worktree.
+RUN chmod -R a+rX /usr/share/nginx/html
