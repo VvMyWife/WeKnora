@@ -270,15 +270,8 @@ func (g *pgRepository) KeywordsRetrieve(ctx context.Context,
 		SQL:  "(is_enabled IS NULL OR is_enabled = ?)",
 		Vars: []interface{}{true},
 	})
-	if exclusion := generatedQuestionExclusionClause(params.ExcludeGeneratedQuestionKBIDs); exclusion != nil {
-		conds = append(conds, exclusion)
-	}
-	conds = append(conds, clause.OrderBy{Columns: []clause.OrderByColumn{
-		{Column: clause.Column{Name: "score"}, Desc: true},
-	}})
-
 	var embeddingDBList []pgVectorWithScore
-	err = g.db.WithContext(ctx).Clauses(conds...).
+	query := g.db.WithContext(ctx).Model(&pgVectorWithScore{}).Clauses(conds...).
 		Select([]string{
 			scoreFunction + "(id) as score",
 			"id",
@@ -289,9 +282,17 @@ func (g *pgRepository) KeywordsRetrieve(ctx context.Context,
 			"knowledge_id",
 			"knowledge_base_id",
 			"tag_id",
-		}).
-		Limit(int(params.TopK)).
-		Find(&embeddingDBList).Error
+		})
+	if exclusion := generatedQuestionExclusionClause(params.ExcludeGeneratedQuestionKBIDs); exclusion != nil {
+		// pg_search 0.25 cannot plan the row-dependent generated-question predicate
+		// inside its BM25 custom scan. Materialize scored matches first, then filter
+		// before LIMIT so excluded high-scoring questions cannot crowd out results.
+		err = g.db.WithContext(ctx).Raw(`WITH keyword_candidates AS MATERIALIZED (?)
+			SELECT * FROM keyword_candidates WHERE ? ORDER BY score DESC LIMIT ?`,
+			query, exclusion, int(params.TopK)).Scan(&embeddingDBList).Error
+	} else {
+		err = query.Clauses(clause.OrderBy{Columns: []clause.OrderByColumn{{Column: clause.Column{Name: "score"}, Desc: true}}}).Limit(int(params.TopK)).Find(&embeddingDBList).Error
+	}
 
 	if err == gorm.ErrRecordNotFound {
 		logger.GetLogger(ctx).Warnf("[Postgres] No records found for keywords query: %s", params.Query)
