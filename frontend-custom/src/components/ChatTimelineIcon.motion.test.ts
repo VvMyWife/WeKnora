@@ -24,7 +24,7 @@ let css: string
 before(async () => {
   server = await createServer({
     configFile: false, optimizeDeps: { noDiscovery: true, entries: [] }, plugins: [vue()],
-    server: { middlewareMode: true, hmr: false }, appType: 'custom',
+    server: { middlewareMode: true, hmr: false, watch: null }, appType: 'custom',
   })
   Icon = (await server.ssrLoadModule('/src/components/ChatTimelineIcon.vue')).default
   const { descriptor } = parse(source)
