@@ -1,0 +1,158 @@
+{
+  "checked_at": "2026-10-30T01:36:32.932549+00:00",
+  "image_source_sha": "fda761a6bbdbd7158b7fe2544ee4567b86e44910",
+  "upstream_sha": "e8e0d2ed4bd660c46313884d2f2b3b243d7c318d",
+  "tests": {
+    "backend": "passed",
+    "asynq_unlimited": "passed",
+    "native_anydoc": "passed",
+    "official_frontend": {
+      "total": 2355,
+      "passed": 2354,
+      "skipped": 1
+    },
+    "custom_frontend": {
+      "total": 2400,
+      "passed": 2399,
+      "skipped": 1
+    },
+    "docreader": {
+      "total": 496,
+      "passed": 484,
+      "skipped": 12
+    },
+    "sdk_cli": "passed",
+    "mcp_default": 6,
+    "mcp_sse_preflight": 31,
+    "sandbox_tls_real_rounds": 2,
+    "real_bm25_filter_and_limit": "passed"
+  },
+  "runtime_checks": {
+    "realfile": {
+      "status": "passed",
+      "evidence": "realfile-results.json"
+    },
+    "archive-external": {
+      "status": "passed",
+      "evidence": "archive-external-results.json"
+    },
+    "archive-version": {
+      "status": "passed",
+      "evidence": "archive-version-results.json"
+    },
+    "control-retry": {
+      "status": "passed",
+      "evidence": "control-retry-results.json"
+    },
+    "formats-defaults": {
+      "status": "passed",
+      "evidence": "formats-defaults-results.json"
+    },
+    "permissions": {
+      "status": "passed",
+      "evidence": "permissions-results.json"
+    },
+    "automation-crud": {
+      "status": "passed",
+      "evidence": "automation-crud-results.json"
+    },
+    "approval": {
+      "status": "passed",
+      "evidence": "approval-results.json"
+    },
+    "graph_scope": {
+      "status": "passed",
+      "documents": 2,
+      "nodes": [
+        4,
+        4
+      ],
+      "relationships": [
+        2,
+        2
+      ],
+      "wiki_pages": [
+        1,
+        1
+      ]
+    },
+    "citation_agent": {
+      "session_id": "7afd40fc-2b86-46e5-ac6a-3de41649fa18",
+      "fact_17": true,
+      "bound_citation_observed": true,
+      "citation_count": 1,
+      "repair_attempted": false,
+      "raw_saved_privately": true
+    },
+    "citation_quick": {
+      "session_id": "ca613164-e2e6-44a1-a689-70d6773dccd2",
+      "fact_17": true,
+      "bound_citation_observed": true,
+      "citation_count": 1,
+      "repair_attempted": false,
+      "raw_saved_privately": true
+    },
+    "migration": {
+      "fresh": {
+        "official": "134:false",
+        "custom": "4:false",
+        "repeated_up": "passed",
+        "fingerprints_preserved": true
+      },
+      "current128": {
+        "official": "134:false",
+        "custom": "4:false",
+        "repeated_up": "passed",
+        "fingerprints_preserved": true
+      },
+      "prior133": {
+        "official": "134:false",
+        "custom": "4:false",
+        "repeated_up": "passed",
+        "fingerprints_preserved": true
+      }
+    },
+    "rollback": {
+      "database": "ljc_sync_rollback128",
+      "dirty_ledger_refused": true,
+      "dirty_attempt_data_unchanged": true,
+      "snapshot_restore_official": "128:false",
+      "snapshot_restore_personal": "4:false",
+      "protected_counts_and_content_preserved": true,
+      "production_modified": false
+    }
+  },
+  "browser": {
+    "original_pdf": "passed",
+    "archive_graph": "passed",
+    "default_settings": "passed",
+    "context_assistant": "passed",
+    "final_console_errors": 0,
+    "final_console_warnings": 0,
+    "evidence_local": "output/playwright/20261029-*.png and 20261030-final-*.png"
+  },
+  "production_deployed": false,
+  "production_baseline_unchanged": true,
+  "candidate_states": {
+    "ljc-sync-20261029-app": "exited",
+    "ljc-sync-20261029-frontend": "exited",
+    "ljc-sync-20261029-docreader": "exited",
+    "ljc-sync-20261029-redis": "exited",
+    "ljc-sync-20261029-neo4j": "exited",
+    "ljc-sync-20261029-qwen": "exited",
+    "ljc-sync-20261029-docker": "exited",
+    "ljc-sync-20261029-postgres": "exited"
+  },
+  "limitations": [
+    "GPU Qwen9B acceptance uses 4-bit quantization,16K context,8K output; production precision/49K/long-load not validated",
+    "No throughput benchmark or exhaustive model factuality evaluation",
+    "Real WMF tested; EMF routing unit-tested, no real EMF file run",
+    "Third-party live credential/provider combinations not exhaustively exercised"
+  ],
+  "failed_attempts_retained": [
+    "custom-ui.status=123 is the earlier failed run; custom-final-tests.status=0 and custom-build.log are final passing evidence",
+    "PPTX fixture smaller than64px was intentionally filtered; document-sized WMF passes",
+    "DocReader invocation missing init/testdata failed; final correct invocation passed",
+    "First dirty-ledger proof lacked gojieba dictionary mount; corrected proof refused dirty state and restored snapshot"
+  ]
+}

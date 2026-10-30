@@ -47,3 +47,9 @@
 - Do not configure GitLab or an automatic push hook/cron. Preserve push.default=nothing and explicit branch selection.
 - Detailed manual commands and interruption checks: docs/custom-delivery/README.md.
 - Current push credential path: server Ubuntu has no GitHub SSH key; use the existing Windows Git Credential Manager over HTTPS with a verified Git bundle, as documented in docs/custom-delivery/README.md. Do not probe unrelated deployment keys or disable host-key checks.
+
+## Current full integration scope (2026-10-29, delivered 2026-10-30)
+- This batch freezes upstream e8e0d2ed and accepts all upstream frontend features in frontend-custom, retaining all custom behavior. Earlier checkbox selections and module-by-module approval are superseded. Ask only for incompatible business choices.
+- Integration worktree: /home/ubuntu/RAG_Weknora-upstream-20261029; candidate loopback ports 28281/28282. 28182 stays retired. No production18182 deployment or production migration in this batch.
+- Never checkout/reset the production-config-mounted 20261020 worktree. Maintenance worktree is 20261023.
+- See docs/upstream-sync-20261029/README.md for reproducible tests, image/source mapping, restart self-checks and recovery.

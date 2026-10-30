@@ -1,0 +1,19 @@
+{
+  "source_sha": "fda761a6bbdbd7158b7fe2544ee4567b86e44910",
+  "upstream_sha": "e8e0d2ed4bd660c46313884d2f2b3b243d7c318d",
+  "images": {
+    "app": {
+      "tag": "weknora-app:ljc-sync-fda761a6b",
+      "id": "sha256:54d78aeee7b146c5b38c073f99b64fea68e0320f2157af5adf82f6bdfabe770b"
+    },
+    "frontend": {
+      "tag": "weknora-ui-custom:ljc-sync-fda761a6b",
+      "id": "sha256:221a5a858377ec1f76554c627930d41a6ee8a4fa9a39026e119970ae4c6adb0f"
+    },
+    "docreader": {
+      "tag": "weknora-docreader:ljc-sync-fda761a6b",
+      "id": "sha256:837d657ec54c8c1f12662657d5ca65ad792b836225efa441b6d36a11baaf4068"
+    }
+  },
+  "production_deployed": false
+}

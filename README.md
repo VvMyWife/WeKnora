@@ -445,3 +445,8 @@ Thanks to everyone who has contributed:
 ## License
 
 This project is licensed under the [MIT License](./LICENSE). You are free to use, modify, and distribute the code with proper attribution.
+
+
+## 本地定制维护与2026-10-29同步验收
+
+完整步骤、版本边界、测试、候选运行和恢复命令见 [同步使用说明](docs/upstream-sync-20261029/README.md)。本批不发布生产18182。
