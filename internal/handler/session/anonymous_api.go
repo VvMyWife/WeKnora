@@ -190,6 +190,19 @@ func (h *Handler) anonymousChat(c *gin.Context) {
 	ctx = logger.WithPrivateContent(ctx)
 	var usageMu sync.Mutex
 	var observedUsage types.TokenUsage
+	firstToken := time.Duration(0)
+	defer func() {
+		usageMu.Lock()
+		defer usageMu.Unlock()
+		errorType := "none"
+		if e != nil {
+			errorType = "execution_error"
+		}
+		if ctx.Err() != nil {
+			errorType = "canceled_or_timeout"
+		}
+		logger.Infof(c.Request.Context(), "anonymous_api request=%s ip=%s profile=%s first_token_ms=%d duration_ms=%d prompt_tokens=%d completion_tokens=%d total_tokens=%d status=%d error_type=%s", id, ip, p.ID, firstToken.Milliseconds(), time.Since(started).Milliseconds(), observedUsage.PromptTokens, observedUsage.CompletionTokens, observedUsage.TotalTokens, c.Writer.Status(), errorType)
+	}()
 	ctx = modelapi.WithUsageObserver(ctx, func(u types.TokenUsage) { usageMu.Lock(); defer usageMu.Unlock(); observedUsage.Accumulate(u) })
 	ctx, a, e := h.anonymousIdentity(ctx, cfg, p)
 	if e != nil {
@@ -240,7 +253,6 @@ func (h *Handler) anonymousChat(c *gin.Context) {
 	var stateMu sync.Mutex
 	closed := false
 	truncated := false
-	firstToken := time.Duration(0)
 	projector := newAnonymousProjector()
 	streamStarted := false
 	send := func(data any) error {
@@ -425,7 +437,6 @@ func (h *Handler) anonymousChat(c *gin.Context) {
 		extra["choices"] = []gin.H{{"index": 0, "message": gin.H{"role": "assistant", "content": text}, "finish_reason": finish}}
 		c.JSON(200, extra)
 	}
-	logger.Infof(c.Request.Context(), "anonymous_api request=%s ip=%s profile=%s first_token_ms=%d duration_ms=%d", id, ip, p.ID, firstToken.Milliseconds(), time.Since(started).Milliseconds())
 }
 func anonymousUsage(u *types.TokenUsage) any {
 	if u == nil {

@@ -88,6 +88,7 @@ type anonSessions struct {
 	seen      []*types.QARequest
 	cancelled bool
 	wait      bool
+	fail      bool
 }
 
 func (s *anonSessions) CreateSession(_ context.Context, v *types.Session) (*types.Session, error) {
@@ -97,6 +98,11 @@ func (s *anonSessions) KnowledgeQA(ctx context.Context, r *types.QARequest, b *e
 	s.seen = append(s.seen, r)
 	if r.CustomAgent.Config.AccessLevel != types.AssistantAccessReadOnly || r.CustomAgent.Config.MCPSelectionMode != "none" || r.CustomAgent.Config.SkillsSelectionMode != "none" || r.LocalBrowserEnabled || r.WebSearchEnabled {
 		return fmt.Errorf("unsafe options")
+	}
+	if s.fail {
+		b.Emit(ctx, event.Event{Type: event.EventAgentFinalAnswer, Data: event.AgentFinalAnswerData{Content: "partial"}})
+		b.Emit(ctx, event.Event{Type: event.EventError})
+		return nil
 	}
 	// Match the real quick-answer pipeline, which returns before its stream finishes.
 	go func() {
@@ -261,5 +267,18 @@ func TestAnonymousRestartAndProfileRevocation(t *testing.T) {
 	w = anonCall(replacement, "GET", "/api/openai/v1/responses/"+id+"/citations", "")
 	if w.Code != 200 {
 		t.Fatal(w.Code, w.Body.String())
+	}
+}
+
+func TestAnonymousModelFailure(t *testing.T) {
+	_, r, _, _, s := anonymousFixture(t)
+	s.fail = true
+	w := anonCall(r, "POST", "/api/openai/v1/chat/completions", `{"model":"qa","messages":[{"role":"user","content":"q"}]}`)
+	if w.Code != 502 {
+		t.Fatal(w.Code, w.Body.String())
+	}
+	w = anonCall(r, "POST", "/api/openai/v1/chat/completions", `{"model":"qa","messages":[{"role":"user","content":"q"}],"stream":true}`)
+	if !strings.Contains(w.Body.String(), `"error"`) || !strings.Contains(w.Body.String(), "data: [DONE]") || strings.Contains(w.Body.String(), `"final_content"`) {
+		t.Fatal(w.Body.String())
 	}
 }
