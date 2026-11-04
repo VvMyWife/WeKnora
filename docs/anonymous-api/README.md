@@ -2,6 +2,23 @@
 
 本功能新增独立的 `/api/openai/v1` 入口。调用方不登录、不申请密钥；SDK 的 `not-required` 仅为占位字符串。原网页和管理 API 继续使用原认证。匿名调用者共享管理员开放的资料范围，不提供个人私密会话；知道回答 ID 的获准内网调用者可读取该回答的引用证据。
 
+## 本次上线状态（2026-11-04）
+
+已获维护窗口授权并完成生产 app 切换，正式地址 `http://10.20.0.15:18182/api/openai/v1`，开放别名 `policy-qa`。白名单为 `10.40.0.0/22` 和 `10.20.0.0/22`。正式数据原样保留，增量 migration 为官方128/LJC5、均非dirty。只重建app，其他受保护容器的ID及镜像保持原值。
+
+从Windows电脑对18182完成25项真实检查，包含无认证头、官方SDK同步、流式、多轮、引用清单及原文、私有消息隔离、管理入口认证、参数400与别名404。样例同步约15.08秒，2条引用；不代表所有答案都具有完整引用。没有可信引用的模型输出继续标为needs_review，不补造脚注。
+
+完整浏览器问答回归尚未完成：Windows浏览器自动化无法可靠确认页面URL，安全检查停止了操作；18182/18180页面HTTP200、前端容器未改动不能替代完整UI验收。待用户在浏览器中复验。
+
+本次release目录：`/home/ubuntu/RAG_Weknora/runtime/anonymous-api-releases/20261104-153111`。新鲜备份 `database.before.dump` 为1125940925字节且归档校验通过；常规回退只撤回应用和入口，不恢复覆盖业务数据库。
+
+```bash
+# 已安装SDK后，在获准内网客户端运行；--reference-response-id可省略。
+python examples/anonymous-api/verify_release.py --base http://10.20.0.15:18182/api/openai/v1 --out production-check.json
+# 本次精确回退入口，需在已获准的维护窗口执行。
+python3 deploy/anonymous-api/release.py rollback --release-dir /home/ubuntu/RAG_Weknora/runtime/anonymous-api-releases/20261104-153111 --maintenance-approved
+```
+
 ## 代码与运行基线
 
 - 生产运行基线：`f45137d3fd784e076336fcc11b50d17ba5fe85c0`，未将其他工作树的未上线改动混入。
