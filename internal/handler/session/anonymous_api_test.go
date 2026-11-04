@@ -154,6 +154,12 @@ func TestAnonymousSyncHistoryAndIsolation(t *testing.T) {
 	}
 	var v map[string]any
 	json.Unmarshal(w.Body.Bytes(), &v)
+	if m.order[0].RequestID != m.order[1].RequestID || m.order[0].RequestID == m.order[2].RequestID || m.order[2].RequestID != m.order[3].RequestID {
+		t.Fatal("history turns collapse or current turn splits")
+	}
+	if len(m.order[0].RequestID) != 36 {
+		t.Fatal("internal request ID exceeds PostgreSQL schema")
+	}
 	if len(m.order) != 4 || len(s.seen) != 1 || s.seen[0].Query != "new" {
 		t.Fatal("history duplicated or lost")
 	}

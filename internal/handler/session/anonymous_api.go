@@ -171,7 +171,8 @@ func (h *Handler) anonymousChat(c *gin.Context) {
 		}
 	}
 	started := time.Now()
-	id := "chatcmpl-" + uuid.NewString()
+	requestID := uuid.NewString()
+	id := "chatcmpl-" + requestID
 	ip := c.MustGet("anonymous_ip").(string)
 	ctx, cancel := context.WithTimeout(c.Request.Context(), time.Duration(cfg.TimeoutSeconds)*time.Second)
 	defer cancel()
@@ -207,14 +208,22 @@ func (h *Handler) anonymousChat(c *gin.Context) {
 		anonError(c, 503, "Session creation failed")
 		return
 	}
-	for _, m := range req.Messages {
-		_, e = h.messageService.CreateMessage(ctx, &types.Message{ID: uuid.NewString(), SessionID: session.ID, RequestID: id, Content: m.Content, Role: m.Role, IsCompleted: true, Channel: "anonymous-api"})
+	historyRequestID := requestID
+	for i, m := range req.Messages {
+		if m.Role == "user" {
+			if i == len(req.Messages)-1 {
+				historyRequestID = requestID
+			} else {
+				historyRequestID = uuid.NewString()
+			}
+		}
+		_, e = h.messageService.CreateMessage(ctx, &types.Message{ID: uuid.NewString(), SessionID: session.ID, RequestID: historyRequestID, Content: m.Content, Role: m.Role, IsCompleted: true, Channel: "anonymous-api"})
 		if e != nil {
 			anonError(c, 503, "History persistence failed")
 			return
 		}
 	}
-	assistant := &types.Message{ID: uuid.NewString(), SessionID: session.ID, RequestID: id, Role: "assistant", Channel: "anonymous-api", ModelID: a.Config.ModelID}
+	assistant := &types.Message{ID: uuid.NewString(), SessionID: session.ID, RequestID: requestID, Role: "assistant", Channel: "anonymous-api", ModelID: a.Config.ModelID}
 	assistant, e = h.messageService.CreateMessage(ctx, assistant)
 	if e != nil {
 		anonError(c, 503, "Message creation failed")
@@ -228,6 +237,8 @@ func (h *Handler) anonymousChat(c *gin.Context) {
 	var answer strings.Builder
 	var usage *types.TokenUsage
 	var runErr error
+	var stateMu sync.Mutex
+	closed := false
 	truncated := false
 	firstToken := time.Duration(0)
 	projector := newAnonymousProjector()
@@ -256,6 +267,11 @@ func (h *Handler) anonymousChat(c *gin.Context) {
 		return send(v)
 	}
 	bus.On(event.EventAgentFinalAnswer, func(_ context.Context, ev event.Event) error {
+		stateMu.Lock()
+		defer stateMu.Unlock()
+		if closed {
+			return ctx.Err()
+		}
 		d, ok := ev.Data.(event.AgentFinalAnswerData)
 		if !ok {
 			return nil
@@ -289,6 +305,11 @@ func (h *Handler) anonymousChat(c *gin.Context) {
 		return nil
 	})
 	bus.On(event.EventAgentComplete, func(_ context.Context, ev event.Event) error {
+		stateMu.Lock()
+		defer stateMu.Unlock()
+		if closed {
+			return ctx.Err()
+		}
 		if d, ok := ev.Data.(event.AgentCompleteData); ok {
 			if d.FinalAnswer != "" {
 				answer.Reset()
@@ -300,6 +321,11 @@ func (h *Handler) anonymousChat(c *gin.Context) {
 		return nil
 	})
 	bus.On(event.EventError, func(_ context.Context, ev event.Event) error {
+		stateMu.Lock()
+		defer stateMu.Unlock()
+		if closed {
+			return ctx.Err()
+		}
 		runErr = errors.New("generation failed")
 		done()
 		return nil
@@ -317,6 +343,9 @@ func (h *Handler) anonymousChat(c *gin.Context) {
 			e = ctx.Err()
 		}
 	}
+	stateMu.Lock()
+	defer stateMu.Unlock()
+	defer func() { closed = true }()
 	if e == nil {
 		e = runErr
 	}
@@ -337,13 +366,18 @@ func (h *Handler) anonymousChat(c *gin.Context) {
 		}
 		return
 	}
+	persistError := func(message string) {
+		if !streamStarted {
+			anonError(c, 503, message)
+			return
+		}
+		send(gin.H{"error": gin.H{"message": message, "type": "server_error", "code": "persistence_error"}})
+		io.WriteString(c.Writer, "data: [DONE]\n\n")
+		c.Writer.Flush()
+	}
 	final, manifest, e := archivalcitations.FromContext(ctx).Finalize(ctx, answer.String())
 	if e != nil {
-		if !streamStarted {
-			anonError(c, 503, "Citation persistence failed")
-		} else {
-			send(gin.H{"error": gin.H{"message": "Citation persistence failed"}})
-		}
+		persistError("Citation persistence failed")
 		return
 	}
 	usageMu.Lock()
@@ -356,16 +390,12 @@ func (h *Handler) anonymousChat(c *gin.Context) {
 	assistant.IsCompleted = true
 	assistant.Usage = usage
 	if e = h.messageService.UpdateMessage(ctx, assistant); e != nil {
-		if !streamStarted {
-			anonError(c, 503, "Answer persistence failed")
-		}
+		persistError("Answer persistence failed")
 		return
 	}
 	record := anonymousResponse{ID: id, TenantID: cfg.TenantID, UserID: cfg.UserID, ProfileID: p.ID, ProfileSHA256: profileHash(p), SessionID: session.ID, MessageID: assistant.ID, CreatedAt: time.Now()}
 	if e = h.citationStore.DB.WithContext(ctx).Create(&record).Error; e != nil {
-		if !streamStarted {
-			anonError(c, 503, "Response mapping failed")
-		}
+		persistError("Response mapping failed")
 		return
 	}
 

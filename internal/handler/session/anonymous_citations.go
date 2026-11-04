@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/Tencent/WeKnora/internal/anonymousapi"
 	"github.com/Tencent/WeKnora/internal/archivalcitations"
+	"github.com/Tencent/WeKnora/internal/logger"
 	"github.com/gin-gonic/gin"
 	"html"
 	"regexp"
@@ -103,7 +104,7 @@ func (h *Handler) anonymousCitations(c *gin.Context) {
 		anonError(c, 404, "Response is no longer published")
 		return
 	}
-	ctx, _, e := h.anonymousIdentity(c.Request.Context(), cfg, p)
+	ctx, _, e := h.anonymousIdentity(logger.WithPrivateContent(c.Request.Context()), cfg, p)
 	if e != nil {
 		anonError(c, 404, "Response is no longer published")
 		return
@@ -141,7 +142,7 @@ func (h *Handler) anonymousCitations(c *gin.Context) {
 	if s.WikiPageID != "" {
 		e = h.citationStore.DB.WithContext(ctx).Table("wiki_pages").Where("id=? AND tenant_id=? AND knowledge_base_id=? AND deleted_at IS NULL", s.WikiPageID, cfg.TenantID, s.KnowledgeBaseID).Count(&count).Error
 	} else {
-		e = h.citationStore.DB.WithContext(ctx).Table("chunks").Where("id=? AND tenant_id=? AND knowledge_id=? AND knowledge_base_id=? AND deleted_at IS NULL", s.ChunkID, cfg.TenantID, s.KnowledgeID, s.KnowledgeBaseID).Count(&count).Error
+		e = h.citationStore.DB.WithContext(ctx).Table("chunks").Where("id=? AND tenant_id=? AND knowledge_id=? AND knowledge_base_id=? AND deleted_at IS NULL AND EXISTS (SELECT 1 FROM knowledges k WHERE k.id=chunks.knowledge_id AND k.tenant_id=chunks.tenant_id AND k.deleted_at IS NULL)", s.ChunkID, cfg.TenantID, s.KnowledgeID, s.KnowledgeBaseID).Count(&count).Error
 	}
 	if e != nil || count != 1 {
 		anonError(c, 404, "Citation source unavailable")
