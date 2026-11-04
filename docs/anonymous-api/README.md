@@ -44,7 +44,7 @@ SSE 为 Chat Completions chunk，`delta.content` 是即时草稿；结束前扩�
   "enabled": true,
   "tenant_id": 10000,
   "user_id": "专用Viewer用户UUID",
-  "allowed_cidrs": ["10.40.0.34/32"],
+  "allowed_cidrs": ["10.40.0.0/22", "10.20.0.0/22"],
   "trusted_proxy_cidrs": ["172.25.0.2/32"],
   "global_concurrency": 4,
   "ip_concurrency": 2,
@@ -59,7 +59,7 @@ SSE 为 Chat Completions chunk，`delta.content` 是即时草稿；结束前扩�
 }
 ```
 
-上面的地址是这次核实的客户端/代理示例，不代表已经确认全校 CIDR。管理员需加入实际校园/VPN网段。只信任明确配置的代理地址，从转发链右侧剥离可信代理，不能信任调用方自报 IP。代理容器重建换 IP 后需更新。部署前检查 Nginx 的转发规则，并使用真实客户端测试。
+本次已核实客户端 WLAN 为10.40.0.34/22、服务器为10.20.0.15/22，待发布配置限定这两个网段。它们不代表全校或所有VPN网段；其他来源需由管理员核实后加入。只信任明确配置的代理地址，从转发链右侧剥离可信代理，不能信任调用方自报 IP。代理容器重建换 IP 后需更新。部署前检查 Nginx 的转发规则，并使用真实客户端测试。
 
 专用执行用户必须活跃、不是系统管理员、不能跨所有租户，且在目标租户拥有 active Viewer 成员资格。允许知识库还必须在该身份可读取范围内。请求复制智能体配置并强制只读、只用开放知识库、关闭记忆、MCP、skills、浏览器、网页抓取、沙箱和业务修改工具；内部最多 6 轮，每次模型调用最多 120 秒，整轮最多 300 秒。`max_tokens` 不得超过 profile 上限，合法配置范围 1–12288，并继续受模型窗口约束。
 
@@ -160,7 +160,7 @@ runtime/anonymous-api-sdk/Scripts/python.exe -X utf8 runtime/worktrees/api-acces
 只重建 app，不重建数据库、模型、docreader 或前端。先只准备可审阅产物：
 
 ```bash
-python3 deploy/anonymous-api/release.py prepare --cidr 10.40.0.34/32
+python3 deploy/anonymous-api/release.py prepare --cidr 10.40.0.0/22 --cidr 10.20.0.0/22
 # 记录输出的 prepared 绝对目录；检查 config.proposed.json 与 compose.api.json。
 # 如需开放其他同学，先核实其校园/VPN CIDR，再重新 prepare，逐个 --cidr 添加。
 ```
