@@ -84,18 +84,19 @@ Redis 在所有应用实例间原子限制生成并发与 IP 频次。默认全�
 
 ## 调用步骤
 
-curl 无需 Authorization：
+零基础用户先看 [`easy/README.md`](../../examples/anonymous-api/easy/README.md)，里面分别提供Bash与PowerShell可整段执行的命令，以及无需第三方依赖的交互工具。
+
+下面**仅发送一个同步问题**，不包含第二次流式问答或需要手填的占位地址：
 
 ```bash
 BASE=http://10.20.0.15:18182/api/openai/v1
-curl -fsS "$BASE/models"
 curl -fsS "$BASE/chat/completions" -H 'Content-Type: application/json' \
-  -d '{"model":"policy-qa","messages":[{"role":"user","content":"第三级灾难恢复的数据备份要求是什么？"}],"max_tokens":1024}'
-curl -N "$BASE/chat/completions" -H 'Content-Type: application/json' \
-  -d '{"model":"policy-qa","messages":[{"role":"user","content":"请说明依据"}],"stream":true}'
-curl -fsS "$BASE/responses/替换为返回的回答ID/citations"
-curl -fsS "$BASE/responses/替换为回答ID/citations/替换为引用ID"
+  -d '{"model":"policy-qa","messages":[{"role":"user","content":"第三级灾难恢复的数据备份要求是什么？"}],"stream":false,"max_tokens":1024}'
 ```
+
+curl会显示这一次回答的完整JSON。只显示正文、自动查询有效原文，请使用入门说明中的完整命令或 `weknora_ask.py`。
+
+流式是另一种调用方式，不能接在同步演示后当作“继续读取同一回答”。`curl -N`会显示原始SSE事件；最后的final_content须替换草稿，不可再次追加。引用ID、回答ID不可填占位文字；优先使用实际返回的detail_url，citations为空就不要查询具体引用。多轮追问须发送历史messages，仅发送“请说明依据”会发起一个没有前文的独立问答。
 
 Python 依赖安装到持久目录，项目配置使用清华镜像。Windows PowerShell：
 
