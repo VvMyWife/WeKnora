@@ -208,6 +208,9 @@ func NewRouter(params RouterParams) *gin.Engine {
 	r.POST("/api/v1/local-browser/extension/authorize", params.SessionHandler.BrowserSkillAuthorize)
 	r.POST("/api/v1/local-browser/internal", params.SessionHandler.BrowserSkillInternal)
 
+	// Restricted anonymous intranet API; does not weaken existing authentication.
+	params.SessionHandler.RegisterAnonymousAPI(r)
+
 	// 认证中间件
 	r.Use(middleware.Auth(params.TenantService, params.UserService, params.TenantMemberService, params.TenantAPIKeyService, params.Config))
 
