@@ -15,7 +15,7 @@ var anonNumber = regexp.MustCompile(`\bfootnote="([0-9]+)"`)
 var anonChunk = regexp.MustCompile(`\bchunk_id="([^"]+)"`)
 
 func anonymousText(s string) string {
-	return anonKB.ReplaceAllStringFunc(s, func(tag string) string {
+	return archivalcitations.ProjectCitationTags(s, func(tag string) string {
 		m := anonNumber.FindStringSubmatch(tag)
 		if len(m) == 2 {
 			return "[" + m[1] + "]"

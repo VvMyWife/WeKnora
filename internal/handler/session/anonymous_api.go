@@ -89,7 +89,7 @@ func (h *Handler) anonymousIdentity(ctx context.Context, cfg *anonymousapi.Confi
 		return ctx, nil, errors.New("services unavailable")
 	}
 	user, e := h.userService.GetUserByID(ctx, cfg.UserID)
-	if e != nil || user == nil || !user.IsActive {
+	if e != nil || user == nil || !user.IsActive || user.IsSystemAdmin || user.CanAccessAllTenants {
 		return ctx, nil, errors.New("execution identity unavailable")
 	}
 	member, e := h.memberService.GetMembership(ctx, cfg.UserID, cfg.TenantID)
@@ -397,9 +397,9 @@ func (h *Handler) anonymousChat(c *gin.Context) {
 	}
 	logger.Infof(c.Request.Context(), "anonymous_api request=%s ip=%s profile=%s first_token_ms=%d duration_ms=%d", id, ip, p.ID, firstToken.Milliseconds(), time.Since(started).Milliseconds())
 }
-func anonymousUsage(u *types.TokenUsage) gin.H {
+func anonymousUsage(u *types.TokenUsage) any {
 	if u == nil {
-		return gin.H{"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}
+		return nil
 	}
 	return gin.H{"prompt_tokens": u.PromptTokens, "completion_tokens": u.CompletionTokens, "total_tokens": u.TotalTokens}
 }

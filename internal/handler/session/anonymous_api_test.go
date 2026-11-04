@@ -234,3 +234,26 @@ func TestAnonymousNoAuthBypass(t *testing.T) {
 		t.Fatal(w.Code)
 	}
 }
+func TestAnonymousProjectionPreservesLiteralCode(t *testing.T) {
+	in := "`<kb chunk_id=\"example\"/>`\n```xml\n<kb chunk_id=\"example2\"/>\n```\nFact <kb chunk_id=\"c1\" footnote=\"1\" />"
+	out := anonymousText(in)
+	if !strings.Contains(out, "example2") || !strings.Contains(out, "example") || !strings.HasSuffix(out, "Fact [1]") {
+		t.Fatal(out)
+	}
+}
+func TestAnonymousRestartAndProfileRevocation(t *testing.T) {
+	h, r, _, _, _ := anonymousFixture(t)
+	w := anonCall(r, "POST", "/api/openai/v1/chat/completions", `{"model":"qa","messages":[{"role":"user","content":"q"}]}`)
+	if w.Code != 200 {
+		t.Fatal(w.Body.String())
+	}
+	var response map[string]any
+	json.Unmarshal(w.Body.Bytes(), &response)
+	id := response["id"].(string)
+	replacement := gin.New()
+	h.RegisterAnonymousAPI(replacement)
+	w = anonCall(replacement, "GET", "/api/openai/v1/responses/"+id+"/citations", "")
+	if w.Code != 200 {
+		t.Fatal(w.Code, w.Body.String())
+	}
+}
