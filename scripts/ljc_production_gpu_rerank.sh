@@ -1,7 +1,7 @@
 #!/bin/bash
 # Production GPU service: cached weights only, never evict another GPU worker.
 set -euo pipefail
-cd /home/ubuntu/RAG_Weknora-upstream-20261020
+cd /home/ubuntu/RAG_Weknora/runtime/production/rerank
 export CUDA_VISIBLE_DEVICES=GPU-918824a7-2144-fe49-5183-7646ab974946
 free=$(nvidia-smi --id="$CUDA_VISIBLE_DEVICES" --query-gpu=memory.free --format=csv,noheader,nounits)
 test "$free" -ge 4096 || { echo 'Selected GPU has less than4GiB free'; exit 1; }

@@ -1,5 +1,6 @@
 # WeKnora 18182 生产升级
 
+当前部署、测试和回退入口见 [生产目录和分支流程](../production-workflow/README.md)。下文保留当次发布记录。
 服务器为 `ubuntu@10.20.0.15`，权威仓库为 `/home/ubuntu/RAG_Weknora`。本次升级使用独立发布工作区 `/home/ubuntu/RAG_Weknora-release-20261105`。服务配置、备份、发布脚本及状态保存在服务器目录 `/home/ubuntu/weknora-fork-migration/20261112-production`，其中包含私有信息，保留在服务器。
 
 | 组件 | 源码或版本 | 镜像或入口 |

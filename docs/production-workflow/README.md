@@ -91,6 +91,31 @@ python3 docs/production-release-20261112/verify-production.py --output runtime/p
 
 操作中断时先查 `git status`、`git worktree list`、当前镜像、容器挂载和 `runtime/production/consolidation-state.json`，根据实际状态继续。若正在重建，先检查对应 PID、日志及退出码。合入后的版本和线上实际镜像分别记录。
 
-## 剩余旧路径
+## GPU 重排和旧工作树
 
-GPU 重排的 systemd 服务 `weknora-bge-rerank.service` 仍运行在旧工作树。主目录已准备等效启动入口和 systemd 配置，位置为 `runtime/production/rerank/`。待重排服务获准切换后，核对 CUDA、实际重排及 18182，再处理两个仍引用旧路径的已停止验收容器，保留其数据卷，最后移除旧工作树。
+生产 `weknora-bge-rerank.service` 从 `runtime/production/rerank/` 启动，沿用原 GPU、模型权重、Python 环境和 18083 端口。2026-11-12 从新路径实测 CUDA 重排，并通过 18182 问答和 3 条引用明细。原 Git 工作树已退役，验收资料归入 `runtime/retired-worktrees/`，两个停止的验收容器已移除，其数据卷保留。
+
+运行以下只读检查，确认 GPU 工作目录和健康状态。
+
+```bash
+systemctl show weknora-bge-rerank.service -p WorkingDirectory -p MainPID -p ActiveState
+curl -fsS http://10.20.0.15:18083/health
+curl -fsS -H 'Content-Type: application/json' \
+  --data '{"query":"数据备份","documents":["每日进行数据备份","今天气温较高"]}' \
+  http://10.20.0.15:18083/rerank
+```
+
+在维护窗口重建重排启动目录时，先从已验收的维护分支准备运行文件。更新启动文件或 systemd 单元前记录正在使用的版本，以便回退到已验收的启动文件。随后重启并执行上述检查，健康响应应为 CUDA，第一条候选应排在首位。
+
+```bash
+cd /home/ubuntu/RAG_Weknora
+rerank_dir="$PWD/runtime/production/rerank"
+install -d "$rerank_dir/adapters/rerank"
+install -m 0644 adapters/rerank/server.py "$rerank_dir/adapters/rerank/server.py"
+install -m 0750 scripts/ljc_production_gpu_rerank.sh "$rerank_dir/start.sh"
+bash -n "$rerank_dir/start.sh"
+sudo install -m 0644 deploy/production-20261021/weknora-bge-rerank.service \
+  /etc/systemd/system/weknora-bge-rerank.service
+sudo systemctl daemon-reload
+sudo systemctl restart weknora-bge-rerank.service
+```
