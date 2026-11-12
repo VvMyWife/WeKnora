@@ -190,7 +190,7 @@ func Logger() gin.HandlerFunc {
 
 		// Browser traffic contains credentials, page content and screenshots.
 		// Keep access metadata, but never read or buffer these request/response bodies.
-		browserTraffic := strings.HasPrefix(path, "/api/v1/local-browser/") ||
+		browserTraffic := strings.HasPrefix(path, "/api/openai/v1/") || strings.HasPrefix(path, "/api/v1/local-browser/") ||
 			path == "/api/v1/me/browser" || strings.HasSuffix(path, "/local-browser")
 		// 读取请求体（在Next之前读取，因为Next会消费body）
 		var requestBody string

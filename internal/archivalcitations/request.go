@@ -310,3 +310,9 @@ func transformCitationTags(answer string, replace func(string) string) string {
 	}
 	return strings.Join(lines, "\n")
 }
+
+// ProjectCitationTags visits citation tags outside fenced/inline code. API adapters
+// use this to render public footnotes without altering literal code examples.
+func ProjectCitationTags(answer string, replace func(string) string) string {
+	return transformCitationTags(answer, replace)
+}

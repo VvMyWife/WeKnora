@@ -1084,6 +1084,8 @@ func initDatabase(cfg *config.Config) (*gorm.DB, error) {
 		return nil, err
 	}
 
+	db.Logger = logger.PrivateGORMLogger{Interface: db.Logger}
+
 	// Sanity check: dialect-specific code in services (notably the
 	// vector_stores delete guard) compares Dialector.Name() to "postgres" /
 	// "sqlite" string literals. A future driver swap that produces a

@@ -71,7 +71,9 @@ func TestLJCMigrationsFreshAndLegacySQLite(t *testing.T) {
 			var customVersion int
 			var customDirty bool
 			require.NoError(t, db.QueryRow("SELECT version,dirty FROM "+ljcMigrationTable).Scan(&customVersion, &customDirty))
-			require.Equal(t, 3, customVersion)
+			require.Equal(t, 4, customVersion)
+			require.True(t, sqliteTableExists(t, db, "ljc_anonymous_api_responses"))
+			require.NoError(t, RunMigrationsWithOptions("sqlite3://unused", opts))
 			require.False(t, customDirty)
 			if scenario == "legacy" {
 				var value string
@@ -115,7 +117,7 @@ func TestLJCMigrationPostgresRestore(t *testing.T) {
 	require.Equal(t, 134, version)
 	require.False(t, dirty)
 	require.NoError(t, db.QueryRow("SELECT version,dirty FROM "+ljcMigrationTable).Scan(&custom, &dirty))
-	require.Equal(t, 4, custom)
+	require.Equal(t, 5, custom)
 	require.False(t, dirty)
 	for table, want := range counts {
 		var got int64

@@ -11,9 +11,19 @@ import (
 // LogUsage emits the standard "[LLM Usage]" line shared by every Chat
 // implementation. It is a no-op when usage is nil so callers can pass through
 // optional usage blocks without guarding at each call site.
+type usageObserverKey struct{}
+
+// WithUsageObserver observes each completed provider call without storing prompt content.
+func WithUsageObserver(ctx context.Context, fn func(types.TokenUsage)) context.Context {
+	return context.WithValue(ctx, usageObserverKey{}, fn)
+}
+
 func LogUsage(ctx context.Context, model string, u *types.TokenUsage) {
 	if u == nil {
 		return
+	}
+	if fn, ok := ctx.Value(usageObserverKey{}).(func(types.TokenUsage)); ok {
+		fn(*u)
 	}
 	purpose, prefixFingerprint := types.LLMCallMetadataFromContext(ctx)
 	logger.Infof(ctx,
