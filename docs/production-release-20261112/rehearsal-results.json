@@ -1,0 +1,7 @@
+{
+  "ledger_before": "128 + personal 5 clean",
+  "ledger_after": "134 + personal 5 clean",
+  "repeated_up": true,
+  "protected_table_content_preserved": true,
+  "source_sha": "61c41d0eece3a0bc9334ed5e829b67328bb783f2"
+}

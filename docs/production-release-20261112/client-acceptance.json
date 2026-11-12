@@ -1,0 +1,14 @@
+{
+  "checked_at": "2026-11-12T08:07:25.960341+00:00",
+  "origin": "http://10.20.0.15:18182",
+  "models_status": 200,
+  "management_without_login_status": 401,
+  "completion_status": 200,
+  "completion_seconds": 15.29,
+  "answer_chars": 526,
+  "total_tokens": 12694,
+  "citation_count": 1,
+  "citation_manifest_status": 200,
+  "citation_detail_passed": 1,
+  "passed": true
+}

@@ -1,0 +1,42 @@
+{
+  "active_database": "weknora_release_20261112",
+  "old_database_ledger": [
+    "128|f",
+    "5|f"
+  ],
+  "active_database_ledger": [
+    "134|f",
+    "5|f"
+  ],
+  "running_images": {
+    "app": {
+      "image_id": "sha256:4ee9de272ad3c417ebd65e1e0bdb0f5f91c18167bf8c9364e1ae37c624f6e96b",
+      "revision": "61c41d0eece3a0bc9334ed5e829b67328bb783f2",
+      "health": "healthy"
+    },
+    "docreader": {
+      "image_id": "sha256:837d657ec54c8c1f12662657d5ca65ad792b836225efa441b6d36a11baaf4068",
+      "revision": "fda761a6bbdbd7158b7fe2544ee4567b86e44910",
+      "health": "healthy"
+    },
+    "frontend": {
+      "image_id": "sha256:221a5a858377ec1f76554c627930d41a6ee8a4fa9a39026e119970ae4c6adb0f",
+      "revision": "fda761a6bbdbd7158b7fe2544ee4567b86e44910",
+      "health": null
+    }
+  },
+  "valid_embedding_indexes": 11,
+  "production_config_hashes_unchanged": true,
+  "frontend_proxy_ip_unchanged": true,
+  "protected_containers_unchanged": true,
+  "protected_business_tables_at_cutover_unchanged": 12,
+  "management_api_requires_login_on_both_frontends": true,
+  "retired_ports_closed": [
+    28182,
+    28281,
+    28282
+  ],
+  "existing_snapshot_bytes": 1126069517,
+  "existing_snapshot_sha256": "089bf66b711094431e5f62261d75f922f17e9dd9515afd5205defd9be81154a4",
+  "additional_archive_skipped": true
+}
