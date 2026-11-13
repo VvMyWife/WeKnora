@@ -66,7 +66,7 @@ func TestLJCMigrationsFreshAndLegacySQLite(t *testing.T) {
 			require.NoError(t, err)
 			require.NoError(t, RunMigrationsWithOptions("sqlite3://unused", opts))
 			version, dirty := sqliteMigrationState(t, db)
-			require.Equal(t, 51, version)
+			require.Equal(t, 52, version)
 			require.False(t, dirty)
 			var customVersion int
 			var customDirty bool

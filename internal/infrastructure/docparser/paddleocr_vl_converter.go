@@ -6,7 +6,6 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"io"
 	"mime"
 	"net/http"
 	"path/filepath"
@@ -231,7 +230,7 @@ func (c *PaddleOCRVLReader) callLayoutParsing(
 	}
 	defer resp.Body.Close()
 
-	respBody, err := io.ReadAll(resp.Body)
+	respBody, err := readCapped(resp.Body, maxResultResponseBytes)
 	if err != nil {
 		return "", nil, 0, nil, fmt.Errorf("read response body: %w", err)
 	}
