@@ -5,9 +5,9 @@
 | 产物 | 源码 | 镜像 |
 |---|---|---|
 | 后端 | `f0693c65c` | `weknora-app:ljc-candidate-f0693c65c-bsk041`，ID `sha256:20025948c9bbfa8491cb8d1322a8c31b2525b6880de4df44b59ceed76500b1f9` |
-| DocReader | `b440c52fc` | `weknora-docreader:ljc-candidate-b440c52fc`，ID `sha256:7887a23a38a75a179adb8070c8122f147c80b07a0c6be55df79a292da573ea66f` |
-| 18182 候选 | `b440c52fc` | `weknora-ui-custom:ljc-candidate-b440c52fc`，ID `sha256:4b1d5e95102b1236a0eae240f98afedadf228ebe872f16e35c7eb86d7e83a6677` |
-| 正式后端 | `61c41d0ee` | 当前生产仍运行此源码，账本官方 134＋个人 5 |
+| DocReader | `b440c52fc` | `weknora-docreader:ljc-candidate-b440c52fc`，ID `sha256:7887a23a38a75a179adb8070c8122f147c80b07a0c6be55df79a292da573ea6f` |
+| 18182 候选 | `b440c52fc` | `weknora-ui-custom:ljc-candidate-b440c52fc`，ID `sha256:4b1d5e95102b1236a0eae240f98afedadf228ebe872f16e35c7eb86d7e83a667` |
+| 升级前正式后端 | `61c41d0ee` | 原库保留，账本官方 134＋个人 5 |
 
 后端沿用已验收运行基础层，BrowserSkill 守护程序和扩展使用与官方清单同源的 0.4.1 官方发布资产。DocReader 复用上一批依赖层，本批 `pyproject.toml` 和 `uv.lock` 无变化。
 
@@ -53,4 +53,34 @@ docker compose -f "$p/compose.acceptance.json" stop
 docker stop ljc-20261113-proof-pg
 ```
 
-正式部署走独立维护窗口。沿用 [生产运维流程](../production-workflow/README.md) 核对镜像和配置。发布时若升级数据库，回退须使用切换前数据库或恢复副本，切回旧镜像前要核对切换后新增的业务写入。当前线上仍以 18182 为正式入口。
+后续正式部署在维护窗口执行。沿用 [生产运维流程](../production-workflow/README.md) 核对镜像和配置。发布时若升级数据库，回退须使用切换前数据库或恢复副本，切回旧镜像前要核对切换后新增的业务写入。当前线上仍以 18182 为正式入口。
+
+## 18182 正式上线
+
+北京时间 2026-11-13 14:23 完成切换。正式 18182 使用上表中的新版后端、DocReader 和定制前端，生产清单已更新到主目录 `runtime/production/compose.json`。运行库为 `weknora_release_20261113`，官方 136＋个人 5，均无 dirty 标记。正式数据流式恢复后升级，12 张业务表内容指纹一致，11 个检索索引有效。原库 `weknora_release_20261112` 保留。
+
+18182 实际浏览器加载了新版资源并显示「档案智查」，控制台无错误。正式匿名问答通过，1 条引用明细可查。凭据库路由与表已就绪，匿名访问返回 401。登录后的管理界面仍以隔离验收记录为准。
+
+```bash
+cd /home/ubuntu/RAG_Weknora
+p=runtime/production/release-20261113
+cat "$p/state.json" "$p/database-proof.json" "$p/postflight.json"
+docker compose -p ljc-weknora-production -f runtime/production/compose.json config --quiet
+curl -fsS http://127.0.0.1:18081/health
+curl -fsS -o /dev/null http://127.0.0.1:18182/
+```
+
+回退清单为 `runtime/production/release-20261113/compose.before.json`。维护窗口内先暂停写入，保留并核对新版库的新业务记录，再使用原库和原镜像回退。确认数据处理方式后依次执行：
+
+```bash
+cd /home/ubuntu/RAG_Weknora
+p=runtime/production/release-20261113
+docker compose -p ljc-weknora-production -f "$p/compose.before.json" config --quiet
+for service in docreader app frontend; do
+  docker compose -p ljc-weknora-production -f "$p/compose.before.json" up -d --no-deps --pull never "$service" || break
+done
+curl -fsS http://127.0.0.1:18081/health
+curl -fsS -o /dev/null http://127.0.0.1:18182/
+```
+
+回退后复测问答和引用，并把主目录生产清单同步到实际回退版本。
