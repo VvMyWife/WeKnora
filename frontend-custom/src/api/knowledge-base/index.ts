@@ -12,6 +12,8 @@ export function retryArchiveBatchFailures(kbId: string, stage = '') {
 }
 import type { AuditLog, AuditOutcome, ListAuditLogResponse } from '@/api/tenant/audit-log';
 import { buildListKnowledgeFilesQuery } from './knowledgeFileListQuery';
+import { withKnowledgeReadContext, type KnowledgeReadOptions } from './knowledgeReadOptions';
+export type { KnowledgeReadOptions } from './knowledgeReadOptions';
 
 export { buildListKnowledgeFilesQuery } from './knowledgeFileListQuery';
 
@@ -362,6 +364,7 @@ export function createKnowledgeBase(data: {
   extract_config?: any;
   faq_config?: { index_mode: string; question_index_mode?: string };
   wiki_config?: {
+    auto_generate?: boolean;
     synthesis_model_id?: string;
     max_pages_per_ingest?: number;
     extraction_granularity?: 'focused' | 'standard' | 'exhaustive';
@@ -394,6 +397,7 @@ export function updateKnowledgeBase(id: string, data: {
     image_processing_config?: ImageProcessingConfig;
     faq_config?: any;
     wiki_config?: {
+      auto_generate?: boolean;
       synthesis_model_id?: string;
       max_pages_per_ingest?: number;
       extraction_granularity?: 'focused' | 'standard' | 'exhaustive';
@@ -573,8 +577,8 @@ export interface ListKnowledgeFilesParams {
   include_archive_source?: boolean;
 }
 
-export function listKnowledgeFiles(kbId: string, params: ListKnowledgeFilesParams) {
-  return get(`/api/v1/knowledge-bases/${kbId}/knowledge?${buildListKnowledgeFilesQuery(params)}`);
+export function listKnowledgeFiles(kbId: string, params: ListKnowledgeFilesParams, options?: KnowledgeReadOptions) {
+  return get(withKnowledgeReadContext(`/api/v1/knowledge-bases/${kbId}/knowledge?${buildListKnowledgeFilesQuery(params)}`, options), { signal: options?.signal });
 }
 
 export interface KnowledgeProcessingOverview {
@@ -650,8 +654,8 @@ export interface KnowledgeFolderTree {
   folders: KnowledgeFolderNode[];
 }
 
-export function listKnowledgeFolders(kbId: string) {
-  return get(`/api/v1/knowledge-bases/${kbId}/knowledge/folders`);
+export function listKnowledgeFolders(kbId: string, options?: KnowledgeReadOptions) {
+  return get(withKnowledgeReadContext(`/api/v1/knowledge-bases/${kbId}/knowledge/folders`, options), { signal: options?.signal });
 }
 
 /**

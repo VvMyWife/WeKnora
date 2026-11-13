@@ -114,7 +114,7 @@ func TestLJCMigrationPostgresRestore(t *testing.T) {
 	var version, custom int
 	var dirty bool
 	require.NoError(t, db.QueryRow("SELECT version,dirty FROM schema_migrations").Scan(&version, &dirty))
-	require.Equal(t, 134, version)
+	require.Equal(t, 136, version)
 	require.False(t, dirty)
 	require.NoError(t, db.QueryRow("SELECT version,dirty FROM "+ljcMigrationTable).Scan(&custom, &dirty))
 	require.Equal(t, 5, custom)
