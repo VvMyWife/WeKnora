@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/Tencent/WeKnora/internal/types"
 	"github.com/alicebob/miniredis/v2"
@@ -63,6 +64,14 @@ func TestWikiIngestSelectedDocumentUsesExistingClaimsAndFollowUp(t *testing.T) {
 				}
 				lookup.lookup = svc.knowledgeRepo.GetKnowledgeByIDOnly
 				require.NoError(t, svc.ProcessWikiIngest(context.Background(), ordinary))
+				if interrupt {
+					var deferred types.TaskPendingOp
+					require.NoError(t, db.Where("dedup_key = ?", "selected").First(&deferred).Error)
+					require.NotNil(t, deferred.AvailableAt)
+					require.True(t, deferred.AvailableAt.After(time.Now()))
+					require.NoError(t, db.Model(&deferred).Update("available_at", time.Now().Add(-time.Second)).Error)
+					require.NoError(t, svc.ProcessWikiIngest(context.Background(), ordinary))
+				}
 				count, err := svc.pendingRepo.PendingCount(context.Background(), wikiTaskType, wikiTaskScope, "kb")
 				require.NoError(t, err)
 				require.Zero(t, count)

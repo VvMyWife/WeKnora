@@ -726,6 +726,7 @@ func (s *wikiIngestService) ProcessWikiIngest(ctx context.Context, t *asynq.Task
 			return fmt.Errorf("wiki ingest: settle interrupted batch: %w", err)
 		}
 		claimsSettled = true
+		payload.KnowledgeID = ""
 		followUpScheduled = s.scheduleFollowUp(cleanupCtx, payload, wikiFollowUpDelay, batchSize, maxInflight, false)
 		return nil
 	}
