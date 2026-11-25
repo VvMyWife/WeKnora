@@ -29,17 +29,25 @@ func (h *MessageHandler) citationMessage(c *gin.Context) (*types.Message, bool) 
 	return message, true
 }
 func (h *MessageHandler) canReadCitation(c *gin.Context, summary archivalcitations.Summary) bool {
+	_, allowed := h.citationReadTenant(c, summary)
+	return allowed
+}
+
+func (h *MessageHandler) citationReadTenant(c *gin.Context, summary archivalcitations.Summary) (uint64, bool) {
 	if summary.WikiPageID != "" {
 		kb, _, tenant, permission, err := h.citationKnowledge.validateKnowledgeBaseAccessWithKBID(c, summary.KnowledgeBaseID)
 		if err != nil || kb == nil || !permission.HasPermission(types.OrgRoleViewer) {
-			return false
+			return 0, false
 		}
 		var count int64
 		err = h.citationStore.DB.WithContext(c.Request.Context()).Table("wiki_pages").Where("id=? AND tenant_id=? AND knowledge_base_id=? AND deleted_at IS NULL", summary.WikiPageID, tenant, summary.KnowledgeBaseID).Count(&count).Error
-		return err == nil && count == 1
+		return tenant, err == nil && count == 1
 	}
 	k, _, e := h.citationKnowledge.resolveKnowledgeAndValidateKBAccess(c, summary.KnowledgeID, types.OrgRoleViewer)
-	return e == nil && k != nil && k.KnowledgeBaseID == summary.KnowledgeBaseID
+	if e != nil || k == nil || k.KnowledgeBaseID != summary.KnowledgeBaseID {
+		return 0, false
+	}
+	return k.TenantID, true
 }
 func (h *MessageHandler) GetMessageCitations(c *gin.Context) {
 	if !archivalcitations.Enabled() {
@@ -62,7 +70,10 @@ func (h *MessageHandler) GetMessageCitations(c *gin.Context) {
 	allowed := make([]archivalcitations.Summary, 0, len(manifest.Citations))
 	unavailable := 0
 	for _, summary := range manifest.Citations {
-		if h.canReadCitation(c, summary) {
+		if tenant, ok := h.citationReadTenant(c, summary); ok {
+			if c.Query("preview") == "pages" {
+				summary.Preview = h.citationStore.CitationPreview(c.Request.Context(), tenant, summary)
+			}
 			summary.Origins = h.authorizedCitationOrigins(c, summary)
 			allowed = append(allowed, summary)
 		} else {
