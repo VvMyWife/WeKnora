@@ -2295,7 +2295,7 @@ const loadNextPage = async () => {
 
 const ensureScrollableArea = () => {
   const element = knowledgeScroll.value;
-  if (!element || isFAQ.value || docListLoading.value || scrollLoading.value) return;
+  if (!element || element.clientHeight <= 0 || isFAQ.value || docListLoading.value || scrollLoading.value) return;
   if (cardList.value.length < total.value && element.scrollHeight <= element.clientHeight + 2) {
     void loadNextPage();
   }
@@ -2307,6 +2307,8 @@ const handleScroll = () => {
     void loadNextPage();
   }
 };
+
+watch([knowledgeScroll, docListLoading, viewMode], ensureScrollableArea, { flush: 'post' });
 const getDoc = (page: number) => {
   getfDetails(details.id, page)
 };
