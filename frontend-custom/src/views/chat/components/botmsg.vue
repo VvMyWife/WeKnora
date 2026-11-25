@@ -18,7 +18,7 @@
                 <RagPipelineProgress :session="session" :embedded-mode="embeddedMode" />
                 <AgentStreamDisplay v-if="session.isAgentMode" :session="session" :session-id="sessionId"
                     :user-query="userQuery" :rag-mode="true" :follow-up-loading="followUpLoading"
-                    :embedded-mode="embeddedMode" defer-tool-approvals
+                    :embedded-mode="embeddedMode" :inline-citation-page-documents="renderedCitationPageDocuments" defer-tool-approvals
                     :can-fork="canFork"
                     :can-rewind="canRewind"
                     @fork="emit('fork', $event)"
@@ -35,7 +35,7 @@
                 <docInfo v-if="session.knowledge_references?.length" :session="session"></docInfo>
                 <AgentStreamDisplay :session="session" :session-id="sessionId" :user-query="userQuery"
                     v-if="session.isAgentMode" :follow-up-loading="followUpLoading"
-                    :embedded-mode="embeddedMode" defer-tool-approvals
+                    :embedded-mode="embeddedMode" :inline-citation-page-documents="renderedCitationPageDocuments" defer-tool-approvals
                     :can-fork="canFork"
                     :can-rewind="canRewind"
                     @fork="emit('fork', $event)"
@@ -52,6 +52,9 @@
                 <div class="ai-markdown-template markdown-content" v-stable-html="renderedHTML">
                 </div>
             </div>
+            <InlineCitationPages v-if="showInlineCitationPages"
+                :session-id="sessionId" :message-id="messageIdForArtifacts"
+                @rendered-documents="renderedCitationPageDocuments = $event" />
             <!-- 复制和添加到知识库按钮 - 非 Agent 模式下显示 -->
             <div v-if="answerFullyRendered && (content || session.content)" class="answer-toolbar"
                 :class="{ 'answer-toolbar--persistent': hasArtifacts || artifactsCollecting }">
@@ -130,6 +133,9 @@
             <div v-if="isImgLoading" class="img_loading"><t-loading size="small"></t-loading><span>{{
                 $t('common.loading') }}</span></div>
         </div>
+        <InlineCitationPages v-if="session.isAgentMode && showInlineCitationPages && !session.hideContent"
+            :session-id="sessionId" :message-id="messageIdForArtifacts"
+            @rendered-documents="renderedCitationPageDocuments = $event" />
         <ArchivalCitations v-if="!embeddedMode" ref="archivalPanel" :session-id="sessionId" :message-id="messageIdForArtifacts" :complete="session.is_completed" :manifest="session.archival_citations" />
         <picturePreview :reviewImg="reviewImg" :reviewUrl="reviewUrl" @closePreImg="closePreImg"></picturePreview>
         <Teleport to="body">
@@ -158,6 +164,7 @@ import AssistantActionsButton from '@/components/assistant/AssistantActionsButto
 import ChatRequestInfoButton from '@/components/ChatRequestInfoButton.vue';
 import ChatCitationFloat from '@/components/ChatCitationFloat.vue';
 import ArchivalCitations from '@/components/ArchivalCitations.vue';
+import InlineCitationPages from '@/components/InlineCitationPages.vue';
 import picturePreview from '@/components/picture-preview.vue';
 import ChatArtifactsDrawer from './ChatArtifactsDrawer.vue';
 import { isCollectingSkillArtifacts } from '@/utils/skillArtifacts';
@@ -460,6 +467,11 @@ watch(
 );
 
 // 单次渲染整个 Markdown 内容（替代 token-by-token，修复 KaTeX 公式在 streaming 时闪烁消失的问题）
+const showInlineCitationPages = computed(() => !props.embeddedMode && !!props.session?.is_completed);
+const renderedCitationPageDocuments = ref([]);
+watch(() => [showInlineCitationPages.value, messageIdForArtifacts.value], () => {
+    renderedCitationPageDocuments.value = [];
+});
 const renderedHTML = computed(() => {
     const text = typedAnswer.value;
     if (!text || typeof text !== 'string') return '';
@@ -469,6 +481,7 @@ const renderedHTML = computed(() => {
         sanitizeHtml: sanitizeMarkdownHTML,
         streaming: !props.session?.is_completed,
         knowledgeReferences: props.session?.knowledge_references,
+        inlineCitationPageDocuments: renderedCitationPageDocuments.value,
         artifacts: artifactList.value,
     });
 });
