@@ -60,16 +60,17 @@ type Chunk struct {
 	SourceAnchors []map[string]any `json:"source_anchors"`
 }
 type SourceUnit struct {
-	ID          string          `json:"id"`
-	DocumentID  string          `json:"document_id"`
-	UnitID      string          `json:"unit_id"`
-	PageIndex   int             `json:"page_index"`
-	Order       int             `json:"order"`
-	BlockType   string          `json:"block_type"`
-	Text        string          `json:"text"`
-	BoundingBox map[string]any  `json:"bounding_box"`
-	TitlePath   []string        `json:"title_path"`
-	Table       json.RawMessage `json:"table"`
+	ID               string          `json:"id"`
+	DocumentID       string          `json:"document_id"`
+	UnitID           string          `json:"unit_id"`
+	PageIndex        int             `json:"page_index"`
+	Order            int             `json:"order"`
+	BlockType        string          `json:"block_type"`
+	Text             string          `json:"text"`
+	BoundingBox      map[string]any  `json:"bounding_box"`
+	TitlePath        []string        `json:"title_path"`
+	Table            json.RawMessage `json:"table"`
+	pageIndexPresent bool
 }
 type Package struct {
 	Manifest     Manifest     `json:"manifest"`
@@ -241,15 +242,17 @@ func Read(filename string) (*Package, error) {
 		paths[d.RelativePath] = true
 	}
 	unitIDs := map[string]bool{}
-	unitKeys := map[string]bool{}
+	unitKeys := map[string]SourceUnit{}
 	for _, u := range p.SourceUnits {
 		key := u.DocumentID + "\x00" + u.UnitID
-		if u.ID == "" || unitIDs[u.ID] || u.UnitID == "" || unitKeys[key] || docs[u.DocumentID].ID == "" || u.PageIndex < 0 || u.Order < 0 {
+		if _, duplicate := unitKeys[key]; u.ID == "" || unitIDs[u.ID] || u.UnitID == "" || duplicate || docs[u.DocumentID].ID == "" || u.PageIndex < 0 || u.Order < 0 {
 			return nil, fmt.Errorf("invalid source unit: %s", u.ID)
 		}
 		unitIDs[u.ID] = true
-		unitKeys[key] = true
+		unitKeys[key] = u
 	}
+	physical := m.HasPhysicalPDFMapping()
+	pageCounts := map[string]int{}
 	chunks := map[string]bool{}
 	for _, c := range p.Chunks {
 		if c.ID == "" || chunks[c.ID] || docs[c.DocumentID].ID == "" || c.Order != orders[c.DocumentID] || strings.TrimSpace(c.Content) == "" || c.TokenCount < 1 {
@@ -259,9 +262,30 @@ func Read(filename string) (*Package, error) {
 		orders[c.DocumentID]++
 		for _, a := range c.SourceAnchors {
 			id, ok := a["unit_id"].(string)
-			if !ok || !unitKeys[c.DocumentID+"\x00"+id] {
+			unit, exists := unitKeys[c.DocumentID+"\x00"+id]
+			if !ok || !exists {
 				return nil, fmt.Errorf("unknown source anchor: %s", c.ID)
 			}
+			doc := docs[c.DocumentID]
+			if physical && strings.EqualFold(path.Ext(doc.OriginalFile), ".pdf") {
+				index, ok := a["page_index"].(float64)
+				if !ok || !unit.pageIndexPresent || index != float64(unit.PageIndex) {
+					return nil, fmt.Errorf("invalid physical page anchor: %s", c.ID)
+				}
+				count := pageCounts[doc.ID]
+				if count == 0 {
+					var err error
+					count, err = pdfMemberPages(files[doc.OriginalFile])
+					if err != nil {
+						return nil, fmt.Errorf("invalid physical page source %s: %w", doc.ID, err)
+					}
+					pageCounts[doc.ID] = count
+				}
+				if unit.PageIndex >= count {
+					return nil, fmt.Errorf("physical page anchor out of range: %s", c.ID)
+				}
+			}
+
 		}
 	}
 	for id := range docs {

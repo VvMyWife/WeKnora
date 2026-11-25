@@ -41,6 +41,8 @@ type SourceLocator struct {
 	SourceID string `json:"source_id,omitempty"`
 	// SourceHash binds the locator to the knowledge record’s source revision hash.
 	SourceHash string `json:"source_hash,omitempty"`
+	// ArchiveVersionID pins a verified physical PDF locator to immutable bytes.
+	ArchiveVersionID string `json:"archive_version_id,omitempty"`
 	// Page is the 1-based PDF page.
 	Page int `json:"page,omitempty"`
 	// BBox is [x0, y0, x1, y1] as fractions of the page width and height,

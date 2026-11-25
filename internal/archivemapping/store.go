@@ -242,3 +242,40 @@ func (s *Store) ItemState(ctx context.Context, tenant uint64, kb, batch, item, s
 	}
 	return s.DB.WithContext(ctx).Model(&Item{}).Where("id = ? AND batch_id = ? AND status <> ?", item, batch, "bound").Updates(map[string]any{"status": status, "error": reason, "updated_at": time.Now().UTC()}).Error
 }
+
+func (s *Store) RegisterParsedPDF(ctx context.Context, kb, expectedFileHash string, staged Version) (*Version, error) {
+	var result Version
+	err := s.DB.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		var knowledge types.Knowledge
+		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).
+			Where("id = ? AND tenant_id = ? AND knowledge_base_id = ?", staged.KnowledgeID, staged.TenantID, kb).
+			First(&knowledge).Error; err != nil {
+			return err
+		}
+		if knowledge.FileHash != expectedFileHash {
+			return fmt.Errorf("PDF source changed during parsing")
+		}
+		query := tx.Where("tenant_id = ? AND knowledge_id = ? AND sha256 = ? AND file_type = ?",
+			staged.TenantID, staged.KnowledgeID, staged.SHA256, "pdf")
+		if err := query.Order("created_at").First(&result).Error; errors.Is(err, gorm.ErrRecordNotFound) {
+			result = staged
+			if err := tx.Create(&result).Error; err != nil {
+				return err
+			}
+		} else if err != nil {
+			return err
+		}
+		var active Version
+		if err := tx.Table("archive_mapping_versions AS v").Select("v.*").
+			Joins("JOIN archive_mapping_links l ON l.version_id = v.id AND l.tenant_id = v.tenant_id AND l.knowledge_id = v.knowledge_id").
+			Where("l.tenant_id = ? AND l.knowledge_id = ?", staged.TenantID, staged.KnowledgeID).
+			Take(&active).Error; err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+			return err
+		}
+		if active.ID == "" || active.CreatedBy == "native-pdf" {
+			return setLink(tx, staged.TenantID, staged.KnowledgeID, result.ID)
+		}
+		return nil
+	})
+	return &result, err
+}

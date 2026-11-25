@@ -6,11 +6,14 @@ import (
 	"fmt"
 	"html"
 	"regexp"
+	"sort"
 	"strings"
 	"sync"
 	"time"
 
+	"github.com/Tencent/WeKnora/internal/archivemapping"
 	"github.com/Tencent/WeKnora/internal/logger"
+	"github.com/Tencent/WeKnora/internal/types"
 )
 
 type scopeKey struct{}
@@ -79,6 +82,7 @@ func (s *Scope) Offer(ctx context.Context, chunk, knowledge, kb, provided string
 		ID, KnowledgeID, KnowledgeBaseID, Content, ChunkType, Metadata, RelationChunks string
 		TenantID                                                                       uint64
 		ContentRevision                                                                int
+		SourceLocators                                                                 types.SourceLocators `gorm:"type:json"`
 	}
 	e := s.store.DB.WithContext(ctx).Table("chunks").Where("id=? AND knowledge_id=? AND knowledge_base_id=? AND deleted_at IS NULL", chunk, knowledge, kb).Take(&row).Error
 	if e != nil {
@@ -146,10 +150,24 @@ func (s *Scope) Offer(ctx context.Context, chunk, knowledge, kb, provided string
 			return e
 		}
 	}
+	physicalPages := false
+	if kind == "chunk" && row.ChunkType == string(types.ChunkTypeText) {
+		pinnedID, pages := pinnedPDFPages(row.SourceLocators)
+		if pinnedID != "" {
+			versions := archivemapping.NewStore(s.store.DB)
+			pinned, err := versions.Version(ctx, row.TenantID, knowledge, pinnedID)
+			if err == nil && strings.EqualFold(pinned.FileType, "pdf") && pinned.SHA256 != "" {
+				archive.ID, archive.SHA256, archive.FileName = pinned.ID, pinned.SHA256, pinned.FileName
+				version = pinned.ID
+				location = Location{Status: PageKnown, Pages: pages}
+				physicalPages = true
+			}
+		}
+	}
 	if strings.TrimSpace(original.Title) == "" {
 		original.Title = knowledge
 	}
-	sum := Summary{ID: EvidenceID(s.tenant, s.session, s.message, chunk, snapshot, version, revision), ChunkID: chunk, KnowledgeID: knowledge, KnowledgeBaseID: kb, Title: original.Title, ContentRevision: revision, ContentSHA256: Hash(snapshot), ArchiveVersionID: version, ArchiveFileName: archive.FileName, ArchiveSHA256: archive.SHA256, SourceKind: kind, Location: location, Origins: origins}
+	sum := Summary{ID: EvidenceID(s.tenant, s.session, s.message, chunk, snapshot, version, revision), ChunkID: chunk, KnowledgeID: knowledge, KnowledgeBaseID: kb, Title: original.Title, ContentRevision: revision, ContentSHA256: Hash(snapshot), ArchiveVersionID: version, ArchiveFileName: archive.FileName, ArchiveSHA256: archive.SHA256, SourceKind: kind, Location: location, PhysicalPages: physicalPages, Origins: origins}
 	s.evidence[chunk] = offeredEvidence{sum, Record{ID: sum.ID, TenantID: s.tenant, KnowledgeTenantID: row.TenantID, SessionID: s.session, MessageID: s.message, KnowledgeID: knowledge, ChunkID: chunk, Snapshot: snapshot}}
 	return nil
 }
@@ -315,4 +333,25 @@ func transformCitationTags(answer string, replace func(string) string) string {
 // use this to render public footnotes without altering literal code examples.
 func ProjectCitationTags(answer string, replace func(string) string) string {
 	return transformCitationTags(answer, replace)
+}
+
+func pinnedPDFPages(locators types.SourceLocators) (string, []int) {
+	var version string
+	pages := map[int]struct{}{}
+	for _, locator := range locators {
+		if locator.Type != types.SourceLocatorPDF || locator.Partial || locator.Page < 1 || locator.ArchiveVersionID == "" {
+			return "", nil
+		}
+		if version != "" && version != locator.ArchiveVersionID {
+			return "", nil
+		}
+		version = locator.ArchiveVersionID
+		pages[locator.Page] = struct{}{}
+	}
+	numbers := make([]int, 0, len(pages))
+	for number := range pages {
+		numbers = append(numbers, number)
+	}
+	sort.Ints(numbers)
+	return version, numbers
 }

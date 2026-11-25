@@ -55,7 +55,11 @@ func withExternalFile(filename, member, name string, fn func(*multipart.FileHead
 		return e
 	}
 	defer in.Close()
-	temp, e := os.CreateTemp("", "external-member-*.multipart")
+	return withArchiveFile(in, name, fn)
+}
+
+func withArchiveFile(in io.Reader, name string, fn func(*multipart.FileHeader) error) error {
+	temp, e := os.CreateTemp("", "weknora-archive-*.multipart")
 	if e != nil {
 		return e
 	}
@@ -264,9 +268,29 @@ func (s *knowledgeService) processExternalDocument(ctx context.Context, kb *type
 	if e = s.checkExternalEmbeddingLimits(ctx, kb, k, &payload); e != nil {
 		return e
 	}
+	var archiveID string
+	if payload.PhysicalPDFMapping && strings.EqualFold(path.Ext(payload.Document.OriginalFile), ".pdf") && s.archiveStore != nil {
+		archive, err := s.archiveStore.Active(ctx, k.TenantID, k.ID)
+		if err != nil {
+			return err
+		}
+		if archive != nil && archive.SHA256 == payload.Document.SourceSHA256 {
+			archiveID = archive.ID
+		}
+	}
 	parsed := make([]types.ParsedChunk, len(payload.Chunks))
 	for i, ch := range payload.Chunks {
 		parsed[i] = types.ParsedChunk{Content: ch.Content, Seq: ch.Order, ChunkID: externalchunks.MappedID(r.ID, ch.ID)}
+		if archiveID != "" {
+			for _, anchor := range ch.SourceAnchors {
+				index, ok := anchor["page_index"].(float64)
+				if ok {
+					parsed[i].SourceLocators = append(parsed[i].SourceLocators, types.SourceLocator{
+						Type: types.SourceLocatorPDF, Page: int(index) + 1, ArchiveVersionID: archiveID,
+					})
+				}
+			}
+		}
 	}
 	s.skipStage(ctx, k.ID, types.StageDocReader, "external chunks: OCR and conversion bypassed")
 	if e = s.processChunks(ctx, kb, k, parsed, ProcessChunksOptions{ExternalPayload: &payload, ExternalRecordID: r.ID}); e != nil {

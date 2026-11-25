@@ -45,6 +45,7 @@ type Summary struct {
 	ArchiveSHA256    string         `json:"archive_sha256,omitempty"`
 	SourceKind       string         `json:"source_kind"`
 	Location         Location       `json:"location"`
+	PhysicalPages    bool           `json:"physical_pages,omitempty"`
 }
 type SourceOrigin struct {
 	KnowledgeID string   `json:"knowledge_id"`

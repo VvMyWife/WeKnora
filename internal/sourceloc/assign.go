@@ -112,6 +112,7 @@ func foldInto(last *types.SourceLocator, loc types.SourceLocator) bool {
 		last.Partial != loc.Partial ||
 		last.Mapping != loc.Mapping ||
 		last.SourceHash != loc.SourceHash ||
+		last.ArchiveVersionID != loc.ArchiveVersionID ||
 		last.SourceID != loc.SourceID {
 		return false
 	}

@@ -54,9 +54,10 @@ type Membership struct {
 func (Membership) TableName() string { return "external_chunk_memberships" }
 
 type DocumentPayload struct {
-	Document    Document     `json:"document"`
-	Chunks      []Chunk      `json:"chunks"`
-	SourceUnits []SourceUnit `json:"source_units"`
+	Document           Document     `json:"document"`
+	PhysicalPDFMapping bool         `json:"physical_pdf_mapping,omitempty"`
+	Chunks             []Chunk      `json:"chunks"`
+	SourceUnits        []SourceUnit `json:"source_units"`
 }
 type Store struct {
 	DB            *gorm.DB
@@ -121,7 +122,7 @@ func (s *Store) Plan(ctx context.Context, tenant uint64, kb, filename string, p 
 					return fmt.Errorf("相对路径已存在文档 %s（knowledge_id=%s）；本次不覆盖，请使用新知识库", d.RelativePath, existing.ID)
 				}
 			}
-			payload := DocumentPayload{Document: d, Chunks: []Chunk{}, SourceUnits: []SourceUnit{}}
+			payload := DocumentPayload{Document: d, PhysicalPDFMapping: p.Manifest.HasPhysicalPDFMapping(), Chunks: []Chunk{}, SourceUnits: []SourceUnit{}}
 			for _, c := range p.Chunks {
 				if c.DocumentID == d.ID {
 					payload.Chunks = append(payload.Chunks, c)

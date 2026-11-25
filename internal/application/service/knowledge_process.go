@@ -4838,6 +4838,11 @@ func (s *knowledgeService) convert(
 	}
 	if !isURL {
 		attachStructureBlocks(ctx, fileType, req.FileContent, result)
+		if strings.EqualFold(fileType, "pdf") {
+			if err := s.pinParsedPDF(ctx, knowledge, req.FileName, req.FileContent, result); err != nil {
+				logger.Warnf(ctx, "PDF source version unavailable for %s: %v", knowledge.ID, err)
+			}
+		}
 	}
 	docOutput := types.JSONMap{
 		"text_length":  len(result.MarkdownContent),
