@@ -1229,6 +1229,7 @@ const props = defineProps<{
   sessionId?: string;
   userQuery?: string;
   embeddedMode?: boolean;
+  inlineCitationPageDocuments?: string[];
   artifactsInDrawer?: boolean;
   embedChannelId?: string;
   embedToken?: string;
@@ -2966,6 +2967,7 @@ const renderAgentMarkdown = (
     sanitizeHtml: sanitizeMarkdownHTML,
     streaming: !isSegmentDone.value,
     knowledgeReferences: getReferencesForDrawer(),
+    inlineCitationPageDocuments: props.inlineCitationPageDocuments,
     artifacts: artifactList.value,
     cachedMermaidSvgHtml: streamingMermaidSvgCache.value,
     prepareMarkdown: prepareAgentMarkdown,

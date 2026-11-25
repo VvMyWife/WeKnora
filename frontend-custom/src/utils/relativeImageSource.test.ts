@@ -86,3 +86,10 @@ test('internal image URI with no unique cited document produces an unavailable l
     assert.doesNotMatch(html, /<a |<img|weknora:\/\//)
   }
 })
+
+test('only successfully rendered source pages replace their document image fallback', () => {
+  const image = `weknora://doc/${kid}/attachment/0/image/48.png`
+  assert.equal(relativeImageSourceHtml(image, [ref], [], [kid]), '')
+  assert.match(relativeImageSourceHtml(image, [ref], [], [kb])!, /预览对应原件/)
+  assert.equal(relativeImageSourceHtml('images/page_9_image_1.jpg', [ref], [], [kid]), '')
+})
