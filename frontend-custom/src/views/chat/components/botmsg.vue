@@ -52,9 +52,6 @@
                 <div class="ai-markdown-template markdown-content" v-stable-html="renderedHTML">
                 </div>
             </div>
-            <InlineCitationPages v-if="showInlineCitationPages"
-                :session-id="sessionId" :message-id="messageIdForArtifacts"
-                @rendered-documents="renderedCitationPageDocuments = $event" />
             <!-- 复制和添加到知识库按钮 - 非 Agent 模式下显示 -->
             <div v-if="answerFullyRendered && (content || session.content)" class="answer-toolbar"
                 :class="{ 'answer-toolbar--persistent': hasArtifacts || artifactsCollecting }">
@@ -133,7 +130,7 @@
             <div v-if="isImgLoading" class="img_loading"><t-loading size="small"></t-loading><span>{{
                 $t('common.loading') }}</span></div>
         </div>
-        <InlineCitationPages v-if="session.isAgentMode && showInlineCitationPages && !session.hideContent"
+        <InlineCitationPages v-if="showInlineCitationPages"
             :session-id="sessionId" :message-id="messageIdForArtifacts"
             @rendered-documents="renderedCitationPageDocuments = $event" />
         <ArchivalCitations v-if="!embeddedMode" ref="archivalPanel" :session-id="sessionId" :message-id="messageIdForArtifacts" :complete="session.is_completed" :manifest="session.archival_citations" />
