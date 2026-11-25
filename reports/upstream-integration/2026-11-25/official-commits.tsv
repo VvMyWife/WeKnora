@@ -1,0 +1,174 @@
+4746d97d8410d204c7b635a75759016a1581891e	fix(ci): pin DocReader tests to Ubuntu 24.04 (#5536)
+26d062e35cbf904bbd26fd373f7939afffb672a5	fix(agent): treat an unset MCP selection mode as none, not all (#5450)
+27e7edf147f81ef1813ff964c7e54c365e920d10	fix(obs): remove public-read ACL from SaveBytes PutObject (#5124)
+9d2ffd63bda18457e320d6bc04030ae24649c88f	fix(wiki): preserve source pages during document reparse (#5186)
+a124732dbf0cc4d9f074fbfe2c99f615ed83a2af	fix(im): isolate user and thread session mappings (#5067)
+f060553906b930b18d6a4fe4fc5ee6adfd0aa276	fix(knowledge): fence subtask releases by parse attempt (#5361)
+4cb435e10ec4d81247edd3b8eb27091eb293516a	fix(knowledge): fence multimodal counters by image batch (#5245)
+f9e485ecdb80667e123b377be18145fa3032a4b1	fix(ima): preserve deletion tracking after failed replacements (#5514)
+273e33c6a39694550681662f89b81d396db2e5d3	fix(ima): reject incomplete listings before reconciling deletions (#5516)
+ff016ebf322bd46f52d7af113b07f0cd894c8747	fix(confluence): retain failed pages for deletion reconciliation (#5431)
+881e9e914bd2ac8a9908f551b87c2c1ae4a76e14	fix(yuque): reject repeated final document pages (#5545)
+0cd0d8530286dc9d7aaa644e8143c8c9d597495d	test(notion): keep attachment SSRF validation offline (#5550)
+181ec5f461929a4fffc4acc4163ff98a97445fde	fix(notion): reject search pages missing a continuation cursor (#5548)
+8361597b6aa9f458d460b19e8e2cc2720ce781fc	fix(feishu): reject incomplete Wiki pagination without a token (#5553)
+f120e8f220f67880077f47662072c09f7d0f166d	fix(feishu): reject incomplete Drive pagination without a token (#5554)
+04bfe31236129344e78bf9fd67c58d496b6601a0	fix(weaviate): preserve per-source vector identity within a chunk (#5008)
+ad76aa43a66d5a01776b37511b59a0a387e331fb	fix(graph): report failed Neo4j deletion batches (#5237)
+96d99e52097297630df2db9ef721ab4a6d6e5cc5	fix(retrieval): select primary hits after chunk hydration (#5359)
+f4d01032d8cc18e76ed9fee6a33e69b294e5e38f	fix(agent): reject blank final synthesis answers (#5393)
+fd207aaa47c2afa940187f13c2341b78453b8266	fix(docparser): support self-hosted MinerU 4.1 Tasks (#5121)
+8b7c9d84dc945c1c6f58da3b7436d5632aacac55	fix(models): recover terminal Responses tool calls (#5406)
+5be3f08639827c8cee589f568c237b1b5496c7a3	fix(ollama): retain streamed tool calls across frames (#5423)
+11da4aa71fc8ac1e8b0a0a5d2a8632e10d4c4894	fix(ollama): preserve native tool call IDs (#5443)
+8a553a0e6a3c41fb3751451244c84d3f6de13de7	fix(gemini): normalize nullable tool parameter schemas (#5457)
+5dd53effac6fd3e50b2e773ffe661941d247e770	fix(agent): resolve shared KB storage for data analysis (#5025)
+27abfe5dbd61c73914f7f34822c68e9614c7d0d6	fix(agent): preserve shared image references from read_document (#5075)
+024ca39bb086994400bfe55a471006350a979c49	fix(retrieval): record citation-source image handles as message evidence (#5396)
+1025118c1ea9c1f3da074495df995ded0c026766	fix(mcp): surface errors after partial ask answers (#5382)
+fd4122a63c2e215125fa384fe99055a2f12347ab	fix(chat): reject parser-reported attachment failures (#5383)
+d8c8ecd3ff958fbe76fe09b1e6a6411ab6785105	fix(chat): stop cleanup batch after delete failures (#5384)
+79298a35838719cdc332e039ff2f31c5d722fa09	fix(knowledge): return sync passage processing errors (#5385)
+082830415161335c3ab3d0f2b2690755d0d9763c	fix(qa): report token usage on quick-answer complete events (#5253)
+71a2b8214af5f940b6d606f477021a2f8bf07b1b	fix(datasource): skip replay of finished sync rounds on retry (#5038)
+39d18665b18268a8c8f747cc16f67d40d9f2f821	fix(datasource): preserve pause state during sync writes (#5433)
+b0b87de70c9cc484e6bc844deed83be4591c9876	test(yuque): keep custom base URL validation offline (#5542)
+f852cfaf153aa4c3c15e38bfaf9eaabec90e4100	fix(docreader): preserve inline base64 image examples (#5448)
+06d24305a513cd3c5a519933f3d295091470bece	fix(agent): preserve final synthesis truncation in streams and history (#5006)
+206fdaf847e7d79050267b9d5ab6955d290cece0	fix(datasource): retry cancelled syncs when the log write fails (#5418)
+eceeb94324126b2b54d6a013e1abd256ac29d365	fix(retrieval): reject changed chunk revisions after rerank (#5424)
+f446e0c211f9a9a571fae9a29724d25697bd6e0b	fix(feishu): reject encrypted callbacks with a partial AES block (#5349)
+60eafa74786f8a8eb22e1d88168937e9514ac4c8	fix(knowledge): check parser engine before reparse deletes existing content (#5377)
+23fdef1018680ebdebe3316aa0f3c0fafbf9b1b1	fix(session): end SSE responses after a final message-persistence error (#5466)
+7c87789522ed1c1724ac80f78b4ed8f348b48d91	fix(im): share knowledge import format validation (#5405)
+829c02606efaa8ff1b7dec7d6fbfeb1965bb1f55	fix(citation): keep display-math blocks intact before a citation tag (issue #5401) (#5409)
+ad9149dd1bd27eafcdd100a6ab48dfbce26080c3	fix(build): strip LLVM LTO sections from the anydoc archive (#5417)
+110be5e87469ddbff0e26f4dfb0dab0d59876117	fix(feishu): skip child expansion for a shortcut without its origin (#5027)
+e91630db0e8dade2136e08d520ee0ed960454f2e	fix(notion): retain paragraph and to-do descendants (#5042)
+a0b343ef1e473fae18d0ee7e43f4e5619265c698	fix(rss): resolve article resources against the final URL (#5043)
+7c90c494d94748e69123d450bf6f2e3e5b63acc5	fix(rss): preserve plain text in JSON feed imports (#5434)
+810a9392d1ab9e43e9d35cc80bde78bb2ed0bff2	fix(rss): discard the batch when sync is canceled (#5463)
+c39eecbf65bddcf8840d1456a2b7fa5b5499647c	fix(yuque): discard canceled sync results (#5493)
+3b26feab774d467095a7bebb939cf01d7fa72c1b	fix(yuque): sync notes without version timestamps (#5503)
+61350b545274b6d5151ec6a2e6dc18c22c8d8a8c	fix(yuque): honor HTTP dates in Retry-After (#5541)
+1ec64fa45c6719774f7f1b76a013eb7115d24f72	fix(yuque): preserve Markdown that starts with custom HTML elements (#5544)
+e9764e52a98451241e87cb4114febcffbd83716c	fix(yuque): bound TOC ancestor traversal by depth (#5546)
+64abf163ddb91f618e4f05d60439a19f9f9b1620	fix(notion): encode block pagination cursors (#5549)
+1d3f90da26e1d66a2b091ccef8eda4aa35686d6a	fix(notion): preserve backticks in inline code (#5551)
+5d97b55999bd36e68ade5e90ef35019b910b3269	fix(notion): preserve parenthesized Markdown link URLs (#5552)
+28a85a56ee01f014495e6f3ca68281e48849d0ab	fix(feishu): encode Wiki pagination tokens (#5555)
+1c44d6a4131e9da19ef21af90216916e608a7393	fix(rss): normalize custom feed header names (#5556)
+71cccb57852e23436ea69dbdd1ef73d9edce5515	fix(agent): keep approval write and stdin previews on a rune boundary (#5327)
+9639e656cbe1f9d89f0ff48c039aef7d19cd1a51	fix(agent): invalidate file cache after inline async shell jobs (#5332)
+ceb36a4141725844ff126a8547ab9c38870638c8	fix(agent): replay background notices when resuming runs (#5334)
+84b9e275f7086bb8f6eafd3a550bf6692002825b	fix(docparser): handle missing reader results without panicking (#5350)
+c3d1cac42f3c173824fe0f16c7d9c671b3543ad8	fix(knowledge): retry transient knowledge-base reads during parsing (#5356)
+db3fb7d3488816c995d37c00a8dd52cb0b0c87b7	fix(agent): normalize integer arguments without rounding (#5478)
+7866cbce8150285f48047ace0ec44a78f6cb39c9	fix(agent): retain all fitting ranked search hits (#5483)
+4208950fd981a05e396febb36b2c91921377434e	fix(agent): budget rendered document pages (#5484)
+4362b010256964ca7af9efd5cb8d41328ec5c331	fix(rerank): reject malformed NVIDIA NIM rankings (#5527)
+4b40f9c96dbd8fdbf6743d2cfc50c8e30afc1601	fix(wiki): reject page creation after knowledge base deletion (#5560)
+a1fa13cb22d4d0d2a0707973a43d9f0ea8e4f76d	fix(website): adapt adopter cards and expose website links
+eaed8597891bda864f5675e0255d90f7b7ecbb47	chore(i18n): align zh-TW terminology with Taiwan usage (#5012)
+d93888dcd94c88698189c869ae0fc94e83ea74a7	fix(feishu): reject incomplete docx and bitable pagination
+20bee1c1c7f0733bf765a90471624b6e8618ba58	fix(automation): isolate asynchronous editor sessions (#5041)
+f1d78e07b1a57475886c0b7bafabbba0c061ea3e	fix(knowledge): isolate manual editor document loads (#5044)
+93a902f1a4e4628beab10e4783c4e52de13aa5c4	fix(chat): isolate attachment uploads across session switches (#5059)
+c25d50000c95e7ebc0a4dfcfea0e00022b9ed316	fix(faq): preserve operational fields in web imports (#5086)
+9e418cb92ef2e20ed1bbe5bace5503c30e8a3831	fix(frontend): use CSS variables for chat code block token colors in dark mode (#5310)
+0cceeb4f8c6920ad5035d03bf56dcba48c0a3d35	fix(automation): preserve unchanged one-shot schedule instants (#5330)
+21f528568c650e06621c21cd7d1cc2d984a34d6c	feat(citations): show the source knowledge base on the citation header (#5343)
+f0d048610ea40b976d61748344a17e92be8aa7b6	fix(assistant): reject overlapping page edit anchors (#5379)
+36919de96ca8e9d1ccfbc7f20fe0bd6e722bcbeb	fix(assistant): preserve later text edits when undoing page fills (#5380)
+b0528b1bedeb376793dcd657095076c4c10ec495	fix(cmdk): respect IME confirmation and native button Enter (#5397)
+6ddd46108f7716232759daf37d16750b29373991	fix(chat): consume search prefills on reused new-chat pages (#5398)
+7c6051c6d9a93c02b85a821da9454aa7e862c621	fix(cmdk): distinguish search failures from empty results (#5400)
+70817bce55283f512816b1df99cc0d316b44d93e	fix(preview): respect code fences when resolving Markdown images (#5408)
+882d26b3bcc828889bba3fc2218c134adc5128da	fix(frontend): prevent textarea actions from overlapping editor content (#5438)
+3ff8f28edd9a6022f1a4aa1632354cb5b3fd6cd3	fix(chunker): align preview estimates with the token budget (#5444)
+b5e4b31ebe1c2fe9b4fef46da27e0a74c73904a3	fix(preview): preserve escaped pipes when repairing imported tables (#5453)
+6a0e2e0bd50b7a6b1e2ffd501747c122222dfe12	fix(frontend): preserve whitespace in conversation Markdown exports (#5456)
+42ace9e1090fad30b59656bdabd6aa3b552314d1	fix(frontend): match agent rerank requirement to enabled tools (#5461)
+40db7fbff93a0812f1eac785501ef9fb245b29fb	fix(frontend): paginate documents when the viewport is not filled (#5517)
+fca90bba74b522e81ec0567bf184fbf6ea69a02b	fix(notion): retry sync after nested block fetch failures (#5566)
+55f634e1b47087642b3c028cd28ad1d2c07bde3c	fix(chat): count search-step files by document, not knowledge base (#5489)
+187b5f1abd224efa6cdbf1de12e9abcdac5109a9	fix(website): unify enterprise case cards and navigation (#5570)
+0df33ad3b60fd380309f0d1b7cc78446dc30ee7c	fix(notion): skip 404 nested blocks and preserve database record retry
+c41b990888c5cc95d801ef702a1e124c41cc00f8	Merge pull request #5568 from yetuge/fix/feishu-block-pagination-guards
+f64dbf002490fd947b4bce48a8cd4fa0dff6dcbd	Merge pull request #5574 from NianJiuZst/fix/notion-nested-block-404-and-db-records
+0d370dc9b967501b5aa1e3af43a791500fd702ae	fix(rerank): reject malformed DashScope rankings
+a5f0fb3810630d64c3939817f24c765eadee9df3	fix(preview): resolve parenthesized and indented Markdown images
+16974fc283067c8483b2f2f9d8831a3f5d974033	Merge pull request #5577 from ydflow/fix/dashscope-rerank-validation
+7d064bc3a259f87634840199f565ec4dd644ba1e	Merge pull request #5585 from wzxsdf/codex/fix-preview-image-paths
+496ff33dd5ec9d56ef539beca9dbdb96de9dccfa	feat(mcp): revalidate saved tool directories when the server changes
+d08d3e5a143e15266741ce968075ad86221725da	docs(helm): fix dead CONTRIBUTING.md link
+67515c471e2d85ed9315608cd41feb623a5fa445	Merge pull request #5624 from ochanism/feat/mcp-catalog-revalidation
+23ed88161156ec8c10b3fa9f82512195a60e30b9	Merge pull request #5622 from farisbasha/docs-helm-contributing-link
+fb18d8021fedf3b59badfb55164f966e7daaa72e	perf(i18n,docs): split and lazy-load frontend locales and deduplicate Swagger codegen
+832b5fede868f1efbafd720bad3e38d36e1b4a60	ci: close 6 production test gate blind spots and add Lite E2E smoke test
+405e75a568b87d98a27e5a3265a30aa4086aa842	fix(i18n,docs): sync embed shared i18n, harden chunk failure recovery, and enforce LF on swagger specs
+6729e7bf384b452677f4398e9f4e670bb61e17f7	fix(ci,hooks): watch swagger specs in app.yml, compile all sandbox test pkgs, and enforce client gofmt in hooks
+33138d35329549afb8569a22d307ef3f936493cf	fix(ci,smoke): prevent lite_smoke cleanup deadlock/race and close sibling CI gates
+2d839f469c650702d6d7b2f40f1d3f95148761fa	fix(i18n,docs): preserve native ko-KR/ru-RU bundles over embed seeds and guard concurrent language switches
+399f67ed8f706a90b95730f1f81fd931378447c8	Merge pull request #5639 from NianJiuZst/refactor/i18n-split-lazy-and-swagger-sync
+d95139b93e0cc09ff00272aceb34d3507691f088	Merge pull request #5636 from NianJiuZst/ci/governance-gates
+0831c185f24fac99eb77353fd91c399302d7b030	fix(knowledge): keep a reparse searchable until its worker replaces the content
+fb2afd44a986634b1fabc29fd04eee2d2ff604a5	fix(knowledge): guard reparse resource swap, quota delta, and live retrieval state
+b72bc44e32c69c55ed8ee475fe7dade84c873300	Merge pull request #5024 from Aling33/fix/reparse-preserve-indexed-content
+c0ad1d0ceaadbd096d90cff496ffd38746e83035	fix(knowledge): support KB clone and document move progress without Redis in Lite mode
+04ca14dbac566e8ed482b7f07d83dfd7a1cd50d8	fix(feishu,ui): skip deleted selected wiki nodes and surface stale selections
+88f3282223f6e54331e2a73e8d2943b8586c81d2	fix(feishu,ui): sweep attachments on deletion and harden deleted-resource UX
+3d743938614acae99a01a10fd8c1ab421083a13c	fix(feishu,ui): preserve live nested drive shortcuts, guard ancestor reveal, and merge deleted titles
+5dec105bf8b0c7e34a37184bb700803086ac5a50	fix(knowledge): prevent Lite reparse move from poisoning transfer phase and fix lint
+81a03046bed16504d249bb22591492966fc9c9b9	Merge pull request #5658 from NianJiuZst/fix/lite-kb-clone-move-progress
+be0f8457e31a84b6521ecde97c57c80d1a614c89	fix(frontend): render Mermaid in Markdown document preview
+32a9452c28a2788b9bb80f3e51e3018d572154b8	Merge pull request #5650 from NianJiuZst/fix/feishu-deleted-selected-node-sync
+84aeb5098754280536bc2711caf15066d413c83d	fix(mcp): load scope options when returning to configuration
+0bc7ca29dde361ba6d0d928e6fa7c8ad96c20631	fix(system): support cross-page server-side search in platform user management
+39f2ae1c7f3f0745fea6ed4644364f8245320116	fix(system): harden search error/lock state transitions and fix Go lint lll violations
+4f3ad8a5b6847512186c34c81aba86eea31a7fc6	Merge pull request #5643 from NianJiuZst/fix/system-user-management-search
+d80d3c1e23480ff8d72a8faa4e8ac7e869bae3cf	Merge pull request #5684 from Zaqqmm/fix/mcp-scope-navigation-5680
+74767642db6e9f9b55a943475c6db28f7601866e	Merge pull request #5677 from Kidz0419/codex/document-preview-mermaid
+60dbbc80b2746a09e67e7a73ea113511dc250954	fix(data-analysis): auto-detect Excel header rows, check result consistency, and surface analysis failures
+53ce747b5ca4c5b1b8e001a3d93769fd331eada8	feat(website): add eight community partners to showcase (#5690)
+c45922ce22e3f31d3b5cdb82df15b5a01eca030c	fix(feishu): resolve mentions in incoming messages
+a6449dea85eaff5823f35b4044d1b7cf37e17449	feat(embed): allow deleting signed visitor sessions
+69417a238b2f5d2772140d4261816603e596eec7	fix(wiki): persist finalize work before settling ingest batches
+5d3fde9eb9190cb17a19713bc8e7d04ffa65d26e	Merge pull request #5689 from NianJiuZst/fix/data-analysis-excel-header
+965f33c632fd6e011046ac861c7c4737837a2831	Merge pull request #5721 from 30bef100w/fix/wiki-finalize-durable-handoff
+a038951d54b004b65c5d81d4eadb72eba1fb02e1	Merge pull request #5715 from icearia0219/codex/embed-session-delete
+1b3a1febf3e5c9b37564912d288adc838f6a2e2b	Merge pull request #5713 from wzxsdf/codex/feishu-resolve-mentions
+8941b3a86ce6d7ea5c9fe90cf1862c1245924e86	fix(datasource): isolate per-item ingest failures in streaming sync and classify validation rejections
+da8227d9694f605f48d88787abee077a817ef9e5	fix(datasource): preserve scheduled syncs across quiet failure rounds and recovery
+9a98c3aaca1f65fab2ca14006e73e6cde989af2b	Merge pull request #5725 from NianJiuZst/fix/datasource-sync-item-failure
+4374bf340f9f74f724e6dc5f1380460df798ac04	feat(auth): promote bootstrap system admin at sign-up (fixes #5001)
+5d8bc9ff5bc1bb86cd619ca789ef5afd9677b4d2	fix(gitlab): import newly selected paths across unchanged and moved commits (#5717)
+859bca01917afc5953d5fec3c97a0f0a2ef2d507	Merge pull request #5718 from tsumon/fix/gitlab-scope-expansion-5717
+1ef55d4a8dd2f6d464532d4da750b870416b5bae	Merge pull request #5712 from Crazy-ChenMiLin/feat/issue-5001-bootstrap-system-admin-at-signup
+c920471d236ce8320246e24a6e6ea53dd8e940be	fix(frontend): correct API key labels in the model editor
+333734ee5215042ba20951b780618165cece9523	docs: correct built-in vendor count from 29 to 30
+9363f33dcb3242669286efe51c123a6e3b3ced97	fix(agent): bound split-turn compaction fallback
+0b9663d460574245a853f12232cbe9fb3e44a961	fix(knowledge): defer recovery when heartbeat lookup fails
+b4d95ec6368cdcd8ef880aaf84199f235804405b	Merge pull request #5743 from ydflow/fix/agent-turn-prefix-fallback-budget
+82caca267e60a53c620f2f506aa452ae5feec640	Merge pull request #5746 from OUAO-FRANK/codex/issue-5745-heartbeat-query-failure
+077e9750bd4f45e351e64a5bef16e63d5cbae764	Merge pull request #5740 from shengzhaowei/docs/vendor-count-30
+7a3ca499055247f7371752a0c9671e627cffbaae	Merge pull request #5735 from QuantumJumper23/fix/model-api-key-label
+a73c6648105b4827a532f86c2d8e7198e9f87a2a	fix(agent): abort context compaction when the turn is canceled (#5818)
+795fc74f8172417fef6c36059237cc14d93acc6e	fix(query-understand): preserve escaped backslashes during JSON recovery (#5823)
+9a762d95a317a530dfe793f392a084b2fa107769	fix(stream): clamp negative offsets in GetEvents and GetSteerEvents (#5773)
+fea856ee77e7222804c654480ef826a1849aa649	fix(agent): stop materializing knowledge files after cancellation (#5664)
+f4859f7fbb631af34cd13e5a81fccd872890ebce	fix(docparser): bound PaddleOCR-VL Cloud submit upload with the configured timeout (#5590)
+62185f03c1594036602b84890e7f35533d2378c9	fix(anydoc): update zip to 9.0.5 (#5833)
+dedca86ca493d7f0eefd10ff3109a111a13b1a23	fix: stream TOS files without unsupported seeking
+cf5306da87d6348c7a1ba4583dd4f6d524f7bfb3	test(file): keep TOS preview assertion within lint line limit
+e3933af3b49059bc5d89acd40cdcfb352465ac36	fix(telegram): report the Bot API error description on failed calls (#5821)
+173befbe7f6d803278b4aee2ed5d045067bb662a	fix(cli): validate session list --since before authentication (#5808)
+2b964af2cde01577c15a742a67659e8e59a3c18d	fix(search): highlight keywords without rewriting markup (#5578)
+40013f001af502e89a1b2baa43e5457728554a6c	fix(mcp-server): create knowledge bases with the web UI chunking defaults (#5822)
+fc39b1ff21b27c2ac3d101b4435c173215dd2fed	fix(kb): persist the default indexing strategy for FAQ knowledge bases (#5369)
+f59bc1cc3a246865c205c2ba746b41f7664cbfac	fix(service): make IsImageType case-insensitive like IsAudioType/IsVideoType (#5371)
+6087a8e1f69e93108551de0c96572639ebff03eb	fix(knowledge): keep leading digits in generated questions (#5734)
+032c67f30d63f744ffa9131887c35f7d15121224	fix(client): reject trailing data in JSON responses (#5751)
+89cb4ba6e41dc0ff3f614c03f6c84d5e55e7e0cb	fix(system): refine document progress UI, refresh flow, and backend filters
+ec25f57e55de58bc34a8c918dfe2b2645cfce93f	chore(release): prepare v0.9.1 (#5889)
+71c32af9273482e0dad013d0e3bea2f4d719516c	fix(chat): anchor mention file browser above input and align popup styles
