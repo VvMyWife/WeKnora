@@ -234,6 +234,13 @@ func (s *knowledgeService) StartExternalImport(ctx context.Context, kbID, batchI
 }
 
 func (s *knowledgeService) enqueueExternalDocument(ctx context.Context, k *types.Knowledge, r *externalchunks.Record, attempt int) error {
+	if attempt <= 0 {
+		_, next, err := s.tracker().OpenAttempt(ctx, k.ID, "")
+		if err != nil {
+			return fmt.Errorf("open external document parse attempt: %w", err)
+		}
+		attempt = next
+	}
 	raw, e := json.Marshal(types.DocumentProcessPayload{TenantID: k.TenantID, KnowledgeID: k.ID, KnowledgeBaseID: k.KnowledgeBaseID, FileType: "md", FilePath: k.FilePath, FileName: k.FileName, Attempt: attempt})
 	if e != nil {
 		return e
@@ -262,7 +269,12 @@ func (s *knowledgeService) processExternalDocument(ctx context.Context, kb *type
 		parsed[i] = types.ParsedChunk{Content: ch.Content, Seq: ch.Order, ChunkID: externalchunks.MappedID(r.ID, ch.ID)}
 	}
 	s.skipStage(ctx, k.ID, types.StageDocReader, "external chunks: OCR and conversion bypassed")
-	s.processChunks(ctx, kb, k, parsed, ProcessChunksOptions{ExternalPayload: &payload, ExternalRecordID: r.ID})
+	if e = s.processChunks(ctx, kb, k, parsed, ProcessChunksOptions{ExternalPayload: &payload, ExternalRecordID: r.ID}); e != nil {
+		return e
+	}
+	if s.currentAttemptSuperseded(ctx, k.ID) || s.isKnowledgeSourceReplaced(ctx, k) {
+		return nil
+	}
 	if k.ParseStatus == types.ParseStatusFailed {
 		return fmt.Errorf("%s", k.ErrorMessage)
 	}

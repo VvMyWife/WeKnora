@@ -4236,6 +4236,12 @@ func (s *knowledgeService) ProcessDocument(ctx context.Context, t *asynq.Task) e
 
 	if knowledge.Source == "external_chunks" {
 		if externalErr := s.processExternalDocument(ctx, kb, knowledge); externalErr != nil {
+			if s.currentAttemptSuperseded(ctx, knowledge.ID) || s.isKnowledgeSourceReplaced(ctx, knowledge) {
+				return nil
+			}
+			if aborted, status := s.isKnowledgeAborted(ctx, knowledge.TenantID, knowledge.ID); aborted {
+				return abortRetryErr(ctx, knowledge.ID, status)
+			}
 			knowledge.ParseStatus = types.ParseStatusFailed
 			knowledge.ErrorMessage = externalErr.Error()
 			_ = s.repo.UpdateKnowledge(ctx, knowledge)
