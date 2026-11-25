@@ -38,7 +38,6 @@ export type ChatMarkdownRendererOptions = {
 }
 
 export type RenderChatMarkdownOptions = {
-  inlineCitationPageDocuments?: string[]
   artifacts?: ArtifactRefMeta[]
   renderer: Renderer
   escapeMarkdown: (markdown: string) => string
@@ -544,7 +543,7 @@ export function renderChatMarkdown(rawMarkdown: unknown, options: RenderChatMark
     renderer: options.renderer,
     walkTokens(token) {
       if (token.type !== 'image') return
-      const source = relativeImageSourceHtml(token.href, options.knowledgeReferences || [], options.artifacts || [], options.inlineCitationPageDocuments)
+      const source = relativeImageSourceHtml(token.href, options.knowledgeReferences || [], options.artifacts || [])
       if (source !== null) Object.assign(token, { type: 'html', text: source, raw: source })
     },
     breaks: true,
