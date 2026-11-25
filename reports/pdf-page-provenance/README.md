@@ -39,7 +39,9 @@ docker run --rm --pull never --network none -v "$PWD:/src" -v "$PWD/.go-modcache
 bash "$p/test-ui.sh"
 sha=$(cat "$p/build-source.sha")
 git diff --exit-code "$sha" HEAD -- internal frontend-custom migrations
-bash "$p/build-app.sh" "$sha"
+backend=$(cat "$p/backend-source.sha")
+git diff --exit-code "$backend" HEAD -- internal migrations
+bash "$p/build-app.sh" "$backend"
 bash "$p/build-ui.sh" "$sha"
 docker start ljc-20261125-proof-pg ljc-20261125-embedding
 docker compose -f "$p/compose.candidate.json" up -d --pull never
@@ -47,7 +49,7 @@ curl -fsS --retry 20 --retry-all-errors --retry-delay 2 http://127.0.0.1:28281/h
 python3 "$p/candidate-test.py"
 ```
 
-在 28282 的两个测试知识库中分别上传样例 PDF 和导入外部分块 ZIP。打开验收日志记录的问答，核对第 3 页缩略图、空白第 2 页、点击原地放大和原件校验。短文跨页形成同一 chunk 时，缩略图包含该块实际覆盖的来源页。
+候选测试脚本使用两个隔离知识库，分别上传样例 PDF 和导入外部分块 ZIP。打开验收日志记录的问答，核对第 3 页缩略图、空白第 2 页、点击原地放大和原件校验。短文跨页形成同一 chunk 时，缩略图包含该块实际覆盖的来源页。
 
 ## 发布、自检与回退
 
