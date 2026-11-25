@@ -60,3 +60,29 @@ test('drawer route parser rejects external, malformed and unscoped destinations'
   assert.equal(knowledgeSourcePreviewID('https://other.example'+url,origin),null)
   assert.equal(knowledgeSourcePreviewID('/platform/knowledge-bases/no?knowledge_id='+kid,origin),null)
 })
+
+test('stored document image URI renders an original preview even when the cited chunk has no image', () => {
+  const href = `weknora://doc/${kid}/attachment/0/image/48.png`
+  const html = renderChatMarkdown(`![条形缺陷评级总长度限制](${href})`, {
+    renderer: createChatMarkdownRenderer(),
+    escapeMarkdown: value => value,
+    sanitizeHtml: value => value,
+    knowledgeReferences: [{ ...ref, content: 'Text-only citation' }],
+  })
+  assert.match(html, /预览对应原件/)
+  assert.ok(html.includes(`/platform/knowledge-bases/${kb}?knowledge_id=${kid}`))
+  assert.doesNotMatch(html, /<img|weknora:\/\//)
+})
+
+test('internal image URI with no unique cited document produces an unavailable label', () => {
+  const prefix = `weknora://doc/${kid}/attachment/0/`
+  for (const [url, references] of [
+    [prefix + 'image/48.png', []],
+    [prefix + 'image/48.png', [ref, { ...ref, knowledge_base_id: kid }]],
+    [prefix + 'image/%2E%2E/48.png', [ref]],
+  ] as const) {
+    const html = relativeImageSourceHtml(url, [...references])!
+    assert.match(html, /图片附件不可用/)
+    assert.doesNotMatch(html, /<a |<img|weknora:\/\//)
+  }
+})
