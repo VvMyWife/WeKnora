@@ -2,11 +2,12 @@ package chatpipeline
 
 import (
 	"context"
-	"github.com/Tencent/WeKnora/internal/archivalcitations"
+	"strings"
 	"sync"
 	"testing"
 	"time"
 
+	"github.com/Tencent/WeKnora/internal/archivalcitations"
 	"github.com/Tencent/WeKnora/internal/event"
 	"github.com/Tencent/WeKnora/internal/models/chat"
 	"github.com/Tencent/WeKnora/internal/types"
@@ -129,10 +130,15 @@ func TestCitationCompletionWaitsForProviderDrain(t *testing.T) {
 		}
 		return count
 	}
-	require.Eventually(t, func() bool { return len(bus.finalAnswerContents()) >= 2 }, 2*time.Second, 5*time.Millisecond)
-	require.Zero(t, countDone(), "repair must not run while provider still owns stream resources")
+	require.Eventually(t, func() bool {
+		return len(bus.finalAnswerContents()) == 1 && len(model.stream) == 0
+	}, 2*time.Second, 5*time.Millisecond)
+	require.True(t, strings.HasPrefix("answer", strings.Join(bus.finalAnswerContents(), "")))
+	require.Never(t, func() bool { return countDone() != 0 }, 50*time.Millisecond, 5*time.Millisecond,
+		"repair must not run while provider still owns stream resources")
 	close(model.stream)
 	require.Eventually(t, func() bool { return countDone() == 1 }, 2*time.Second, 5*time.Millisecond)
+	require.Equal(t, "answer", strings.Join(bus.finalAnswerContents(), ""))
 }
 
 func (s *stubModelService) GetChatModel(context.Context, string) (chat.Chat, error) {
@@ -323,4 +329,72 @@ func TestStreamReportsIncompleteAsError(t *testing.T) {
 	for _, answer := range bus.finalAnswerEvents() {
 		require.False(t, answer.Done, "a cut-off stream must not close the answer as complete")
 	}
+}
+
+// The provider reports token usage on the stream's final chunk; the closing
+// answer event must carry it so the KnowledgeQA turn can report usage on the
+// complete event and persist it with the message (issue #3865).
+func TestStreamCarriesUsageOnFinalAnswer(t *testing.T) {
+	usage := &types.TokenUsage{PromptTokens: 21203, CompletionTokens: 27, TotalTokens: 21230}
+	bus := &syncEventBus{}
+	model := &openStreamChat{closeStream: true, chunks: []types.StreamResponse{
+		{ResponseType: types.ResponseTypeAnswer, Content: "hel"},
+		{ResponseType: types.ResponseTypeAnswer, Content: "lo", Done: true, Usage: usage},
+	}}
+
+	chatManage := &types.ChatManage{}
+	chatManage.SessionID = "sess-usage"
+	chatManage.EventBus = bus
+	plugin := &PluginChatCompletionStream{modelService: &stubModelService{model: model}}
+	require.Nil(t, plugin.OnEvent(
+		context.Background(), types.CHAT_COMPLETION_STREAM, chatManage,
+		func() *PluginError { return nil },
+	))
+
+	require.Eventually(t, func() bool {
+		events := bus.finalAnswerEvents()
+		return len(events) == 2 && events[len(events)-1].Done
+	}, 2*time.Second, 5*time.Millisecond)
+	events := bus.finalAnswerEvents()
+	// Events carry per-chunk content; the consumer accumulates.
+	require.Equal(t, "lo", events[len(events)-1].Content)
+	require.Same(t, usage, events[len(events)-1].Usage.(*types.TokenUsage))
+	// Chunks without usage keep it unset instead of manufacturing a zero value.
+	require.Nil(t, events[0].Usage)
+}
+
+// The assembler emits the finish chunk (Done, no usage) before its End
+// emission (Done, usage). The closing answer event must wait for the channel
+// to close so the usage trailer is not dropped (review finding on PR #5253).
+func TestStreamCarriesUsageTrailerAfterFinishChunk(t *testing.T) {
+	usage := &types.TokenUsage{PromptTokens: 1000, CompletionTokens: 5, TotalTokens: 1005}
+	bus := &syncEventBus{}
+	model := &openStreamChat{closeStream: true, chunks: []types.StreamResponse{
+		{ResponseType: types.ResponseTypeAnswer, Content: "hel"},
+		{ResponseType: types.ResponseTypeAnswer, Content: "lo", Done: true},
+		// The assembler's End emission: Done again, no content, usage attached.
+		{ResponseType: types.ResponseTypeAnswer, Done: true, Usage: usage},
+	}}
+
+	chatManage := &types.ChatManage{}
+	chatManage.SessionID = "sess-usage-trailer"
+	chatManage.EventBus = bus
+	plugin := &PluginChatCompletionStream{modelService: &stubModelService{model: model}}
+	require.Nil(t, plugin.OnEvent(
+		context.Background(), types.CHAT_COMPLETION_STREAM, chatManage,
+		func() *PluginError { return nil },
+	))
+
+	require.Eventually(t, func() bool {
+		events := bus.finalAnswerEvents()
+		return len(events) == 2 && events[len(events)-1].Done
+	}, 2*time.Second, 5*time.Millisecond)
+	events := bus.finalAnswerEvents()
+	// Only the closing event may carry Done; the trailer never becomes a
+	// second Done event after the session's answer closed. Events carry
+	// per-chunk content — the consumer accumulates.
+	require.Equal(t, []event.AgentFinalAnswerData{
+		{Content: "hel"},
+		{Content: "lo", Done: true, Usage: usage},
+	}, events)
 }

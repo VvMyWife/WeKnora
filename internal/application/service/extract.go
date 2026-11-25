@@ -277,7 +277,7 @@ func (s *ChunkExtractService) Handle(ctx context.Context, t *asynq.Task) error {
 		} else {
 			finalizeSubtaskDetached(ctx, s.knowledgeRepo, p.KnowledgeID,
 				fmt.Sprintf("graph_chunk[%d]", p.ChunkIndex),
-				handleErr, false, isFinalAsynqAttempt(ctx) && !errors.Is(handleErr, context.Canceled))
+				handleErr, false, isFinalAsynqAttempt(ctx) && !errors.Is(handleErr, context.Canceled), p.Attempt)
 		}
 		if gSpan == nil {
 			return
